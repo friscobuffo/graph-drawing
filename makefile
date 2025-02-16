@@ -2,8 +2,7 @@
 COMPILER = g++
 
 # Source Files
-SRCS = src/main.cpp \
-       src/core/graph/algorithms.cpp
+SRCS = src/main.cpp
 
 # C++ standard
 CXXFLAGS = -std=c++20

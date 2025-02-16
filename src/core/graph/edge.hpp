@@ -8,16 +8,16 @@
 #include "../utils.hpp"
 
 template <typename T>
-concept EdgeTrait = requires(T edge) {
+concept GraphEdgeTrait = requires(T edge) {
     requires PrintTrait<T>;
     { edge.getTo() } -> std::convertible_to<int>;
 };
 
-struct Edge {
+struct GraphEdge {
 private:
     int m_to;
 public:
-    Edge(int to) : m_to(to) {}
+    GraphEdge(int to) : m_to(to) {}
     int getTo() const { return m_to; }
     std::string toString() const {
         return "Edge to " + std::to_string(m_to);
@@ -25,14 +25,14 @@ public:
     void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(EdgeTrait<Edge>);
+static_assert(GraphEdgeTrait<GraphEdge>);
 
-struct ColoredEdge {
+struct ColoredGraphEdge {
 private:
-    Edge m_edge;
+    GraphEdge m_edge;
     Color m_color;
 public:
-    ColoredEdge(int to, Color color) : m_edge(to), m_color(color) {}
+    ColoredGraphEdge(int to, Color color) : m_edge(to), m_color(color) {}
     int getTo() const { return m_edge.getTo(); }
     Color getColor() const { return m_color; }
     std::string toString() const {
@@ -41,15 +41,15 @@ public:
     void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(EdgeTrait<ColoredEdge>);
-static_assert(ColorTrait<ColoredEdge>);
+static_assert(GraphEdgeTrait<ColoredGraphEdge>);
+static_assert(ColorTrait<ColoredGraphEdge>);
 
-struct WeightedEdge {
+struct WeightedGraphEdge {
 private:
-    Edge m_edge;
+    GraphEdge m_edge;
     double m_weight;
 public:
-WeightedEdge(int to, double weight) : m_edge(to), m_weight(weight) {}
+    WeightedGraphEdge(int to, double weight) : m_edge(to), m_weight(weight) {}
     int getTo() const { return m_edge.getTo(); }
     double getWeight() const { return m_weight; }
     std::string toString() const {
@@ -58,7 +58,7 @@ WeightedEdge(int to, double weight) : m_edge(to), m_weight(weight) {}
     void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(EdgeTrait<WeightedEdge>);
-static_assert(WeightTrait<WeightedEdge>);
+static_assert(GraphEdgeTrait<WeightedGraphEdge>);
+static_assert(WeightTrait<WeightedGraphEdge>);
 
 #endif

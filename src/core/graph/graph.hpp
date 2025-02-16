@@ -12,70 +12,57 @@
 template <typename T>
 concept GraphTrait = requires(T graph, const T constGraph) {
     requires PrintTrait<T>;
-    typename T::NodeType;
-    requires NodeTrait<typename T::NodeType>;
+    typename T::GraphNodeType;
+    requires GraphNodeTrait<typename T::GraphNodeType>;
     
-    { constGraph.getNodes() } -> std::same_as<const Container<typename T::NodeType>&>;
-    { graph.addNode(std::declval<typename T::NodeType*>()) } -> std::same_as<void>;
-    { graph.addEdge(0, std::declval<typename T::NodeType::EdgeType*>()) } -> std::same_as<void>;
-    { graph.size() } -> std::convertible_to<size_t>;
-    { graph.getNodes() } -> std::same_as<Container<typename T::NodeType>&>;
+    { constGraph.getNodes() } -> std::same_as<const Container<typename T::GraphNodeType>&>;
+    { graph.addNode(std::declval<typename T::GraphNodeType*>()) } -> std::same_as<void>;
+    { graph.addEdge(0, std::declval<typename T::GraphNodeType::GraphEdgeType*>()) } -> std::same_as<void>;
     { constGraph.size() } -> std::convertible_to<size_t>;
 };
 
 template <typename T>
 struct Graph {
-    using NodeType = T;
+    using GraphNodeType = T;
 private:
     Container<T> m_nodes;
 public:
     Graph() {}
-    Container<T>& getNodes() { return m_nodes; }
     const Container<T>& getNodes() const { return m_nodes; }
     void addNode(T* node) {
         node->setIndex(size());
         m_nodes.addElement(std::unique_ptr<T>(node));
     }
-    void addEdge(size_t from, T::EdgeType* edge) {
-        m_nodes[from].addEdge(edge);
-    }
+    void addEdge(size_t from, T::GraphEdgeType* edge) { m_nodes[from].addEdge(edge); }
     size_t size() const { return m_nodes.size(); }
     std::string toString() const {
         std::string result = "Graph: {";
-        for (auto& node : m_nodes) {
+        for (auto& node : m_nodes)
             result += "["+node.toString() + "] ";
-        }
         return result + "}";
     }
-    void print() const {
-        std::cout << toString() << std::endl;
-    }
+    void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(GraphTrait<Graph<Node<Edge>>>);
+static_assert(GraphTrait<Graph<GraphNode<GraphEdge>>>);
 
 struct SimpleGraph {
-    using NodeType = Node<Edge>;
+    using GraphNodeType = GraphNode<GraphEdge>;
 private:
-    Graph<Node<Edge>> m_graph;
+    Graph<GraphNode<GraphEdge>> m_graph;
 public:
     SimpleGraph() {}
-    Container<Node<Edge>>& getNodes() { return m_graph.getNodes(); }
-    const Container<Node<Edge>>& getNodes() const { return m_graph.getNodes(); }
-    void addNode(Node<Edge>* node) { m_graph.addNode(node); }
-    void addEdge(size_t from, Edge* edge) {
+    const Container<GraphNode<GraphEdge>>& getNodes() const { return m_graph.getNodes(); }
+    void addNode(GraphNode<GraphEdge>* node) { m_graph.addNode(node); }
+    void addEdge(size_t from, GraphEdge* edge) {
         m_graph.addEdge(from, edge);
     }
     size_t size() const { return m_graph.size(); }
-    void addSimpleNode() {
-        m_graph.addNode(new Node<Edge>());
-    }
-    void addSimpleEdge(size_t from, size_t to) {
-        m_graph.addEdge(from, new Edge(to));
-    }
-    void addUndirectedSimpleEdge(size_t from, size_t to) {
-        addSimpleEdge(from, to);
-        addSimpleEdge(to, from);
+    void addNode() { m_graph.addNode(new GraphNode<GraphEdge>()); }
+    void addEdge(size_t from, size_t to) { m_graph.addEdge(from, new GraphEdge(to)); }
+    void addUndirectedEdge(size_t from, size_t to) {
+        addEdge(from, to);
+        addEdge(to, from);
     }
     std::string toString() const {
         return m_graph.toString();

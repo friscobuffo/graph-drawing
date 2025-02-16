@@ -10,26 +10,26 @@
 #include "edge.hpp"
 
 template <typename T>
-concept NodeTrait = requires(T node, const T constNode) {
+concept GraphNodeTrait = requires(T node, const T constNode) {
     requires PrintTrait<T>;
-    typename T::EdgeType;
-    requires EdgeTrait<typename T::EdgeType>;
+    typename T::GraphEdgeType;
+    requires GraphEdgeTrait<typename T::GraphEdgeType>;
     
     { node.getIndex() } -> std::convertible_to<int>;
     { node.setIndex(0) } -> std::same_as<void>;
-    { constNode.getEdges() } -> std::same_as<const Container<typename T::EdgeType>&>;
-    { node.addEdge(std::declval<typename T::EdgeType*>()) } -> std::same_as<void>;
-    { node.getEdges() } -> std::same_as<Container<typename T::EdgeType>&>;
+    { constNode.getEdges() } -> std::same_as<const Container<typename T::GraphEdgeType>&>;
+    { node.addEdge(std::declval<typename T::GraphEdgeType*>()) } -> std::same_as<void>;
+    { node.getEdges() } -> std::same_as<Container<typename T::GraphEdgeType>&>;
 };
 
 template <typename T>
-struct Node {
-    using EdgeType = T;
+struct GraphNode {
+    using GraphEdgeType = T;
 private:
     int m_index = -1;
     Container<T> m_edges;
 public:
-    Node() {}
+    GraphNode() {}
     int getIndex() const { return m_index; }
     void setIndex(int index) { m_index = index; }
     Container<T>& getEdges() { return m_edges; }
@@ -44,13 +44,13 @@ public:
     void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(NodeTrait<Node<Edge>>);
+static_assert(GraphNodeTrait<GraphNode<GraphEdge>>);
 
 template <typename T>
 struct ColoredNode {
-    using EdgeType = T;
+    using GraphEdgeType = T;
 private:
-    Node<T> m_node{};
+    GraphNode<T> m_node{};
     Color m_color;
 public:
     ColoredNode(Color color) : m_color(color) {}
@@ -69,23 +69,23 @@ public:
     void print() const { std::cout << toString() << std::endl; }
 };
 
-static_assert(NodeTrait<ColoredNode<Edge>>);
+static_assert(GraphNodeTrait<ColoredNode<GraphEdge>>);
 
-struct SimpleNode {
-    using EdgeType = Edge;
+struct SimpleGraphNode {
+    using GraphEdgeType = GraphEdge;
 private:
-    Node<Edge> m_node;
+    GraphNode<GraphEdge> m_node;
 public:
-    SimpleNode() {}
+    SimpleGraphNode() {}
     int getIndex() const { return m_node.getIndex(); }
     void setIndex(int index) { m_node.setIndex(index); }
-    Container<Edge>& getEdges() { return m_node.getEdges(); }
-    const Container<Edge>& getEdges() const { return m_node.getEdges(); }
-    void addEdge(Edge* edge) { m_node.addEdge(edge); }
+    Container<GraphEdge>& getEdges() { return m_node.getEdges(); }
+    const Container<GraphEdge>& getEdges() const { return m_node.getEdges(); }
+    void addEdge(GraphEdge* edge) { m_node.addEdge(edge); }
     std::string toString() const { return m_node.toString(); }
     void print() const { m_node.print(); }
 };
 
-static_assert(NodeTrait<SimpleNode>);
+static_assert(GraphNodeTrait<SimpleGraphNode>);
 
 #endif
