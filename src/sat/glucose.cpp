@@ -37,10 +37,9 @@ const Result* get_results() {
         return nullptr;
     }
     std::string line;
-    if (line == "UNSAT") {
-        return new Result{ResultType::UNSAT, {}, get_proof()};
-    }
-    else if (std::getline(file, line)) { // Read the first line
+    if (std::getline(file, line)) {
+        if (line == "UNSAT")
+            return new Result{ResultType::UNSAT, {}, get_proof()};
         std::istringstream iss(line);
         std::vector<int> numbers;
         int num;

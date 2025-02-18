@@ -9,8 +9,8 @@ void Shape::set_direction(const size_t i, const size_t j, const Direction direct
         switch (direction) {
             case Direction::LEFT: std::get<0>(m_node_neighbors_direction[i]) = j; break;
             case Direction::RIGHT: std::get<1>(m_node_neighbors_direction[i]) = j; break;
-            case Direction::UP: std::get<2>(m_node_neighbors_direction[i]) = j; break;
-            case Direction::DOWN: std::get<3>(m_node_neighbors_direction[i]) = j; break;
+            case Direction::DOWN: std::get<2>(m_node_neighbors_direction[i]) = j; break;
+            case Direction::UP: std::get<3>(m_node_neighbors_direction[i]) = j; break;
         }
     }
     else {
@@ -21,35 +21,11 @@ void Shape::set_direction(const size_t i, const size_t j, const Direction direct
             case Direction::RIGHT:
                 m_node_neighbors_direction[i] = std::make_tuple(-1, j, -1, -1);
                 break;
-            case Direction::UP:
+            case Direction::DOWN:
                 m_node_neighbors_direction[i] = std::make_tuple(-1, -1, j, -1);
                 break;
-            case Direction::DOWN:
-                m_node_neighbors_direction[i] = std::make_tuple(-1, -1, -1, j);
-                break;
-        }
-    }
-    if (m_node_neighbors_direction.contains(j)) {
-        switch (direction) {
-            case Direction::LEFT: std::get<1>(m_node_neighbors_direction[j]) = i; break;
-            case Direction::RIGHT: std::get<0>(m_node_neighbors_direction[j]) = i; break;
-            case Direction::UP: std::get<3>(m_node_neighbors_direction[j]) = i; break;
-            case Direction::DOWN: std::get<2>(m_node_neighbors_direction[j]) = i; break;
-        }
-    }
-    else {
-        switch (direction) {
-            case Direction::LEFT:
-                m_node_neighbors_direction[j] = std::make_tuple(i, -1, -1, -1);
-                break;
-            case Direction::RIGHT:
-                m_node_neighbors_direction[j] = std::make_tuple(-1, i, -1, -1);
-                break;
             case Direction::UP:
-                m_node_neighbors_direction[j] = std::make_tuple(-1, -1, i, -1);
-                break;
-            case Direction::DOWN:
-                m_node_neighbors_direction[j] = std::make_tuple(-1, -1, -1, i);
+                m_node_neighbors_direction[i] = std::make_tuple(-1, -1, -1, j);
                 break;
         }
     }
@@ -95,11 +71,11 @@ int Shape::has_node_a_right_neighbor(const size_t node) const {
     return std::get<1>(m_node_neighbors_direction.at(node));
 }
 
-int Shape::has_node_a_up_neighbor(const size_t node) const {
+int Shape::has_node_a_down_neighbor(const size_t node) const {
     return std::get<2>(m_node_neighbors_direction.at(node));
 }
 
-int Shape::has_node_a_down_neighbor(const size_t node) const {
+int Shape::has_node_a_up_neighbor(const size_t node) const {
     return std::get<3>(m_node_neighbors_direction.at(node));
 }
 
@@ -108,7 +84,8 @@ std::string Shape::to_string() const {
     for (auto& [pair, direction] : m_shape) {
         result += "(" + std::to_string(pair.first) + ", " + std::to_string(pair.second) + ") -> " + direction_to_string(direction) + " ";
     }
-    return result + "}";
+    result += "}";
+    return result;
 }
 
 void Shape::print() const {

@@ -220,7 +220,7 @@ const Shape* _result_to_shape(const T& graph, const std::vector<int>& numbers,
 }
 
 template <GraphTrait T>
-const Shape* build_shape(const T& graph, std::vector<std::vector<size_t>>& cycles, int iterations = 1) {
+const Shape* build_shape(const T& graph, std::vector<std::vector<size_t>>& cycles) {
     auto [
         is_edge_up_variable,
         is_edge_down_variable,

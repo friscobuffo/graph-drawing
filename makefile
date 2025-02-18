@@ -4,7 +4,9 @@ COMPILER = g++
 # Source Files
 SRCS = src/main.cpp \
 		src/sat/glucose.cpp \
-		src/orthogonal/shape.cpp
+		src/orthogonal/shape.cpp \
+		src/drawing/polygon.cpp \
+		src/drawing/svg_drawer.cpp
 
 # C++ standard
 CXXFLAGS = -std=c++20

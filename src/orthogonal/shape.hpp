@@ -21,6 +21,7 @@ inline const std::string direction_to_string(const Direction direction) {
         case Direction::RIGHT: return "right";
         case Direction::UP: return "up";
         case Direction::DOWN: return "down";
+        default: return "unknown";
     }
 }
 
@@ -38,7 +39,7 @@ struct pair_hash {
 class Shape {
 private:
     std::unordered_map<std::pair<size_t, size_t>, Direction, pair_hash> m_shape;
-    std::unordered_map<size_t, std::tuple<bool, bool, bool, bool>> m_node_neighbors_direction; 
+    std::unordered_map<size_t, std::tuple<int, int, int, int>> m_node_neighbors_direction; 
 public:
     void set_direction(const size_t i, const size_t j, const Direction direction);
     Direction get_direction(const size_t i, const size_t j) const;
