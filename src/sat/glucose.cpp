@@ -2,20 +2,51 @@
 
 #include <cstdio>
 #include <iostream>
-#include <cstring>
+#include <fstream>
+#include <sstream>
 
-int launch_glucose() {
-    FILE* pipe = popen("./glucose .conjunctive_normal_form.cnf .output.txt -certified -certified-output=daje", "r");
+const Result* get_results();
+
+const Result* launch_glucose() {
+    FILE* pipe = popen("./glucose .conjunctive_normal_form.cnf .output.txt -certified -certified-output=.proof.txt", "r");
     if (!pipe) {
         std::cerr << "Failed to run executable" << std::endl;
-        return 1;
+        return nullptr;
     }
-
-    // char buffer[128];
-    // while (fgets(buffer, sizeof(buffer), pipe) != nullptr) {
-    //     std::cout << buffer;  // Print output
-    // }
-
     fclose(pipe);
-    return 0;
+    return get_results();
+}
+
+std::string get_proof() {
+    std::ifstream file(".proof.txt");
+    if (!file) {
+        std::cerr << "Error: Could not open the file.\n";
+        return "";
+    }
+    std::string line;
+    std::string proof;
+    while (std::getline(file, line))
+        proof += line + "\n";
+    return proof;
+}
+
+const Result* get_results() {
+    std::ifstream file(".output.txt"); // Open the file
+    if (!file) {
+        std::cerr << "Error: Could not open the file.\n";
+        return nullptr;
+    }
+    std::string line;
+    if (line == "UNSAT") {
+        return new Result{ResultType::UNSAT, {}, get_proof()};
+    }
+    else if (std::getline(file, line)) { // Read the first line
+        std::istringstream iss(line);
+        std::vector<int> numbers;
+        int num;
+        while (iss >> num)
+            numbers.push_back(num);
+        return new Result{ResultType::SAT, numbers, get_proof()};
+    }
+    return nullptr;
 }

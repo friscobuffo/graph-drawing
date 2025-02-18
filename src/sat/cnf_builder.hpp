@@ -9,7 +9,6 @@
 class CNFBuilder {
 private:
     std::vector<std::vector<int>> clauses;
-
 public:
     void add_clause(std::vector<int> clause) {
         clauses.push_back(std::move(clause));

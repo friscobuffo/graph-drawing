@@ -1,6 +1,10 @@
 #ifndef MY_SHAPE_BUILDER_H
 #define MY_SHAPE_BUILDER_H
 
+#include <vector>
+#include <tuple>
+#include <memory>
+
 #include "../core/graph/graph.hpp"
 #include "shape.hpp"
 #include "../sat/glucose.hpp"
@@ -179,7 +183,44 @@ void _add_cycles_constraints(const T& graph, CNFBuilder& cnf_builder,
 }
 
 template <GraphTrait T>
-Shape* build_shape(const T& graph, std::vector<std::vector<size_t>>& cycles, int iterations = 1) {
+const Shape* _result_to_shape(const T& graph, const std::vector<int>& numbers,
+    const std::vector<std::vector<int>>& is_edge_up_variable,
+    const std::vector<std::vector<int>>& is_edge_down_variable,
+    const std::vector<std::vector<int>>& is_edge_right_variable,
+    const std::vector<std::vector<int>>& is_edge_left_variable
+) {
+    auto variable_values = std::unordered_map<int, bool>();
+    for (size_t i = 0; i < numbers.size(); i++) {
+        int var = numbers[i];
+        if (var > 0) variable_values[var] = true;
+        else variable_values[-var] = false;
+    }
+    auto shape = new Shape();
+    for (int i = 0; i < graph.size(); i++) {
+        for (auto& edge : graph.getNodes()[i].getEdges()) {
+            int j = edge.getTo();
+            int up = is_edge_up_variable[i][j];
+            int down = is_edge_down_variable[i][j];
+            int right = is_edge_right_variable[i][j];
+            int left = is_edge_left_variable[i][j];
+            if (variable_values[up]) {
+                shape->set_direction(i, j, Direction::UP);
+            } else if (variable_values[down]) {
+                shape->set_direction(i, j, Direction::DOWN);
+            } else if (variable_values[right]) {
+                shape->set_direction(i, j, Direction::RIGHT);
+            } else if (variable_values[left]) {
+                shape->set_direction(i, j, Direction::LEFT);
+            } else {
+                assert(false);
+            }
+        }
+    }
+    return shape;
+}
+
+template <GraphTrait T>
+const Shape* build_shape(const T& graph, std::vector<std::vector<size_t>>& cycles, int iterations = 1) {
     auto [
         is_edge_up_variable,
         is_edge_down_variable,
@@ -192,70 +233,15 @@ Shape* build_shape(const T& graph, std::vector<std::vector<size_t>>& cycles, int
     _add_constraints_opposite_edges(graph, cnf_builder, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable);
     _add_nodes_constraints(graph, cnf_builder, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable);
     _add_cycles_constraints(graph, cnf_builder, cycles, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable);
-    cnf_builder.convert_to_cnf("shape.cnf");
-    return nullptr;
+    cnf_builder.convert_to_cnf(".conjunctive_normal_form.cnf");
+    std::unique_ptr<const Result> results = std::unique_ptr<const Result>(launch_glucose());
+    if (results->result == ResultType::UNSAT) {
+        std::cout << "UNSAT" << std::endl;
+        return nullptr;
+    }
+    const std::vector<int>& variables = results->numbers;
+    const Shape* shape = _result_to_shape(graph, variables, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable);
+    return shape;
 }
 
-/*
-
-def build_shape(graph: Graph, cycles: list, iterations: int = 1) -> Shape:
-    timer_start = perf_counter()
-    is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable, variable_to_edge = _initialize_variables(graph)
-    with Glucose42(with_proof=True) as solver:
-        _add_constraints_one_direction_per_edge(graph, solver, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable)
-        _add_constraints_opposite_edges(graph, solver, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable)
-        _add_nodes_constraints(graph, solver, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable)
-        _add_cycles_constraints(cycles, solver, is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable)
-        sat_contraints_time = perf_counter() - timer_start
-        print(f"SAT constraints generation time: {sat_contraints_time}")
-        timer_start = perf_counter()
-        solved = solver.solve()
-        sat_solve_time = perf_counter() - timer_start
-        print(f"SAT solving time: {sat_solve_time}")
-        print(f"SAT total time: {sat_contraints_time + sat_solve_time}")
-        if solved:
-            print(f"Number of iterations: {iterations}")
-            return _model_solution_to_shape(graph, solver.get_model(), is_edge_up_variable, is_edge_down_variable, is_edge_right_variable, is_edge_left_variable)
-        else:
-            print("NOT SOLVED")
-            proof = solver.get_proof()
-            # print(proof)
-            for i in range(len(proof) - 1, -1, -1):
-                proof_elem = proof[i].split(sep=" ")
-                clauses = set()
-                for elem in proof_elem:
-                    if elem == "0" or elem == "d":
-                        continue
-                    clauses.add(abs(int(elem)))
-                if len(clauses) == 1:
-                    for var in clauses:
-                        edge = variable_to_edge[var]
-                        graph.remove_edge(edge[0], edge[1])
-                        new_node = graph.size()
-                        graph.add_node()
-                        graph.add_edge(edge[0], new_node)
-                        graph.add_edge(edge[1], new_node)
-                        for cycle in cycles:
-                            for j in range(len(cycle)):
-                                if cycle[j] == edge[0] and cycle[(j + 1) % len(cycle)] == edge[1]:
-                                    cycle.insert(j + 1, new_node)
-                                    break
-                                if cycle[j] == edge[1] and cycle[(j + 1) % len(cycle)] == edge[0]:
-                                    cycle.insert(j + 1, new_node)
-                                    break
-                        print("used clause:", proof_elem)
-                        print("clause:", clauses)
-                        print("removed edge: ", edge)
-                        print("added node: ", new_node)
-                        print("TRYING AGAIN")
-                        return build_shape(graph, cycles, iterations+1)
-            exception = (
-                f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-                f"DID NOT FOUND A GOOD CLAUSE\n"
-                f"proof:\n"
-                f"{proof}\n"
-                f"!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n"
-            )
-            raise Exception(exception)
-*/
 #endif

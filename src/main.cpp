@@ -1,13 +1,11 @@
 #include "core/graph/graph.hpp"
 #include "core/graph/algorithms.hpp"
-#include "core/tree/tree.hpp"
-#include "core/tree/node.hpp"
 #include "core/tree/algorithms.hpp"
 #include "core/graph/file_loader.hpp"
 
+#include "orthogonal/shape_builder.hpp"
 #include "sat/glucose.hpp"
 #include "orthogonal/shape.hpp"
-#include "orthogonal/shape_builder.hpp"
 
 #include <iostream>
 
@@ -60,9 +58,10 @@ int main() {
     SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
     auto cyclesFromFile = computeAllCycles(*fromFile);
 
-    build_shape(*fromFile, cyclesFromFile);
+    const Shape* shape = build_shape(*fromFile, cyclesFromFile);
 
     delete fromFile;
-    
+    delete shape;
+
     return 0;
 }
