@@ -35,13 +35,13 @@ public:
     Container<T>& getEdges() { return m_edges; }
     const Container<T>& getEdges() const { return m_edges; }
     void addEdge(T* edge) { m_edges.addElement(std::unique_ptr<T>(edge)); }
-    std::string toString() const {
+    std::string to_string() const {
         std::string result = "Node " + std::to_string(m_index) + " edges: ";
         for (auto& edge : m_edges)
-            result += "(" + edge.toString() + ")";
+            result += "(" + edge.to_string() + ")";
         return result;
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphNodeTrait<GraphNode<GraphEdge>>);
@@ -60,13 +60,13 @@ public:
     const Container<T>& getEdges() const { return m_node.getEdges(); }
     void addEdge(T* edge) { m_node.addEdge(edge); }
     Color getColor() const { return m_color; }
-    std::string toString() const {
+    std::string to_string() const {
         std::string result = "ColoredNode " + color2string(m_color) + " " + std::to_string(m_node.getIndex()) + " edges:";
         for (auto& edge : getEdges())
-            result += " " + edge.toString();
+            result += " " + edge.to_string();
         return result;
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphNodeTrait<ColoredNode<GraphEdge>>);
@@ -82,7 +82,7 @@ public:
     Container<GraphEdge>& getEdges() { return m_node.getEdges(); }
     const Container<GraphEdge>& getEdges() const { return m_node.getEdges(); }
     void addEdge(GraphEdge* edge) { m_node.addEdge(edge); }
-    std::string toString() const { return m_node.toString(); }
+    std::string to_string() const { return m_node.to_string(); }
     void print() const { m_node.print(); }
 };
 

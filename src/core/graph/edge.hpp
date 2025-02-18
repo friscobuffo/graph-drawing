@@ -19,10 +19,10 @@ private:
 public:
     GraphEdge(int to) : m_to(to) {}
     int getTo() const { return m_to; }
-    std::string toString() const {
+    std::string to_string() const {
         return "Edge to " + std::to_string(m_to);
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphEdgeTrait<GraphEdge>);
@@ -35,10 +35,10 @@ public:
     ColoredGraphEdge(int to, Color color) : m_edge(to), m_color(color) {}
     int getTo() const { return m_edge.getTo(); }
     Color getColor() const { return m_color; }
-    std::string toString() const {
+    std::string to_string() const {
         return "ColoredEdge " + color2string(m_color) + " -> " + std::to_string(m_edge.getTo());
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphEdgeTrait<ColoredGraphEdge>);
@@ -52,10 +52,10 @@ public:
     WeightedGraphEdge(int to, double weight) : m_edge(to), m_weight(weight) {}
     int getTo() const { return m_edge.getTo(); }
     double getWeight() const { return m_weight; }
-    std::string toString() const {
+    std::string to_string() const {
         return "ColoredEdge " + std::to_string(m_weight) + " -> " + std::to_string(m_edge.getTo());
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphEdgeTrait<WeightedGraphEdge>);

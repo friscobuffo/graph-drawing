@@ -31,14 +31,14 @@ public:
     void setParent(int parent) { m_parent = parent; }
     const std::vector<size_t>& getChilds() const { return m_childs; }
     void addChild(size_t index) { m_childs.push_back(index); }
-    std::string toString() const {
+    std::string to_string() const {
         std::string result = "Node " + std::to_string(m_index);
         result += " parent: " + std::to_string(m_parent) + " childs: ";
         for (auto& child : m_childs)
             result += "(" + std::to_string(child) + ")";
         return result;
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(TreeNodeTrait<TreeNode>);

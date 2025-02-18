@@ -35,13 +35,13 @@ public:
     }
     void addEdge(size_t from, T::GraphEdgeType* edge) { m_nodes[from].addEdge(edge); }
     size_t size() const { return m_nodes.size(); }
-    std::string toString() const {
+    std::string to_string() const {
         std::string result = "Graph: {";
         for (auto& node : m_nodes)
-            result += "["+node.toString() + "] ";
+            result += "["+node.to_string() + "] ";
         return result + "}";
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(GraphTrait<Graph<GraphNode<GraphEdge>>>);
@@ -64,8 +64,8 @@ public:
         addEdge(from, to);
         addEdge(to, from);
     }
-    std::string toString() const {
-        return m_graph.toString();
+    std::string to_string() const {
+        return m_graph.to_string();
     }
     void print() const {
         m_graph.print();

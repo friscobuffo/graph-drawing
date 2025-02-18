@@ -39,13 +39,13 @@ public:
         m_nodes[child].setParent(parent);
     }
     size_t size() const { return m_nodes.size(); }
-    std::string toString() const {
+    std::string to_string() const {
         std::string result = "Tree: {";
         for (auto& node : m_nodes)
-            result += "["+node.toString()+"] ";
+            result += "["+node.to_string()+"] ";
         return result + "}";
     }
-    void print() const { std::cout << toString() << std::endl; }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(TreeTrait<Tree<TreeNode>>);
@@ -61,8 +61,8 @@ public:
     void addNode() { m_tree.addNode(new TreeNode()); }
     void addChild(size_t parent, size_t child) { m_tree.addChild(parent, child); }
     size_t size() const { return m_tree.size(); }
-    std::string toString() const { return m_tree.toString(); }
-    void print() const { std::cout << toString() << std::endl; }
+    std::string to_string() const { return m_tree.to_string(); }
+    void print() const { std::cout << to_string() << std::endl; }
 };
 
 static_assert(TreeTrait<SimpleTree>);

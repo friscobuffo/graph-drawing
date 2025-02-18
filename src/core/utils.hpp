@@ -205,7 +205,7 @@ concept WeightTrait = requires(T weighted) {
 
 template <typename T>
 concept PrintTrait = requires(T printable) {
-    { printable.toString() } -> std::convertible_to<std::string>;
+    { printable.to_string() } -> std::convertible_to<std::string>;
     { printable.print() } -> std::same_as<void>;
 };
 

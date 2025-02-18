@@ -5,7 +5,13 @@
 #include "core/tree/algorithms.hpp"
 #include "core/graph/file_loader.hpp"
 
-int main() {
+#include "sat/glucose.hpp"
+#include "orthogonal/shape.hpp"
+#include "orthogonal/shape_builder.hpp"
+
+#include <iostream>
+
+void prova1() {
     SimpleGraph graph;
     graph.addNode();
     graph.addNode();
@@ -46,5 +52,17 @@ int main() {
     auto cyclesFromFile = computeAllCycles(*fromFile);
     std::cout << cyclesFromFile.size() << std::endl;
     delete fromFile;
+}
+
+int main() {
+    // prova1();
+
+    SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
+    auto cyclesFromFile = computeAllCycles(*fromFile);
+
+    build_shape(*fromFile, cyclesFromFile);
+
+    delete fromFile;
+    
     return 0;
 }
