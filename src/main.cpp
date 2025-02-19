@@ -91,7 +91,7 @@ int main() {
             drawer.add(line);
         }
     for (size_t i = 0; i < fromFile->size(); ++i)
-        drawer.add(points[i]);
+        drawer.add(points[i], "black", std::to_string(i));
     drawer.saveToFile("graph.svg");
     delete fromFile;
     delete shape;

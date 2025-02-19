@@ -175,7 +175,7 @@ struct PartialOrdering {
 private:
     SimpleGraph m_partial_ordering_x;
     SimpleGraph m_partial_ordering_y;;
-    std::vector<int> _make_total_ordering(SimpleGraph& graph) {
+    std::vector<int> _make_topological_ordering(SimpleGraph& graph) {
         std::vector<int> in_degree(graph.size(), 0);
         for (int u = 0; u < graph.size(); ++u)
             for (auto& edge : graph.getNodes()[u].getEdges()) {
@@ -201,18 +201,6 @@ private:
         }
         if (count != graph.size())
             throw std::runtime_error("Graph contains cycle");
-        std::vector<std::unordered_set<int>> edge_set(graph.size());
-        for (int u = 0; u < graph.size(); ++u)
-            for (auto& edge : graph.getNodes()[u].getEdges())
-                edge_set[u].insert(edge.getTo());
-        for (size_t i = 0; i < topological_order.size() - 1; ++i) {
-            int u = topological_order[i];
-            int v = topological_order[i + 1];
-            if (edge_set[u].find(v) == edge_set[u].end()) {
-                graph.addEdge(u, v);
-                edge_set[u].insert(v);
-            }
-        }
         return topological_order;
     }
 public:
@@ -234,9 +222,9 @@ public:
         }
         m_partial_ordering_y.addEdge(from, to);
     }
-    std::tuple<std::vector<int>, std::vector<int>> make_total_ordering() {
-        auto topological_order_x = _make_total_ordering(m_partial_ordering_x);
-        auto topological_order_y = _make_total_ordering(m_partial_ordering_y);
+    std::tuple<std::vector<int>, std::vector<int>> make_topological_ordering() {
+        auto topological_order_x = _make_topological_ordering(m_partial_ordering_x);
+        auto topological_order_y = _make_topological_ordering(m_partial_ordering_y);
         return std::make_tuple(topological_order_x, topological_order_y);
     }
 };
@@ -297,20 +285,29 @@ int NodesPositions::get_position_y(size_t node) const {
 
 template <GraphTrait T>
 const NodesPositions* build_nodes_positions(const Shape& shape, const T& graph) {
+    graph.print();
+    std::cout << "\n\n";
+    shape.print();
     const EquivalenceClassesHandler* classes = build_equivalence_classes(shape, graph);
     PartialOrdering* partial_ordering = equivalence_classes_to_partial_ordering(*classes, graph, shape);
-    auto [ordering_x, ordering_y] = partial_ordering->make_total_ordering();
+    auto [classes_x_ordering, classes_y_ordering] = partial_ordering->make_topological_ordering();
     NodesPositions* positions = new NodesPositions();
     int current_position_x = 0;
-    for (auto& class_id : ordering_x) {
-        for (auto& node : classes->get_nodes_x(class_id))
+    for (auto& class_id : classes_x_ordering) {
+        std::cout << "Class x" << class_id << std::endl;
+        for (auto& node : classes->get_nodes_x(class_id)) {
+            std::cout << "   Node " << node << std::endl;
             positions->set_position_x(node, current_position_x);
+        }
         ++current_position_x;
     }
     int current_position_y = 0;
-    for (auto& class_id : ordering_y) {
-        for (auto& node : classes->get_nodes_y(class_id))
+    for (auto& class_id : classes_y_ordering) {
+        std::cout << "Class y" << class_id << std::endl;
+        for (auto& node : classes->get_nodes_y(class_id)) {
+            std::cout << "   Node " << node << std::endl;
             positions->set_position_y(node, current_position_y);
+        }
         ++current_position_y;
     }
     delete classes;

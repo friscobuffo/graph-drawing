@@ -10,9 +10,13 @@ SvgDrawer::SvgDrawer(int width, int height)
     m_svg << "x=\"0\" y=\"0\" fill=\"white\" />";
 }
 
-void SvgDrawer::add(Point2D& point, std::string color) {
+void SvgDrawer::add(Point2D& point, std::string color, std::string label) {
     m_svg << "<circle cx=\"" << point.x << "\" cy=\"" << m_scaleY.map(point.y) << "\" ";
-    m_svg << "r=\"2\" fill=\"" << color << "\" />" << std::endl;
+    m_svg << "r=\"4\" fill=\"" << color << "\" />" << std::endl;
+    if (!label.empty()) {
+        m_svg << "<text x=\"" << point.x+2 << "\" y=\"" << m_scaleY.map(point.y+2) << "\" ";
+        m_svg << "font-family=\"Verdana\" font-size=\"16\" fill=\"black\">" << label << "</text>" << std::endl;
+    }
 }
 
 void SvgDrawer::add(Line2D& line, std::string color) {
