@@ -168,6 +168,16 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
             }
         }
     }
+    for (int i = 0; i < graph.size(); ++i) {
+        if (handler->get_class_x(i) == -1) {
+            handler->set_class_x(i, next_class_x);
+            ++next_class_x;
+        }
+        if (handler->get_class_y(i) == -1) {
+            handler->set_class_y(i, next_class_y);
+            ++next_class_y;
+        }
+    }
     return handler;
 }
 
@@ -242,21 +252,17 @@ PartialOrdering* equivalence_classes_to_partial_ordering(
             if (shape.is_horizontal(i, j)) {
                 int node_class_x = classes.get_class_x(i);
                 int neighbor_class_x = classes.get_class_x(j);
-                if (node_class_x == -1 || neighbor_class_x == -1) continue;
-                if (shape.is_left(i, j)) {
-                    ordering->add_edge_x(node_class_x, neighbor_class_x);
-                } else {
+                if (shape.is_left(i, j))
                     ordering->add_edge_x(neighbor_class_x, node_class_x);
-                }
+                else
+                    ordering->add_edge_x(node_class_x, neighbor_class_x);
             } else {
                 int node_class_y = classes.get_class_y(i);
                 int neighbor_class_y = classes.get_class_y(j);
-                if (node_class_y == -1 || neighbor_class_y == -1) continue;
-                if (shape.is_down(i, j)) {
-                    ordering->add_edge_y(node_class_y, neighbor_class_y);
-                } else {
+                if (shape.is_down(i, j))
                     ordering->add_edge_y(neighbor_class_y, node_class_y);
-                }
+                else
+                    ordering->add_edge_y(node_class_y, neighbor_class_y);
             }
         }
     }
@@ -285,29 +291,20 @@ int NodesPositions::get_position_y(size_t node) const {
 
 template <GraphTrait T>
 const NodesPositions* build_nodes_positions(const Shape& shape, const T& graph) {
-    graph.print();
-    std::cout << "\n\n";
-    shape.print();
     const EquivalenceClassesHandler* classes = build_equivalence_classes(shape, graph);
     PartialOrdering* partial_ordering = equivalence_classes_to_partial_ordering(*classes, graph, shape);
     auto [classes_x_ordering, classes_y_ordering] = partial_ordering->make_topological_ordering();
     NodesPositions* positions = new NodesPositions();
     int current_position_x = 0;
     for (auto& class_id : classes_x_ordering) {
-        std::cout << "Class x" << class_id << std::endl;
-        for (auto& node : classes->get_nodes_x(class_id)) {
-            std::cout << "   Node " << node << std::endl;
+        for (auto& node : classes->get_nodes_x(class_id))
             positions->set_position_x(node, current_position_x);
-        }
         ++current_position_x;
     }
     int current_position_y = 0;
     for (auto& class_id : classes_y_ordering) {
-        std::cout << "Class y" << class_id << std::endl;
-        for (auto& node : classes->get_nodes_y(class_id)) {
-            std::cout << "   Node " << node << std::endl;
+        for (auto& node : classes->get_nodes_y(class_id))
             positions->set_position_y(node, current_position_y);
-        }
         ++current_position_y;
     }
     delete classes;

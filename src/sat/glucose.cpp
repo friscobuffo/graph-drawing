@@ -7,6 +7,12 @@
 
 const Result* get_results();
 
+void delete_glucose_temp_files() {
+    remove(".conjunctive_normal_form.cnf");
+    remove(".output.txt");
+    remove(".proof.txt");
+}
+
 const Result* launch_glucose() {
     FILE* pipe = popen("./glucose .conjunctive_normal_form.cnf .output.txt -certified -certified-output=.proof.txt", "r");
     if (!pipe) {
@@ -14,7 +20,9 @@ const Result* launch_glucose() {
         return nullptr;
     }
     fclose(pipe);
-    return get_results();
+    const Result* result = get_results();
+    delete_glucose_temp_files();
+    return result;
 }
 
 std::string get_proof() {

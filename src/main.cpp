@@ -59,7 +59,7 @@ void prova1() {
 int main() {
     // prova1();
 
-    SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g6.txt");
+    SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
     auto cyclesFromFile = computeAllCycles(*fromFile);
 
     const Shape* shape = build_shape(*fromFile, cyclesFromFile);
@@ -82,7 +82,6 @@ int main() {
         double x = scale_x.map(positions->get_position_x(i)+1);
         double y = scale_y.map(positions->get_position_y(i)+1);
         points.push_back(Point2D{x, y});
-        std::cout << i << " -> " << x << " " << y << std::endl;
     }
     for (size_t i = 0; i < fromFile->size(); ++i)
         for (auto& edge : fromFile->getNodes()[i].getEdges()) {
@@ -96,6 +95,5 @@ int main() {
     delete fromFile;
     delete shape;
     delete positions;
-
     return 0;
 }

@@ -5,6 +5,7 @@ COMPILER = g++
 SRCS = src/main.cpp \
 		src/sat/glucose.cpp \
 		src/orthogonal/shape.cpp \
+		src/orthogonal/shape_builder.cpp \
 		src/drawing/polygon.cpp \
 		src/drawing/svg_drawer.cpp
 

@@ -49,14 +49,11 @@ static_assert(GraphTrait<Graph<GraphNode<GraphEdge>>>);
 struct SimpleGraph {
     using GraphNodeType = GraphNode<GraphEdge>;
 private:
-    Graph<GraphNode<GraphEdge>> m_graph;
+    Graph<GraphNode<GraphEdge>> m_graph{};
 public:
-    SimpleGraph() {}
     const Container<GraphNode<GraphEdge>>& getNodes() const { return m_graph.getNodes(); }
     void addNode(GraphNode<GraphEdge>* node) { m_graph.addNode(node); }
-    void addEdge(size_t from, GraphEdge* edge) {
-        m_graph.addEdge(from, edge);
-    }
+    void addEdge(size_t from, GraphEdge* edge) { m_graph.addEdge(from, edge); }
     size_t size() const { return m_graph.size(); }
     void addNode() { m_graph.addNode(new GraphNode<GraphEdge>()); }
     void addEdge(size_t from, size_t to) { m_graph.addEdge(from, new GraphEdge(to)); }
@@ -64,12 +61,29 @@ public:
         addEdge(from, to);
         addEdge(to, from);
     }
-    std::string to_string() const {
-        return m_graph.to_string();
+    std::string to_string() const { return m_graph.to_string(); }
+    void print() const { m_graph.print(); }
+};
+
+static_assert(GraphTrait<SimpleGraph>);
+
+struct ColoredNodesGraph {
+    using GraphNodeType = ColoredNode<GraphEdge>;
+private:
+    Graph<ColoredNode<GraphEdge>> m_graph{};
+public:
+    const Container<ColoredNode<GraphEdge>>& getNodes() const { return m_graph.getNodes(); }
+    void addNode(ColoredNode<GraphEdge>* node) { m_graph.addNode(node); }
+    void addEdge(size_t from, GraphEdge* edge) { m_graph.addEdge(from, edge); }
+    size_t size() const { return m_graph.size(); }
+    void addNode(Color color) { m_graph.addNode(new ColoredNode<GraphEdge>(color)); }
+    void addEdge(size_t from, size_t to) { m_graph.addEdge(from, new GraphEdge(to)); }
+    void addUndirectedEdge(size_t from, size_t to) {
+        addEdge(from, to);
+        addEdge(to, from);
     }
-    void print() const {
-        m_graph.print();
-    }
+    std::string to_string() const { return m_graph.to_string(); }
+    void print() const { m_graph.print(); }
 };
 
 static_assert(GraphTrait<SimpleGraph>);
