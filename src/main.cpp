@@ -3,7 +3,7 @@
 #include "orthogonal/drawing_builder.hpp"
 
 int main() {
-    SimpleGraph* graph = loadSimpleUndirectedGraphFromFile("example-graphs/g3.txt");
+    SimpleGraph* graph = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
     make_rectilinear_drawing(*graph);
     delete graph;
     

@@ -21,7 +21,7 @@ const Result* launch_glucose() {
     }
     fclose(pipe);
     const Result* result = get_results();
-    // delete_glucose_temp_files();
+    delete_glucose_temp_files();
     return result;
 }
 
