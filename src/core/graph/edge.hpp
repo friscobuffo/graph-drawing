@@ -10,7 +10,7 @@
 template <typename T>
 concept GraphEdgeTrait = requires(T edge) {
     requires PrintTrait<T>;
-    { edge.getTo() } -> std::convertible_to<int>;
+    { edge.get_to() } -> std::convertible_to<int>;
 };
 
 struct GraphEdge {
@@ -18,7 +18,7 @@ private:
     int m_to;
 public:
     GraphEdge(int to) : m_to(to) {}
-    int getTo() const { return m_to; }
+    int get_to() const { return m_to; }
     std::string to_string() const {
         return "Edge to " + std::to_string(m_to);
     }
@@ -33,10 +33,10 @@ private:
     Color m_color;
 public:
     ColoredGraphEdge(int to, Color color) : m_edge(to), m_color(color) {}
-    int getTo() const { return m_edge.getTo(); }
-    Color getColor() const { return m_color; }
+    int get_to() const { return m_edge.get_to(); }
+    Color get_color() const { return m_color; }
     std::string to_string() const {
-        return "ColoredEdge " + color2string(m_color) + " -> " + std::to_string(m_edge.getTo());
+        return "ColoredEdge " + color_to_string(m_color) + " -> " + std::to_string(m_edge.get_to());
     }
     void print() const { std::cout << to_string() << std::endl; }
 };
@@ -50,10 +50,10 @@ private:
     double m_weight;
 public:
     WeightedGraphEdge(int to, double weight) : m_edge(to), m_weight(weight) {}
-    int getTo() const { return m_edge.getTo(); }
-    double getWeight() const { return m_weight; }
+    int get_to() const { return m_edge.get_to(); }
+    double get_weight() const { return m_weight; }
     std::string to_string() const {
-        return "ColoredEdge " + std::to_string(m_weight) + " -> " + std::to_string(m_edge.getTo());
+        return "ColoredEdge " + std::to_string(m_weight) + " -> " + std::to_string(m_edge.get_to());
     }
     void print() const { std::cout << to_string() << std::endl; }
 };

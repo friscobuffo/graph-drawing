@@ -158,8 +158,12 @@ public:
         return cend();
     }
 
-    void addElement(std::unique_ptr<T> elem) {
+    void add_element(std::unique_ptr<T> elem) {
         m_vector.push_back(std::move(elem));
+    }
+
+    void remove_element(size_t index) {
+        m_vector.erase(m_vector.begin() + index);
     }
 
     T& operator[](size_t index) {
@@ -184,7 +188,7 @@ enum class Color {
     ANY,
 };
 
-inline const std::string color2string(const Color color) {
+inline const std::string color_to_string(const Color color) {
     switch (color) {
         case Color::RED: return "red";
         case Color::BLUE: return "blue";
@@ -195,12 +199,12 @@ inline const std::string color2string(const Color color) {
 
 template <typename T>
 concept ColorTrait = requires(T colored) {
-    { colored.getColor() } -> std::same_as<Color>;
+    { colored.get_color() } -> std::same_as<Color>;
 };
 
 template <typename T>
 concept WeightTrait = requires(T weighted) {
-    { weighted.getWeight() } -> std::convertible_to<double>;
+    { weighted.get_weight() } -> std::convertible_to<double>;
 };
 
 template <typename T>

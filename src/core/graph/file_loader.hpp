@@ -15,14 +15,14 @@ SimpleGraph* loadSimpleUndirectedGraphFromFile(std::string filename) {
         nodesNumber = stoi(line);
         SimpleGraph* graph = new SimpleGraph();
         for (int i = 0; i < nodesNumber; ++i)
-            graph->addNode();
+            graph->add_node();
         int fromIndex, toIndex;
         while (std::getline(infile, line)) {
             if (line.find("//") == 0)
                 continue;
             std::istringstream iss(line);
             if (iss >> fromIndex >> toIndex)
-                graph->addUndirectedEdge(fromIndex, toIndex);
+                graph->add_undirected_edge(fromIndex, toIndex);
         }
         infile.close();
         return graph;

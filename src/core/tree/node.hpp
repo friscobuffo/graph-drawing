@@ -12,11 +12,11 @@ template <typename T>
 concept TreeNodeTrait = requires(T node, const T constNode) {
     requires PrintTrait<T>;
     
-    { node.getIndex() } -> std::convertible_to<int>;
-    { node.setParent(0) } -> std::same_as<void>;
-    { node.setIndex(0) } -> std::same_as<void>;
-    { constNode.getChilds() } -> std::same_as<const std::vector<size_t>&>;
-    { node.addChild(0) } -> std::same_as<void>;
+    { node.get_index() } -> std::convertible_to<int>;
+    { node.set_parent(0) } -> std::same_as<void>;
+    { node.set_index(0) } -> std::same_as<void>;
+    { constNode.get_childs() } -> std::same_as<const std::vector<size_t>&>;
+    { node.add_child(0) } -> std::same_as<void>;
 };
 
 struct TreeNode {
@@ -26,11 +26,11 @@ private:
     std::vector<size_t> m_childs{};
 public:
     TreeNode() {}
-    int getIndex() const { return m_index; }
-    void setIndex(int index) { m_index = index; }
-    void setParent(int parent) { m_parent = parent; }
-    const std::vector<size_t>& getChilds() const { return m_childs; }
-    void addChild(size_t index) { m_childs.push_back(index); }
+    int get_index() const { return m_index; }
+    void set_index(int index) { m_index = index; }
+    void set_parent(int parent) { m_parent = parent; }
+    const std::vector<size_t>& get_childs() const { return m_childs; }
+    void add_child(size_t index) { m_childs.push_back(index); }
     std::string to_string() const {
         std::string result = "Node " + std::to_string(m_index);
         result += " parent: " + std::to_string(m_parent) + " childs: ";

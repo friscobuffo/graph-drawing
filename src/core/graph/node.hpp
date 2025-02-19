@@ -15,11 +15,12 @@ concept GraphNodeTrait = requires(T node, const T constNode) {
     typename T::GraphEdgeType;
     requires GraphEdgeTrait<typename T::GraphEdgeType>;
     
-    { node.getIndex() } -> std::convertible_to<int>;
-    { node.setIndex(0) } -> std::same_as<void>;
-    { constNode.getEdges() } -> std::same_as<const Container<typename T::GraphEdgeType>&>;
-    { node.addEdge(std::declval<typename T::GraphEdgeType*>()) } -> std::same_as<void>;
-    { node.getEdges() } -> std::same_as<Container<typename T::GraphEdgeType>&>;
+    { node.get_index() } -> std::convertible_to<int>;
+    { node.set_index(0) } -> std::same_as<void>;
+    { constNode.get_edges() } -> std::same_as<const Container<typename T::GraphEdgeType>&>;
+    { node.add_edge(std::declval<typename T::GraphEdgeType*>()) } -> std::same_as<void>;
+    { node.remove_edge(0) } -> std::same_as<void>;
+    { node.get_edges() } -> std::same_as<Container<typename T::GraphEdgeType>&>;
 };
 
 template <typename T>
@@ -30,11 +31,19 @@ private:
     Container<T> m_edges;
 public:
     GraphNode() {}
-    int getIndex() const { return m_index; }
-    void setIndex(int index) { m_index = index; }
-    Container<T>& getEdges() { return m_edges; }
-    const Container<T>& getEdges() const { return m_edges; }
-    void addEdge(T* edge) { m_edges.addElement(std::unique_ptr<T>(edge)); }
+    int get_index() const { return m_index; }
+    void set_index(int index) { m_index = index; }
+    Container<T>& get_edges() { return m_edges; }
+    const Container<T>& get_edges() const { return m_edges; }
+    void add_edge(T* edge) { m_edges.add_element(std::unique_ptr<T>(edge)); }
+    void remove_edge(size_t neighbor_index) {
+        for (size_t i = 0; i < get_edges().size(); i++)
+            if (get_edges()[i].get_to() == neighbor_index) {
+                m_edges.remove_element(i);
+                return;
+            }
+        throw std::runtime_error("Edge not found");
+    }
     std::string to_string() const {
         std::string result = "Node " + std::to_string(m_index) + " edges: ";
         for (auto& edge : m_edges)
@@ -54,15 +63,16 @@ private:
     Color m_color;
 public:
     ColoredNode(Color color) : m_color(color) {}
-    int getIndex() const { return m_node.getIndex(); }
-    void setIndex(int index) { m_node.setIndex(index); }
-    Container<T>& getEdges() { return m_node.getEdges(); }
-    const Container<T>& getEdges() const { return m_node.getEdges(); }
-    void addEdge(T* edge) { m_node.addEdge(edge); }
-    Color getColor() const { return m_color; }
+    int get_index() const { return m_node.get_index(); }
+    void set_index(int index) { m_node.set_index(index); }
+    Container<T>& get_edges() { return m_node.get_edges(); }
+    const Container<T>& get_edges() const { return m_node.get_edges(); }
+    void add_edge(T* edge) { m_node.add_edge(edge); }
+    void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
+    Color get_color() const { return m_color; }
     std::string to_string() const {
-        std::string result = "ColoredNode " + color2string(m_color) + " " + std::to_string(m_node.getIndex()) + " edges:";
-        for (auto& edge : getEdges())
+        std::string result = "ColoredNode " + color_to_string(m_color) + " " + std::to_string(m_node.get_index()) + " edges:";
+        for (auto& edge : get_edges())
             result += " " + edge.to_string();
         return result;
     }
@@ -77,11 +87,12 @@ private:
     GraphNode<GraphEdge> m_node;
 public:
     SimpleGraphNode() {}
-    int getIndex() const { return m_node.getIndex(); }
-    void setIndex(int index) { m_node.setIndex(index); }
-    Container<GraphEdge>& getEdges() { return m_node.getEdges(); }
-    const Container<GraphEdge>& getEdges() const { return m_node.getEdges(); }
-    void addEdge(GraphEdge* edge) { m_node.addEdge(edge); }
+    int get_index() const { return m_node.get_index(); }
+    void set_index(int index) { m_node.set_index(index); }
+    Container<GraphEdge>& get_edges() { return m_node.get_edges(); }
+    const Container<GraphEdge>& get_edges() const { return m_node.get_edges(); }
+    void add_edge(GraphEdge* edge) { m_node.add_edge(edge); }
+    void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
     std::string to_string() const { return m_node.to_string(); }
     void print() const { m_node.print(); }
 };

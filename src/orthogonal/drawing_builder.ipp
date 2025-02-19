@@ -3,6 +3,7 @@
 #include <unordered_set>
 #include <queue>
 #include <vector>
+#include <memory>
 #include <tuple>
 
 class EquivalenceClassesHandler {
@@ -138,8 +139,8 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
     int next_class_y = 0;
     std::vector<std::vector<bool>> is_edge_visited(graph.size(), std::vector<bool>(graph.size(), false));
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             if (is_edge_visited[i][j]) continue;
             is_edge_visited[i][j] = true;
             is_edge_visited[j][i] = true;
@@ -188,8 +189,8 @@ private:
     std::vector<int> _make_topological_ordering(SimpleGraph& graph) {
         std::vector<int> in_degree(graph.size(), 0);
         for (int u = 0; u < graph.size(); ++u)
-            for (auto& edge : graph.getNodes()[u].getEdges()) {
-                int v = edge.getTo();
+            for (auto& edge : graph.get_nodes()[u].get_edges()) {
+                int v = edge.get_to();
                 in_degree[v]++;
             }
         std::queue<int> queue;
@@ -203,8 +204,8 @@ private:
             ++count;
             queue.pop();
             topological_order.push_back(u);
-            for (auto& edge : graph.getNodes()[u].getEdges()) {
-                int v = edge.getTo();
+            for (auto& edge : graph.get_nodes()[u].get_edges()) {
+                int v = edge.get_to();
                 if (--in_degree[v] == 0)
                     queue.push(v);
             }
@@ -216,21 +217,21 @@ private:
 public:
     void add_edge_x(int from, int to) {
         while (m_partial_ordering_x.size() <= from) {
-            m_partial_ordering_x.addNode();
+            m_partial_ordering_x.add_node();
         }
         while (m_partial_ordering_x.size() <= to) {
-            m_partial_ordering_x.addNode();
+            m_partial_ordering_x.add_node();
         }
-        m_partial_ordering_x.addEdge(from, to);
+        m_partial_ordering_x.add_edge(from, to);
     }
     void add_edge_y(int from, int to) {
         while (m_partial_ordering_y.size() <= from) {
-            m_partial_ordering_y.addNode();
+            m_partial_ordering_y.add_node();
         }
         while (m_partial_ordering_y.size() <= to) {
-            m_partial_ordering_y.addNode();
+            m_partial_ordering_y.add_node();
         }
-        m_partial_ordering_y.addEdge(from, to);
+        m_partial_ordering_y.add_edge(from, to);
     }
     std::tuple<std::vector<int>, std::vector<int>> make_topological_ordering() {
         auto topological_order_x = _make_topological_ordering(m_partial_ordering_x);
@@ -247,8 +248,8 @@ PartialOrdering* equivalence_classes_to_partial_ordering(
 ) {
     PartialOrdering* ordering = new PartialOrdering();
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             if (shape.is_horizontal(i, j)) {
                 int node_class_x = classes.get_class_x(i);
                 int neighbor_class_x = classes.get_class_x(j);

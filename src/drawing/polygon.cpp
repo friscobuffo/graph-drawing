@@ -109,8 +109,8 @@ Path2D Polygon2D::computePathInside(Point2D& p1, Point2D& p2) {
         return path;
     }
     SimpleGraph graph;
-    graph.addNode();
-    graph.addNode();
+    graph.add_node();
+    graph.add_node();
     std::vector<Point2D> points;
     points.push_back(p1);
     points.push_back(p2);
@@ -118,19 +118,19 @@ Path2D Polygon2D::computePathInside(Point2D& p1, Point2D& p2) {
         for (int j = i+2; j < m_points.size(); ++j) {
             Point2D insideVertex = (m_points[i]+m_points[j])/2.0;
             if (isInside(insideVertex) && !isOnBoundary(insideVertex)) {
-                graph.addNode();
+                graph.add_node();
                 points.push_back(insideVertex);
             }
         }
     }
     // for (int i = 0; i < graph.size()-1; ++i) {
-    //     Point2D& p1 = points[graph.getNodes()[i].getIndex()];
+    //     Point2D& p1 = points[graph.get_nodes()[i].getIndex()];
     //     for (int j = i+1; j < graph.size(); ++j) {
-    //         Point2D& p2 = points[graph.getNodes()[j].getIndex()];
+    //         Point2D& p2 = points[graph.get_nodes()[j].getIndex()];
     //         Line2D line(p1, p2);
     //         if (isInside(line)) {
     //             double distance = p1.distance(p2);
-    //             graph.addEdge(i,j,distance);
+    //             graph.add_edge(i,j,distance);
     //         }
     //     }
     // }

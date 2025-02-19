@@ -8,9 +8,9 @@ bool isConnected(const T& graph) {
         size_t nodeIndex = stack.back();
         stack.pop_back();
         visited[nodeIndex] = true;
-        for (auto& edge : graph.getNodes()[nodeIndex].getEdges())
-            if (!visited[edge.getTo()])
-                stack.push_back(edge.getTo());
+        for (auto& edge : graph.get_nodes()[nodeIndex].get_edges())
+            if (!visited[edge.get_to()])
+                stack.push_back(edge.get_to());
     }
     for (bool visit : visited) if (!visit) return false;
     return true;
@@ -44,8 +44,8 @@ std::vector<std::vector<size_t>> computeAllCyclesWithNode(const T& graph, size_t
         }
         visited[current] = true;
         path.push_back(current);
-        for (auto& edge : graph.getNodes()[current].getEdges()) {
-            size_t neighbor = edge.getTo();
+        for (auto& edge : graph.get_nodes()[current].get_edges()) {
+            size_t neighbor = edge.get_to();
             if (path.size() > 2 && neighbor == start)
                 cycles.push_back(path);
             else

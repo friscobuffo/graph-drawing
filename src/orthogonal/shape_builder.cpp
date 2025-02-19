@@ -1,6 +1,7 @@
 #include "shape_builder.hpp"
 
 #include "../sat/glucose.hpp"
+#include "../sat/cnf_builder.hpp"
 
 struct VariablesHandler {
     std::vector<std::vector<int>> is_edge_up_variable;
@@ -21,8 +22,8 @@ const VariablesHandler _initialize_variables(const ColoredNodesGraph& graph) {
     int next_var = 1;
     handler.variable_to_edge.push_back(std::make_pair(-1, -1));
     for (int i = 0; i < graph.size(); i++) {
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             handler.is_edge_up_variable[i][j] = next_var;
             next_var++;
             handler.is_edge_down_variable[i][j] = next_var;
@@ -47,8 +48,8 @@ void add_constraints_one_direction_per_edge(
     const VariablesHandler& handler
 ) {
     for (int i = 0; i < graph.size(); i++)
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             auto up = handler.is_edge_up_variable[i][j];
             auto down = handler.is_edge_down_variable[i][j];
             auto right = handler.is_edge_right_variable[i][j];
@@ -73,8 +74,8 @@ void add_constraints_opposite_edges(
     const VariablesHandler& handler
 ) {
     for (int i = 0; i < graph.size(); i++)
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             if (i > j) continue;
             int up = handler.is_edge_up_variable[i][j];
             int down = handler.is_edge_down_variable[i][j];
@@ -103,27 +104,27 @@ void _one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CNFBuilder&
     const std::vector<std::vector<int>>& is_edge_in_direction
 ) {
     for (int i = 0; i < graph.size(); i++) {
-        auto& neighbors = graph.getNodes()[i].getEdges();
+        auto& neighbors = graph.get_nodes()[i].get_edges();
         if (neighbors.size() == 4) {
-            auto direction0 = is_edge_in_direction[i][neighbors[0].getTo()];
-            auto direction1 = is_edge_in_direction[i][neighbors[1].getTo()];
-            auto direction2 = is_edge_in_direction[i][neighbors[2].getTo()];
-            auto direction3 = is_edge_in_direction[i][neighbors[3].getTo()];
+            auto direction0 = is_edge_in_direction[i][neighbors[0].get_to()];
+            auto direction1 = is_edge_in_direction[i][neighbors[1].get_to()];
+            auto direction2 = is_edge_in_direction[i][neighbors[2].get_to()];
+            auto direction3 = is_edge_in_direction[i][neighbors[3].get_to()];
             // at least one is true
             cnf_builder.add_clause({direction0, direction1, direction2, direction3});
         }
         if (neighbors.size() == 3) {
-            auto direction0 = is_edge_in_direction[i][neighbors[0].getTo()];
-            auto direction1 = is_edge_in_direction[i][neighbors[1].getTo()];
-            auto direction2 = is_edge_in_direction[i][neighbors[2].getTo()];
+            auto direction0 = is_edge_in_direction[i][neighbors[0].get_to()];
+            auto direction1 = is_edge_in_direction[i][neighbors[1].get_to()];
+            auto direction2 = is_edge_in_direction[i][neighbors[2].get_to()];
             // at most one is true (at least 2 are false)
             cnf_builder.add_clause({-direction0, -direction1});
             cnf_builder.add_clause({-direction0, -direction2});
             cnf_builder.add_clause({-direction1, -direction2});
         }
         if (neighbors.size() == 2) {
-            auto direction0 = is_edge_in_direction[i][neighbors[0].getTo()];
-            auto direction1 = is_edge_in_direction[i][neighbors[1].getTo()];
+            auto direction0 = is_edge_in_direction[i][neighbors[0].get_to()];
+            auto direction1 = is_edge_in_direction[i][neighbors[1].get_to()];
             // at most one is true (at least 1 is false)
             cnf_builder.add_clause({-direction0, -direction1});
         }
@@ -181,8 +182,8 @@ const Shape* result_to_shape(
     }
     auto shape = new Shape();
     for (int i = 0; i < graph.size(); i++) {
-        for (auto& edge : graph.getNodes()[i].getEdges()) {
-            int j = edge.getTo();
+        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+            int j = edge.get_to();
             int up = handler.is_edge_up_variable[i][j];
             int down = handler.is_edge_down_variable[i][j];
             int right = handler.is_edge_right_variable[i][j];

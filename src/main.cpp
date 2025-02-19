@@ -12,13 +12,13 @@
 
 void prova1() {
     SimpleGraph graph;
-    graph.addNode();
-    graph.addNode();
-    graph.addNode();
+    graph.add_node();
+    graph.add_node();
+    graph.add_node();
 
-    graph.addUndirectedEdge(0, 1);
-    graph.addUndirectedEdge(1, 2);
-    graph.addUndirectedEdge(2, 0);
+    graph.add_undirected_edge(0, 1);
+    graph.add_undirected_edge(1, 2);
+    graph.add_undirected_edge(2, 0);
 
     SimpleTree* spanning = buildSimpleSpanningTree(graph);
     spanning->print();
@@ -37,11 +37,11 @@ void prova1() {
     }
 
     SimpleTree tree;
-    tree.addNode();
-    tree.addNode();
-    tree.addNode();
-    tree.addChild(0, 1);
-    tree.addChild(0, 2);
+    tree.add_node();
+    tree.add_node();
+    tree.add_node();
+    tree.add_child(0, 1);
+    tree.add_child(0, 2);
 
     tree.print();
 
@@ -53,11 +53,20 @@ void prova1() {
     delete fromFile;
 }
 
+void prova2() {
+    SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g1.txt");
+    fromFile->print();
+    fromFile->remove_undirected_edge(0, 1);
+    std::cout << "\n\n";
+    fromFile->print();
+    delete fromFile;
+}
+
 #include "drawing/svg_drawer.hpp"
 #include "drawing/linear_scale.hpp"
 
 int main() {
-    // prova1();
+    prova2();
 
     SimpleGraph* fromFile = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
     auto cyclesFromFile = computeAllCycles(*fromFile);
@@ -84,8 +93,8 @@ int main() {
         points.push_back(Point2D{x, y});
     }
     for (size_t i = 0; i < fromFile->size(); ++i)
-        for (auto& edge : fromFile->getNodes()[i].getEdges()) {
-            size_t j = edge.getTo();
+        for (auto& edge : fromFile->get_nodes()[i].get_edges()) {
+            size_t j = edge.get_to();
             Line2D line{points[i], points[j]};
             drawer.add(line);
         }

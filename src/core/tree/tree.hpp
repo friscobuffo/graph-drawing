@@ -16,9 +16,9 @@ concept TreeTrait = requires(T tree, const T constTree) {
     typename T::TreeNodeType;
     requires TreeNodeTrait<typename T::TreeNodeType>;
     
-    { constTree.getNodes() } -> std::same_as<const Container<typename T::TreeNodeType>&>;
-    { tree.addNode(std::declval<typename T::TreeNodeType*>()) } -> std::same_as<void>;
-    { tree.addChild(0, 0) } -> std::same_as<void>;
+    { constTree.get_nodes() } -> std::same_as<const Container<typename T::TreeNodeType>&>;
+    { tree.add_node(std::declval<typename T::TreeNodeType*>()) } -> std::same_as<void>;
+    { tree.add_child(0, 0) } -> std::same_as<void>;
     { constTree.size() } -> std::convertible_to<size_t>;
 };
 
@@ -29,14 +29,14 @@ private:
     Container<T> m_nodes;
 public:
     Tree() {}
-    const Container<T>& getNodes() const { return m_nodes; }
-    void addNode(T* node) {
-        node->setIndex(size());
-        m_nodes.addElement(std::unique_ptr<T>(node));
+    const Container<T>& get_nodes() const { return m_nodes; }
+    void add_node(T* node) {
+        node->set_index(size());
+        m_nodes.add_element(std::unique_ptr<T>(node));
     }
-    void addChild(size_t parent, size_t child) {
-        m_nodes[parent].addChild(child);
-        m_nodes[child].setParent(parent);
+    void add_child(size_t parent, size_t child) {
+        m_nodes[parent].add_child(child);
+        m_nodes[child].set_parent(parent);
     }
     size_t size() const { return m_nodes.size(); }
     std::string to_string() const {
@@ -56,10 +56,10 @@ private:
     Tree<TreeNode> m_tree;
 public:
     SimpleTree() {}
-    const Container<TreeNode>& getNodes() const { return m_tree.getNodes(); }
-    void addNode(TreeNode* node) { m_tree.addNode(node); }
-    void addNode() { m_tree.addNode(new TreeNode()); }
-    void addChild(size_t parent, size_t child) { m_tree.addChild(parent, child); }
+    const Container<TreeNode>& get_nodes() const { return m_tree.get_nodes(); }
+    void add_node(TreeNode* node) { m_tree.add_node(node); }
+    void add_node() { m_tree.add_node(new TreeNode()); }
+    void add_child(size_t parent, size_t child) { m_tree.add_child(parent, child); }
     size_t size() const { return m_tree.size(); }
     std::string to_string() const { return m_tree.to_string(); }
     void print() const { std::cout << to_string() << std::endl; }
