@@ -204,7 +204,31 @@ const Shape* result_to_shape(
     return shape;
 }
 
-const Shape* _build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
+size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
+    for (int i = proof_lines.size() - 1; i >= 0; i--) {
+        const std::string& line = proof_lines[i];
+        // split line based on " "
+        std::vector<std::string> tokens;
+        std::string token;
+        for (char c : line) {
+            if (c == ' ') {
+                tokens.push_back(token);
+                token = "";
+            } else
+                token += c;
+        }
+        tokens.push_back(token);
+        assert(tokens.back() == "0");
+        tokens.pop_back();
+        if (tokens[0] == "d") {
+            if (tokens.size() == 2) return std::stoi(tokens[1]);
+        }
+        else if (tokens.size() == 1) return std::stoi(tokens[0]);
+    }
+    throw std::runtime_error("Could not find the edge to remove");
+}
+
+const Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
     const VariablesHandler handler = _initialize_variables(colored_graph);
     CNFBuilder cnf_builder;
     add_constraints_one_direction_per_edge(colored_graph, cnf_builder, handler);
@@ -213,8 +237,29 @@ const Shape* _build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vec
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
     cnf_builder.convert_to_cnf(".conjunctive_normal_form.cnf");
     std::unique_ptr<const Result> results = std::unique_ptr<const Result>(launch_glucose());
-    if (results->result == ResultType::UNSAT)
-        return nullptr;
+    if (results->result == ResultType::UNSAT) {
+        size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
+        int i = handler.variable_to_edge[variable_edge].first;
+        int j = handler.variable_to_edge[variable_edge].second;
+        size_t new_node_index = colored_graph.size();
+        colored_graph.remove_undirected_edge(i, j);
+        colored_graph.add_node(Color::RED);
+        colored_graph.add_undirected_edge(i, new_node_index);
+        colored_graph.add_undirected_edge(j, new_node_index);
+        for (auto& cycle : cycles) {
+            for (size_t k = 0; k < cycle.size(); k++) {
+                if (cycle[k] == i && cycle[(k + 1) % cycle.size()] == j) {
+                    cycle.insert(cycle.begin() + k + 1, new_node_index);
+                    break;
+                }
+                if (cycle[k] == j && cycle[(k + 1) % cycle.size()] == i) {
+                    cycle.insert(cycle.begin() + k + 1, new_node_index);
+                    break;
+                }
+            }
+        }
+        return build_shape(colored_graph, cycles);
+    }
     const std::vector<int>& variables = results->numbers;
     const Shape* shape = result_to_shape(colored_graph, variables, handler);
     return shape;

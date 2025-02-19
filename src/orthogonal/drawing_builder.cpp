@@ -60,10 +60,9 @@ public:
     }
 };
 
-template <GraphTrait T>
 void _horizontal_edge_expander(
     const Shape& shape,
-    const T& graph,
+    const ColoredNodesGraph& graph,
     int left, int right,
     int class_id,
     std::vector<std::vector<bool>>& is_edge_visited,
@@ -96,10 +95,9 @@ void _horizontal_edge_expander(
     }
 }
 
-template <GraphTrait T>
 void _vertical_edge_expander(
     const Shape& shape,
-    const T& graph,
+    const ColoredNodesGraph& graph,
     int down, int up,
     int class_id,
     std::vector<std::vector<bool>>& is_edge_visited,
@@ -132,8 +130,7 @@ void _vertical_edge_expander(
     }
 }
 
-template <GraphTrait T>
-const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, const T& graph) {
+const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, const ColoredNodesGraph& graph) {
     EquivalenceClassesHandler* handler = new EquivalenceClassesHandler();
     int next_class_x = 0;
     int next_class_y = 0;
@@ -240,10 +237,9 @@ public:
     }
 };
 
-template <GraphTrait T>
 PartialOrdering* equivalence_classes_to_partial_ordering(
     const EquivalenceClassesHandler& classes,
-    const T& graph,
+    const ColoredNodesGraph& graph,
     const Shape& shape
 ) {
     PartialOrdering* ordering = new PartialOrdering();
@@ -290,8 +286,7 @@ int NodesPositions::get_position_y(size_t node) const {
     return m_positions[node].second;
 }
 
-template <GraphTrait T>
-const NodesPositions* build_nodes_positions(const Shape& shape, const T& graph) {
+const NodesPositions* build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph) {
     const EquivalenceClassesHandler* classes = build_equivalence_classes(shape, graph);
     PartialOrdering* partial_ordering = equivalence_classes_to_partial_ordering(*classes, graph, shape);
     auto [classes_x_ordering, classes_y_ordering] = partial_ordering->make_topological_ordering();

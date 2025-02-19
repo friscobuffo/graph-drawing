@@ -7,7 +7,8 @@ SRCS = src/main.cpp \
 		src/orthogonal/shape.cpp \
 		src/orthogonal/shape_builder.cpp \
 		src/drawing/polygon.cpp \
-		src/drawing/svg_drawer.cpp
+		src/drawing/svg_drawer.cpp \
+		src/orthogonal/drawing_builder.cpp
 
 # C++ standard
 CXXFLAGS = -std=c++20

@@ -21,21 +21,21 @@ const Result* launch_glucose() {
     }
     fclose(pipe);
     const Result* result = get_results();
-    delete_glucose_temp_files();
+    // delete_glucose_temp_files();
     return result;
 }
 
-std::string get_proof() {
+std::vector<std::string> get_proof() {
     std::ifstream file(".proof.txt");
     if (!file) {
         std::cerr << "Error: Could not open the file.\n";
-        return "";
+        return {};
     }
+    std::vector<std::string> proof_lines;
     std::string line;
-    std::string proof;
     while (std::getline(file, line))
-        proof += line + "\n";
-    return proof;
+        proof_lines.push_back(line);
+    return proof_lines;
 }
 
 const Result* get_results() {

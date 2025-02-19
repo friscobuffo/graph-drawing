@@ -12,7 +12,7 @@ enum class ResultType {
 struct Result {
     ResultType result;
     std::vector<int> numbers;
-    std::string proof;
+    std::vector<std::string> proof_lines;
 };
 
 const Result* launch_glucose();
