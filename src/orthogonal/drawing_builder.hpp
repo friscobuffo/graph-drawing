@@ -24,7 +24,7 @@ const NodesPositions* build_nodes_positions(const Shape& shape, const ColoredNod
 
 template <GraphTrait T>
 void make_rectilinear_drawing(const T& graph) {
-    auto cycles = computeAllCycles(graph);
+    auto cycles = compute_all_cycles(graph);
     ColoredNodesGraph colored_graph{};
     for (int i = 0; i < graph.size(); i++)
         colored_graph.add_node(Color::BLACK);

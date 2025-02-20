@@ -27,10 +27,8 @@ const Result* launch_glucose() {
 
 std::vector<std::string> get_proof() {
     std::ifstream file(".proof.txt");
-    if (!file) {
-        std::cerr << "Error: Could not open the file.\n";
-        return {};
-    }
+    if (!file)
+        throw std::runtime_error("Error: Could not open the file.");
     std::vector<std::string> proof_lines;
     std::string line;
     while (std::getline(file, line))
@@ -39,11 +37,9 @@ std::vector<std::string> get_proof() {
 }
 
 const Result* get_results() {
-    std::ifstream file(".output.txt"); // Open the file
-    if (!file) {
-        std::cerr << "Error: Could not open the file.\n";
-        return nullptr;
-    }
+    std::ifstream file(".output.txt");
+    if (!file)
+        throw std::runtime_error("Error: Could not open the file.");
     std::string line;
     if (std::getline(file, line)) {
         if (line == "UNSAT")

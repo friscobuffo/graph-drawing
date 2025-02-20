@@ -7,17 +7,17 @@
 #include "graph.hpp"
 
 template <GraphTrait T>
-bool isConnected(const T& graph);
+bool is_connected(const T& graph);
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> computeAllCyclesWithNode(
+std::vector<std::vector<size_t>> compute_all_cycles_with_node(
     const T& graph,
     size_t node_index,
     std::vector<bool>& taboo_nodes
 );
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> computeAllCycles(const T& graph);
+std::vector<std::vector<size_t>> compute_all_cycles(const T& graph);
 
 #include "algorithms.ipp"
 

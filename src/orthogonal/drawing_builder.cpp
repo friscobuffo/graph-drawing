@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <tuple>
+#include <list>
 
 class EquivalenceClassesHandler {
 private:
@@ -60,7 +61,7 @@ public:
     }
 };
 
-void _horizontal_edge_expander(
+void horizontal_edge_expander(
     const Shape& shape,
     const ColoredNodesGraph& graph,
     int left, int right,
@@ -71,31 +72,34 @@ void _horizontal_edge_expander(
     std::unordered_set<size_t> visited;
     visited.insert(left);
     visited.insert(right);
+    std::list<size_t> nodes_in_class;
+    nodes_in_class.push_back(left);
+    nodes_in_class.push_back(right);
     while (shape.has_node_a_left_neighbor(left) != -1) {
         int new_left = shape.has_node_a_left_neighbor(left);
         is_edge_visited[left][new_left] = true;
         is_edge_visited[new_left][left] = true;
         left = new_left;
-        if (visited.contains(left)) {
+        if (visited.contains(left))
             throw std::runtime_error("Cycle detected");
-        }
         visited.insert(left);
-        handler.set_class_y(left, class_id);
+        nodes_in_class.push_front(left);
     }
     while (shape.has_node_a_right_neighbor(right) != -1) {
         int new_right = shape.has_node_a_right_neighbor(right);
         is_edge_visited[right][new_right] = true;
         is_edge_visited[new_right][right] = true;
         right = new_right;
-        if (visited.contains(right)) {
+        if (visited.contains(right))
             throw std::runtime_error("Cycle detected");
-        }
         visited.insert(right);
-        handler.set_class_y(right, class_id);
+        nodes_in_class.push_back(right);
     }
+    for (auto& node : nodes_in_class)
+        handler.set_class_y(node, class_id);
 }
 
-void _vertical_edge_expander(
+void vertical_edge_expander(
     const Shape& shape,
     const ColoredNodesGraph& graph,
     int down, int up,
@@ -106,28 +110,31 @@ void _vertical_edge_expander(
     std::unordered_set<size_t> visited;
     visited.insert(down);
     visited.insert(up);
+    std::list<size_t> nodes_in_class;
+    nodes_in_class.push_back(down);
+    nodes_in_class.push_back(up);
     while (shape.has_node_a_down_neighbor(down) != -1) {
         int new_down = shape.has_node_a_down_neighbor(down);
         is_edge_visited[down][new_down] = true;
         is_edge_visited[new_down][down] = true;
         down = new_down;
-        if (visited.contains(down)) {
+        if (visited.contains(down))
             throw std::runtime_error("Cycle detected");
-        }
         visited.insert(down);
-        handler.set_class_x(down, class_id);
+        nodes_in_class.push_front(down);
     }
     while (shape.has_node_a_up_neighbor(up) != -1) {
         int new_up = shape.has_node_a_up_neighbor(up);
         is_edge_visited[up][new_up] = true;
         is_edge_visited[new_up][up] = true;
         up = new_up;
-        if (visited.contains(up)) {
+        if (visited.contains(up))
             throw std::runtime_error("Cycle detected");
-        }
         visited.insert(up);
-        handler.set_class_x(up, class_id);
+        nodes_in_class.push_back(up);
     }
+    for (auto& node : nodes_in_class)
+        handler.set_class_x(node, class_id);
 }
 
 const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, const ColoredNodesGraph& graph) {
@@ -142,15 +149,13 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
             is_edge_visited[i][j] = true;
             is_edge_visited[j][i] = true;
             if (shape.is_horizontal(i, j)) {
-                handler->set_class_y(i, next_class_y);
-                handler->set_class_y(j, next_class_y);
                 int left = i;
                 int right = j;
                 if (shape.is_left(i, j)) {
                     left = j;
                     right = i;
                 }
-                _horizontal_edge_expander(shape, graph, left, right, next_class_y, is_edge_visited, *handler);
+                horizontal_edge_expander(shape, graph, left, right, next_class_y, is_edge_visited, *handler);
                 ++next_class_y;
             } else {
                 handler->set_class_x(i, next_class_x);
@@ -161,7 +166,7 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
                     down = j;
                     up = i;
                 }
-                _vertical_edge_expander(shape, graph, down, up, next_class_x, is_edge_visited, *handler);
+                vertical_edge_expander(shape, graph, down, up, next_class_x, is_edge_visited, *handler);
                 ++next_class_x;
             }
         }

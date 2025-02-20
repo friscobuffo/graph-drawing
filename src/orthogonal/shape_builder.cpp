@@ -11,7 +11,7 @@ struct VariablesHandler {
     std::vector<std::pair<int, int>> variable_to_edge;
 };
 
-const VariablesHandler _initialize_variables(const ColoredNodesGraph& graph) {
+const VariablesHandler initialize_variables(const ColoredNodesGraph& graph) {
     VariablesHandler handler{
         std::vector<std::vector<int>>(graph.size(), std::vector<int>(graph.size(), -1)),
         std::vector<std::vector<int>>(graph.size(), std::vector<int>(graph.size(), -1)),
@@ -100,7 +100,7 @@ void add_constraints_opposite_edges(
         }
 }
 
-void _one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CNFBuilder& cnf_builder,
+void one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CNFBuilder& cnf_builder,
     const std::vector<std::vector<int>>& is_edge_in_direction
 ) {
     for (int i = 0; i < graph.size(); i++) {
@@ -138,10 +138,10 @@ void add_nodes_constraints(
     const VariablesHandler& handler
 ) {
     for (int node = 0; node < graph.size(); node++) {
-        _one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_up_variable);
-        _one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_down_variable);
-        _one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_right_variable);
-        _one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_left_variable);
+        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_up_variable);
+        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_down_variable);
+        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_right_variable);
+        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_left_variable);
     }
 }
 
@@ -229,7 +229,7 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
 }
 
 const Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
-    const VariablesHandler handler = _initialize_variables(colored_graph);
+    const VariablesHandler handler = initialize_variables(colored_graph);
     CNFBuilder cnf_builder;
     add_constraints_one_direction_per_edge(colored_graph, cnf_builder, handler);
     add_constraints_opposite_edges(colored_graph, cnf_builder, handler);

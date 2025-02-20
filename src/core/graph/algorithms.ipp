@@ -1,5 +1,5 @@
 template <GraphTrait T>
-bool isConnected(const T& graph) {
+bool is_connected(const T& graph) {
     if (graph.size() == 0) return true;
     std::vector<bool> visited(graph.size(), false);
     std::vector<size_t> stack;
@@ -17,11 +17,11 @@ bool isConnected(const T& graph) {
 }
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> computeAllCycles(const T& graph) {
+std::vector<std::vector<size_t>> compute_all_cycles(const T& graph) {
     std::vector<std::vector<size_t>> allCycles;
     std::vector<bool> tabooNodes(graph.size(), false);
     for (size_t i = 0; i < graph.size(); ++i) {
-        std::vector<std::vector<size_t>> cycles = computeAllCyclesWithNode(graph, i, tabooNodes);
+        std::vector<std::vector<size_t>> cycles = compute_all_cycles_with_node(graph, i, tabooNodes);
         for (auto& cycle : cycles)
             allCycles.push_back(cycle);
         tabooNodes[i] = true;
@@ -30,7 +30,7 @@ std::vector<std::vector<size_t>> computeAllCycles(const T& graph) {
 }
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> computeAllCyclesWithNode(const T& graph, size_t node_index, std::vector<bool>& taboo_nodes) {
+std::vector<std::vector<size_t>> compute_all_cycles_with_node(const T& graph, size_t node_index, std::vector<bool>& taboo_nodes) {
     std::vector<std::vector<size_t>> cycles;
     std::vector<size_t> path;
     std::vector<bool> visited(graph.size(), false);
