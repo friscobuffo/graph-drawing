@@ -14,6 +14,7 @@ concept TreeNodeTrait = requires(T node, const T constNode) {
     
     { node.get_index() } -> std::convertible_to<int>;
     { node.set_parent(0) } -> std::same_as<void>;
+    { node.get_parent() } -> std::convertible_to<int>;
     { node.set_index(0) } -> std::same_as<void>;
     { constNode.get_childs() } -> std::same_as<const std::vector<size_t>&>;
     { node.add_child(0) } -> std::same_as<void>;
@@ -29,6 +30,7 @@ public:
     int get_index() const { return m_index; }
     void set_index(int index) { m_index = index; }
     void set_parent(int parent) { m_parent = parent; }
+    int get_parent() const { return m_parent; }
     const std::vector<size_t>& get_childs() const { return m_childs; }
     void add_child(size_t index) { m_childs.push_back(index); }
     std::string to_string() const {

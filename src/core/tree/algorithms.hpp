@@ -1,35 +1,23 @@
 #ifndef MY_TREE_ALGORITHMS_H
 #define MY_TREE_ALGORITHMS_H
 
+#include <vector>
+
 #include "../graph/graph.hpp"
 #include "tree.hpp"
 
 template <GraphTrait T>
-SimpleTree* buildSimpleSpanningTree(const T& graph);
+SimpleTree* build_simple_spanning_tree(const T& graph);
 
-/*
-    def compute_common_ancestor(self, node1, node2):
-        while self.get_depth(node1) > self.get_depth(node2):
-            node1 = self.get_parent(node1)
-        while self.get_depth(node2) > self.get_depth(node1):
-            node2 = self.get_parent(node2)
-        while node1 != node2:
-            node1 = self.get_parent(node1)
-            node2 = self.get_parent(node2)
-        return node1
-    def get_path(self, node):
-        path = []
-        while node != -1:
-            path.append(node)
-            node = self.parent[node]
-        return path[::-1]
-    def is_edge_in_tree(self, node1, node2):
-        return self.parent[node1] == node2 or self.parent[node2] == node1
-    def __str__(self):
-        return "\n".join([f"{i}: {self.parent[i]}" for i in range(self.graph.size())])
 
-*/
+template <TreeTrait T>
+std::vector<size_t> get_path_from_root(const T& tree, size_t node);
 
+template <TreeTrait T>
+size_t compute_common_ancestor(const T& tree, size_t node1, size_t node2);
+
+template <TreeTrait T>
+bool is_edge_in_tree(const T& tree, size_t node1, size_t node2);
 
 #include "algorithms.ipp"
 

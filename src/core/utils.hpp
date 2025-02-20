@@ -11,7 +11,7 @@
 #include <iterator>
 
 template <typename Iterable>
-void printIterable(const Iterable& container, const std::string& end = "\n") {
+void print_iterable(const Iterable& container, const std::string& end = "\n") {
     std::cout << "[ ";
     for (const auto& elem : container)
         std::cout << elem << " ";
@@ -19,7 +19,7 @@ void printIterable(const Iterable& container, const std::string& end = "\n") {
 }
 
 template <typename T>
-void reverseVector(std::vector<T>& vector) {
+void reverse_vector(std::vector<T>& vector) {
     int start = 0;
     int end = vector.size()-1;
     while (start < end) {
@@ -32,14 +32,14 @@ void reverseVector(std::vector<T>& vector) {
 }
 
 template <typename T>
-void printArray(T array[], int size, const std::string& end = "\n") {
+void print_array(T array[], int size, const std::string& end = "\n") {
     std::cout << "[ ";
     for (int i = 0; i < size; ++i)
         std::cout << array[i] << " ";
     std::cout << "]" << end;
 }
 
-inline void saveStringToFile(std::string filename, std::string& content) {
+inline void save_string_to_file(std::string filename, std::string& content) {
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         outfile << content;

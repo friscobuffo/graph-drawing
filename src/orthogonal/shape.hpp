@@ -30,8 +30,6 @@ struct pair_hash {
     std::size_t operator()(const std::pair<T1, T2>& p) const {
         std::size_t h1 = std::hash<T1>{}(p.first);
         std::size_t h2 = std::hash<T2>{}(p.second);
-
-        // Combining hashes using a better mixing function
         return h1 ^ (h2 * 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
     }
 };

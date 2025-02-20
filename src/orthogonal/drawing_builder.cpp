@@ -6,6 +6,9 @@
 #include <memory>
 #include <tuple>
 #include <list>
+#include <optional>
+
+#include "../core/graph/algorithms.hpp"
 
 class EquivalenceClassesHandler {
 private:
@@ -80,8 +83,7 @@ void horizontal_edge_expander(
         is_edge_visited[left][new_left] = true;
         is_edge_visited[new_left][left] = true;
         left = new_left;
-        if (visited.contains(left))
-            throw std::runtime_error("Cycle detected");
+        if (visited.contains(left)) break;
         visited.insert(left);
         nodes_in_class.push_front(left);
     }
@@ -90,8 +92,7 @@ void horizontal_edge_expander(
         is_edge_visited[right][new_right] = true;
         is_edge_visited[new_right][right] = true;
         right = new_right;
-        if (visited.contains(right))
-            throw std::runtime_error("Cycle detected");
+        if (visited.contains(right)) break;
         visited.insert(right);
         nodes_in_class.push_back(right);
     }
@@ -118,8 +119,7 @@ void vertical_edge_expander(
         is_edge_visited[down][new_down] = true;
         is_edge_visited[new_down][down] = true;
         down = new_down;
-        if (visited.contains(down))
-            throw std::runtime_error("Cycle detected");
+        if (visited.contains(down)) break;
         visited.insert(down);
         nodes_in_class.push_front(down);
     }
@@ -128,8 +128,7 @@ void vertical_edge_expander(
         is_edge_visited[up][new_up] = true;
         is_edge_visited[new_up][up] = true;
         up = new_up;
-        if (visited.contains(up))
-            throw std::runtime_error("Cycle detected");
+        if (visited.contains(up)) break;
         visited.insert(up);
         nodes_in_class.push_back(up);
     }
@@ -158,8 +157,6 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
                 horizontal_edge_expander(shape, graph, left, right, next_class_y, is_edge_visited, *handler);
                 ++next_class_y;
             } else {
-                handler->set_class_x(i, next_class_x);
-                handler->set_class_x(j, next_class_x);
                 int down = i;
                 int up = j;
                 if (shape.is_down(i, j)) {
@@ -184,10 +181,10 @@ const EquivalenceClassesHandler* build_equivalence_classes(const Shape& shape, c
     return handler;
 }
 
-struct PartialOrdering {
+struct Ordering {
 private:
-    SimpleGraph m_partial_ordering_x;
-    SimpleGraph m_partial_ordering_y;;
+    SimpleGraph m_ordering_x;
+    SimpleGraph m_ordering_y;;
     std::vector<int> _make_topological_ordering(SimpleGraph& graph) {
         std::vector<int> in_degree(graph.size(), 0);
         for (int u = 0; u < graph.size(); ++u)
@@ -218,36 +215,38 @@ private:
     }
 public:
     void add_edge_x(int from, int to) {
-        while (m_partial_ordering_x.size() <= from) {
-            m_partial_ordering_x.add_node();
-        }
-        while (m_partial_ordering_x.size() <= to) {
-            m_partial_ordering_x.add_node();
-        }
-        m_partial_ordering_x.add_edge(from, to);
+        while (m_ordering_x.size() <= from)
+            m_ordering_x.add_node();
+        while (m_ordering_x.size() <= to)
+            m_ordering_x.add_node();
+        m_ordering_x.add_edge(from, to);
     }
     void add_edge_y(int from, int to) {
-        while (m_partial_ordering_y.size() <= from) {
-            m_partial_ordering_y.add_node();
-        }
-        while (m_partial_ordering_y.size() <= to) {
-            m_partial_ordering_y.add_node();
-        }
-        m_partial_ordering_y.add_edge(from, to);
+        while (m_ordering_y.size() <= from)
+            m_ordering_y.add_node();
+        while (m_ordering_y.size() <= to)
+            m_ordering_y.add_node();
+        m_ordering_y.add_edge(from, to);
     }
     std::tuple<std::vector<int>, std::vector<int>> make_topological_ordering() {
-        auto topological_order_x = _make_topological_ordering(m_partial_ordering_x);
-        auto topological_order_y = _make_topological_ordering(m_partial_ordering_y);
+        auto topological_order_x = _make_topological_ordering(m_ordering_x);
+        auto topological_order_y = _make_topological_ordering(m_ordering_y);
         return std::make_tuple(topological_order_x, topological_order_y);
+    }
+    std::optional<std::vector<size_t>> find_cycle_x() {
+        return find_a_cycle(m_ordering_x);
+    }
+    std::optional<std::vector<size_t>> find_cycle_y() {
+        return find_a_cycle(m_ordering_y);
     }
 };
 
-PartialOrdering* equivalence_classes_to_partial_ordering(
+Ordering* equivalence_classes_to_ordering(
     const EquivalenceClassesHandler& classes,
     const ColoredNodesGraph& graph,
     const Shape& shape
 ) {
-    PartialOrdering* ordering = new PartialOrdering();
+    Ordering* ordering = new Ordering();
     for (int i = 0; i < graph.size(); ++i) {
         for (auto& edge : graph.get_nodes()[i].get_edges()) {
             int j = edge.get_to();
@@ -293,7 +292,12 @@ int NodesPositions::get_position_y(size_t node) const {
 
 const NodesPositions* build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph) {
     const EquivalenceClassesHandler* classes = build_equivalence_classes(shape, graph);
-    PartialOrdering* partial_ordering = equivalence_classes_to_partial_ordering(*classes, graph, shape);
+    Ordering* partial_ordering = equivalence_classes_to_ordering(*classes, graph, shape);
+    auto cycle_x = partial_ordering->find_cycle_x();
+    auto cycle_y = partial_ordering->find_cycle_y();
+    std::cout << std::boolalpha;
+    std::cout << cycle_x.has_value() << std::endl;
+    std::cout << cycle_y.has_value() << std::endl;
     auto [classes_x_ordering, classes_y_ordering] = partial_ordering->make_topological_ordering();
     NodesPositions* positions = new NodesPositions();
     int current_position_x = 0;
