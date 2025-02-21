@@ -11,20 +11,26 @@ template <GraphTrait T>
 bool is_connected(const T& graph);
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> compute_all_cycles_with_node(
+std::vector<std::vector<size_t>> compute_all_cycles_with_node_in_undirected_graph(
     const T& graph,
     size_t node_index,
     std::vector<bool>& taboo_nodes
 );
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> compute_all_cycles(const T& graph);
+std::vector<std::vector<size_t>> compute_all_cycles_in_undirected_graph(const T& graph);
 
 template <GraphTrait T>
-std::optional<std::vector<size_t>> find_a_cycle(const T& graph);
+std::optional<std::vector<size_t>> find_a_cycle_directed_graph(const T& graph);
 
 template <GraphTrait T>
 std::vector<std::vector<size_t>> compute_cycle_basis(const T& graph);
+
+template <GraphTrait T>
+std::vector<size_t> make_topological_ordering(const T& graph);
+
+template <GraphTrait T>
+bool is_edge_in_graph(const T& graph, int i, int j);
 
 #include "algorithms.ipp"
 

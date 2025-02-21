@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <queue>
 
 #include "../tree/tree.hpp"
 #include "../tree/algorithms.hpp"
@@ -22,11 +23,11 @@ bool is_connected(const T& graph) {
 }
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> compute_all_cycles(const T& graph) {
+std::vector<std::vector<size_t>> compute_all_cycles_in_undirected_graph(const T& graph) {
     std::vector<std::vector<size_t>> allCycles;
     std::vector<bool> tabooNodes(graph.size(), false);
     for (size_t i = 0; i < graph.size(); ++i) {
-        std::vector<std::vector<size_t>> cycles = compute_all_cycles_with_node(graph, i, tabooNodes);
+        std::vector<std::vector<size_t>> cycles = compute_all_cycles_with_node_in_undirected_graph(graph, i, tabooNodes);
         for (auto& cycle : cycles)
             allCycles.push_back(cycle);
         tabooNodes[i] = true;
@@ -35,7 +36,7 @@ std::vector<std::vector<size_t>> compute_all_cycles(const T& graph) {
 }
 
 template <GraphTrait T>
-std::vector<std::vector<size_t>> compute_all_cycles_with_node(const T& graph, size_t node_index, std::vector<bool>& taboo_nodes) {
+std::vector<std::vector<size_t>> compute_all_cycles_with_node_in_undirected_graph(const T& graph, size_t node_index, std::vector<bool>& taboo_nodes) {
     std::vector<std::vector<size_t>> cycles;
     std::vector<size_t> path;
     std::vector<bool> visited(graph.size(), false);
@@ -83,7 +84,7 @@ bool dfs_find_cycle(int u, const T& graph, std::vector<int>& state, std::vector<
 }
 
 template <GraphTrait T>
-std::optional<std::vector<size_t>> find_a_cycle(const T& graph) {
+std::optional<std::vector<size_t>> find_a_cycle_directed_graph(const T& graph) {
     std::vector<int> state(graph.size(), 0);
     std::vector<int> parent(graph.size(), -1);
     int cycle_start = -1, cycle_end = -1;
@@ -96,6 +97,7 @@ std::optional<std::vector<size_t>> find_a_cycle(const T& graph) {
     for (int v = cycle_end; v != cycle_start; v = parent[v])
         cycle.push_back(v);
     cycle.push_back(cycle_start);
+    std::reverse(cycle.begin(), cycle.end());
     return cycle;
 }
 
@@ -125,4 +127,42 @@ std::vector<std::vector<size_t>> compute_cycle_basis(const T& graph) {
     }
     delete spanning;
     return cycles;
+}
+
+template <GraphTrait T>
+std::vector<size_t> make_topological_ordering(const T& graph) {
+    std::vector<int> in_degree(graph.size(), 0);
+    for (int u = 0; u < graph.size(); ++u)
+        for (auto& edge : graph.get_nodes()[u].get_edges()) {
+            int v = edge.get_to();
+            in_degree[v]++;
+        }
+    std::queue<int> queue;
+    std::vector<size_t> topological_order;
+    for (int i = 0; i < graph.size(); ++i)
+        if (in_degree[i] == 0)
+            queue.push(i);
+    int count = 0;
+    while (!queue.empty()) {
+        int u = queue.front();
+        ++count;
+        queue.pop();
+        topological_order.push_back(u);
+        for (auto& edge : graph.get_nodes()[u].get_edges()) {
+            int v = edge.get_to();
+            if (--in_degree[v] == 0)
+                queue.push(v);
+        }
+    }
+    if (count != graph.size())
+        throw std::runtime_error("Graph contains cycle");
+    return topological_order;
+}
+
+template <GraphTrait T>
+bool is_edge_in_graph(const T& graph, int i, int j) {
+    for (int k = 0; k < graph.get_nodes()[i].get_edges().size(); ++k)
+        if (graph.get_nodes()[i].get_edges()[k].get_to() == j)
+            return true;
+    return false;
 }

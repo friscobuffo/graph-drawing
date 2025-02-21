@@ -4,17 +4,17 @@
 #include <string>
 #include <vector>
 
-enum class ResultType {
+enum class GlucoseResultType {
     SAT,
     UNSAT
 };
 
-struct Result {
-    ResultType result;
+struct GlucoseResult {
+    GlucoseResultType result;
     std::vector<int> numbers;
     std::vector<std::string> proof_lines;
 };
 
-const Result* launch_glucose();
+const GlucoseResult* launch_glucose();
 
 #endif

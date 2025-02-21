@@ -236,8 +236,8 @@ const Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vect
     add_nodes_constraints(colored_graph, cnf_builder, handler);
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
     cnf_builder.convert_to_cnf(".conjunctive_normal_form.cnf");
-    std::unique_ptr<const Result> results = std::unique_ptr<const Result>(launch_glucose());
-    if (results->result == ResultType::UNSAT) {
+    std::unique_ptr<const GlucoseResult> results = std::unique_ptr<const GlucoseResult>(launch_glucose());
+    if (results->result == GlucoseResultType::UNSAT) {
         size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
         int i = handler.variable_to_edge[variable_edge].first;
         int j = handler.variable_to_edge[variable_edge].second;

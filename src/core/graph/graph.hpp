@@ -102,4 +102,31 @@ public:
 
 static_assert(GraphTrait<ColoredNodesGraph>);
 
+template <typename T>
+struct LabeledEdgeGraph {
+    using GraphNodeType = GraphNode<LabeledGraphEdge<T>>;
+private:
+    Graph<GraphNode<LabeledGraphEdge<T>>> m_graph{};
+public:
+    const Container<GraphNode<LabeledGraphEdge<T>>>& get_nodes() const { return m_graph.get_nodes(); }
+    void add_node(GraphNode<LabeledGraphEdge<T>>* node) { m_graph.add_node(node); }
+    void add_edge(size_t from, LabeledGraphEdge<T>* edge) { m_graph.add_edge(from, edge); }
+    size_t size() const { return m_graph.size(); }
+    void add_node() { m_graph.add_node(new GraphNode<LabeledGraphEdge<T>>()); }
+    void add_edge(size_t from, size_t to, T label) { m_graph.add_edge(from, new LabeledGraphEdge<T>(to, label)); }
+    void remove_edge(size_t from, size_t to) { m_graph.remove_edge(from, to); }
+    void add_undirected_edge(size_t from, size_t to) {
+        add_edge(from, to);
+        add_edge(to, from);
+    }
+    void remove_undirected_edge(size_t from, size_t to) {
+        m_graph.remove_edge(from, to);
+        m_graph.remove_edge(to, from);
+    }
+    std::string to_string() const { return m_graph.to_string(); }
+    void print() const { m_graph.print(); }
+};
+
+static_assert(GraphTrait<LabeledEdgeGraph<int>>);
+
 #endif

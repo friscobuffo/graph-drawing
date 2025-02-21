@@ -5,7 +5,7 @@
 #include <fstream>
 #include <sstream>
 
-const Result* get_results();
+const GlucoseResult* get_results();
 
 void delete_glucose_temp_files() {
     remove(".conjunctive_normal_form.cnf");
@@ -13,14 +13,14 @@ void delete_glucose_temp_files() {
     remove(".proof.txt");
 }
 
-const Result* launch_glucose() {
+const GlucoseResult* launch_glucose() {
     FILE* pipe = popen("./glucose .conjunctive_normal_form.cnf .output.txt -certified -certified-output=.proof.txt", "r");
     if (!pipe) {
         std::cerr << "Failed to run executable" << std::endl;
         return nullptr;
     }
     fclose(pipe);
-    const Result* result = get_results();
+    const GlucoseResult* result = get_results();
     delete_glucose_temp_files();
     return result;
 }
@@ -36,20 +36,20 @@ std::vector<std::string> get_proof() {
     return proof_lines;
 }
 
-const Result* get_results() {
+const GlucoseResult* get_results() {
     std::ifstream file(".output.txt");
     if (!file)
         throw std::runtime_error("Error: Could not open the file.");
     std::string line;
     if (std::getline(file, line)) {
         if (line == "UNSAT")
-            return new Result{ResultType::UNSAT, {}, get_proof()};
+            return new GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof()};
         std::istringstream iss(line);
         std::vector<int> numbers;
         int num;
         while (iss >> num)
             numbers.push_back(num);
-        return new Result{ResultType::SAT, numbers, get_proof()};
+        return new GlucoseResult{GlucoseResultType::SAT, numbers, get_proof()};
     }
     return nullptr;
 }

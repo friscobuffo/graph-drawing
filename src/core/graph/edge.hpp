@@ -61,4 +61,21 @@ public:
 static_assert(GraphEdgeTrait<WeightedGraphEdge>);
 static_assert(WeightTrait<WeightedGraphEdge>);
 
+template <typename T>
+struct LabeledGraphEdge {
+private:
+    GraphEdge m_edge;
+    T m_label;
+public:
+    LabeledGraphEdge(int to, T label) : m_edge(to), m_label(label) {}
+    int get_to() const { return m_edge.get_to(); }
+    const T& get_label() const { return m_label; }
+    std::string to_string() const {
+        return m_edge.to_string() + " with label " + to_string_generic(m_label);
+    }
+    void print() const { std::cout << to_string() << std::endl; }
+};
+
+static_assert(GraphEdgeTrait<LabeledGraphEdge<int>>);
+
 #endif

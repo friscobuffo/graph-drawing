@@ -6,6 +6,7 @@
 #include <string>
 #include <cassert>
 #include <fstream>
+#include <sstream>
 #include <memory>
 #include <concepts>
 #include <iterator>
@@ -212,5 +213,24 @@ concept PrintTrait = requires(T printable) {
     { printable.to_string() } -> std::convertible_to<std::string>;
     { printable.print() } -> std::same_as<void>;
 };
+
+template <typename T>
+std::string to_string_generic(const T& value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
+template <typename... Args>
+std::string to_string_generic(const std::tuple<Args...>& t) {
+    std::ostringstream oss;
+    std::apply([&oss](const auto&... args) {
+        oss << "(";
+        ((oss << args << ", "), ...);
+        oss.seekp(-2, std::ios_base::end);
+        oss << ")";
+    }, t);
+    return oss.str();
+}
 
 #endif
