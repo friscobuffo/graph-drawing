@@ -34,7 +34,7 @@ struct BuildingResult {
     BuildingResultType type;
 };
 
-BuildingResult build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph);
+BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph);
 
 void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
@@ -52,16 +52,18 @@ void make_rectilinear_drawing_incremental(const T& graph) {
         }
     }
     const Shape* shape = build_shape(colored_graph, cycles);
-    BuildingResult result = build_nodes_positions(*shape, colored_graph);
-    while (result.type == BuildingResultType::CYCLE_TO_BE_ADDED) {
-        cycles.push_back(result.cycle_to_be_added);
+    BuildingResult* result = build_nodes_positions(*shape, colored_graph);
+    while (result->type == BuildingResultType::CYCLE_TO_BE_ADDED) {
+        cycles.push_back(result->cycle_to_be_added);
         delete shape;
+        delete result;
         shape = build_shape(colored_graph, cycles);
         result = build_nodes_positions(*shape, colored_graph);
     }
-    node_positions_to_svg(*result.positions, colored_graph);
+    node_positions_to_svg(*result->positions, colored_graph);
     delete shape;
-    delete result.positions;
+    delete result->positions;
+    delete result;
 }
 
 template <GraphTrait T>
@@ -78,11 +80,12 @@ void make_rectilinear_drawing_all_cycles(const T& graph) {
         }
     }
     const Shape* shape = build_shape(colored_graph, cycles);
-    BuildingResult result = build_nodes_positions(*shape, colored_graph);
-    assert(result.type == BuildingResultType::OK);
-    node_positions_to_svg(*result.positions, colored_graph);
+    BuildingResult* result = build_nodes_positions(*shape, colored_graph);
+    assert(result->type == BuildingResultType::OK);
+    node_positions_to_svg(*result->positions, colored_graph);
     delete shape;
-    delete result.positions;
+    delete result->positions;
+    delete result;
 }
 
 #endif

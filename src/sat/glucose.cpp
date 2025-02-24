@@ -4,6 +4,11 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <fcntl.h>
+#include <stdexcept>
 
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
@@ -29,18 +34,29 @@ void delete_glucose_temp_files() {
 }
 
 const GlucoseResult* launch_glucose() {
-    FILE* pipe = popen("./glucose .conjunctive_normal_form.cnf .output.txt -certified -certified-output=.proof.txt", "r");
-    if (!pipe) {
-        std::cerr << "Failed to run executable" << std::endl;
-        return nullptr;
+    pid_t pid = fork();
+    if (pid == -1)
+        throw std::runtime_error("Failed to fork process");
+    if (pid == 0) {
+        // child process
+        int devNull = open("/dev/null", O_WRONLY);
+        if (devNull == -1) {
+            _exit(1);
+        }
+        dup2(devNull, STDOUT_FILENO);
+        dup2(devNull, STDERR_FILENO);
+        close(devNull);
+        execl("./glucose", "glucose", ".conjunctive_normal_form.cnf", 
+              ".output.txt", "-certified", "-certified-output=.proof.txt", (char *)NULL);
+        // if exec fails
+        _exit(1);
     }
-    pclose(pipe);
-    std::cout << "glucose finished\n";
-    std::cout << "getting results\n";
+    // parent process
+    int status;
+    if (waitpid(pid, &status, 0) == -1)
+        throw std::runtime_error("Failed to wait for process");
     const GlucoseResult* result = get_results();
-    std::cout << "deleting temp files\n";
     delete_glucose_temp_files();
-    std::cout << "deleted temp files\n";
     return result;
 }
 
@@ -70,5 +86,5 @@ const GlucoseResult* get_results() {
             numbers.push_back(num);
         return new GlucoseResult{GlucoseResultType::SAT, numbers, get_proof()};
     }
-    return nullptr;
+    throw std::runtime_error("Error: the file is empty.");
 }

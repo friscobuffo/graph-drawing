@@ -282,7 +282,7 @@ std::vector<size_t> build_cycle_in_graph_from_cycle_in_ordering(
     return cycle;
 }
 
-BuildingResult build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph) {
+BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph) {
     auto classes = build_equivalence_classes(shape, graph);
     auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
     auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
@@ -296,14 +296,14 @@ BuildingResult build_nodes_positions(const Shape& shape, const ColoredNodesGraph
         auto cycle = build_cycle_in_graph_from_cycle_in_ordering(cycle_x.value(), *ordering_x, *classes_x, ordering_x_edge_to_graph_edge);
         free(ordering_x_edge_to_graph_edge);
         free(ordering_y_edge_to_graph_edge);
-        return BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
+        return new BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
     }
     auto cycle_y = find_a_cycle_directed_graph(*ordering_y);
     if (cycle_y.has_value()) {
         auto cycle = build_cycle_in_graph_from_cycle_in_ordering(cycle_y.value(), *ordering_y, *classes_y, ordering_y_edge_to_graph_edge);
         free(ordering_x_edge_to_graph_edge);
         free(ordering_y_edge_to_graph_edge);
-        return BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
+        return new BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
     }
     auto classes_x_ordering = make_topological_ordering(*ordering_x);
     auto classes_y_ordering = make_topological_ordering(*ordering_y);
@@ -322,7 +322,7 @@ BuildingResult build_nodes_positions(const Shape& shape, const ColoredNodesGraph
     }
     free(ordering_x_edge_to_graph_edge);
     free(ordering_y_edge_to_graph_edge);
-    return BuildingResult{positions, {}, BuildingResultType::OK};
+    return new BuildingResult{positions, {}, BuildingResultType::OK};
 }
 
 void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph) {
