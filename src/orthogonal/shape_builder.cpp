@@ -221,23 +221,30 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
         assert(tokens.back() == "0");
         tokens.pop_back();
         if (tokens[0] == "d") {
-            if (tokens.size() == 2) return std::stoi(tokens[1]);
+            if (tokens.size() == 2) return abs(std::stoi(tokens[1]));
         }
-        else if (tokens.size() == 1) return std::stoi(tokens[0]);
+        else if (tokens.size() == 1) return abs(std::stoi(tokens[0]));
     }
     throw std::runtime_error("Could not find the edge to remove");
 }
 
 const Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
+    std::cout << "building shape\n";
+    std::cout << "number of cycles: " << cycles.size() << "\n";
     const VariablesHandler handler = initialize_variables(colored_graph);
     CNFBuilder cnf_builder;
     add_constraints_one_direction_per_edge(colored_graph, cnf_builder, handler);
     add_constraints_opposite_edges(colored_graph, cnf_builder, handler);
     add_nodes_constraints(colored_graph, cnf_builder, handler);
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
+    std::cout << "number of variables: " << cnf_builder.get_number_of_variables() << "\n";
+    std::cout << "number of clauses: " << cnf_builder.get_number_of_clauses() << "\n";
     cnf_builder.convert_to_cnf(".conjunctive_normal_form.cnf");
+    std::cout << "launching glucose\n";
     std::unique_ptr<const GlucoseResult> results = std::unique_ptr<const GlucoseResult>(launch_glucose());
+    // results->print();
     if (results->result == GlucoseResultType::UNSAT) {
+        std::cout << "unsat\n";
         size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
         int i = handler.variable_to_edge[variable_edge].first;
         int j = handler.variable_to_edge[variable_edge].second;
@@ -260,6 +267,7 @@ const Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vect
         }
         return build_shape(colored_graph, cycles);
     }
+    std::cout << "shape built\n";
     const std::vector<int>& variables = results->numbers;
     const Shape* shape = result_to_shape(colored_graph, variables, handler);
     return shape;

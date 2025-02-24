@@ -5,6 +5,21 @@
 #include <fstream>
 #include <sstream>
 
+std::string GlucoseResult::to_string() const {
+    std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
+    std::string numbers_str = "Numbers: ";
+    for (int num : numbers)
+        numbers_str += std::to_string(num) + " ";
+    std::string proof_str = "Proof:\n";
+    for (const std::string& line : proof_lines)
+        proof_str += line + "\n";
+    return r + "\n" + numbers_str + "\n" + proof_str;
+}
+
+void GlucoseResult::print() const {
+    std::cout << to_string() << std::endl;
+}
+
 const GlucoseResult* get_results();
 
 void delete_glucose_temp_files() {
@@ -19,9 +34,13 @@ const GlucoseResult* launch_glucose() {
         std::cerr << "Failed to run executable" << std::endl;
         return nullptr;
     }
-    fclose(pipe);
+    pclose(pipe);
+    std::cout << "glucose finished\n";
+    std::cout << "getting results\n";
     const GlucoseResult* result = get_results();
+    std::cout << "deleting temp files\n";
     delete_glucose_temp_files();
+    std::cout << "deleted temp files\n";
     return result;
 }
 

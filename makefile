@@ -10,8 +10,11 @@ SRCS = src/main.cpp \
 		src/drawing/svg_drawer.cpp \
 		src/orthogonal/drawing_builder.cpp
 
+# Optimization flags
+OPTFLAGS = -O3 -march=native
+
 # C++ standard
-CXXFLAGS = -std=c++20
+CXXFLAGS = -std=c++20 $(OPTFLAGS)
 
 # Object Files (stored in obj/ directory)
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
@@ -28,9 +31,6 @@ all: $(TARGET)
 # Rule to build the target
 $(TARGET): $(OBJS)
 	$(COMPILER) $(CXXFLAGS) $(OBJS) -o $(TARGET)
-
-# Optimization flags
-OPTFLAGS = -O3
 
 # Rule to compile .cpp files to .o files
 $(OBJ_DIR)/%.o: %.cpp

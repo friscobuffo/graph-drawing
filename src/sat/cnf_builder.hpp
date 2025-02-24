@@ -8,10 +8,19 @@
 
 class CNFBuilder {
 private:
-    std::vector<std::vector<int>> clauses;
+    int m_num_vars = 0;
+    std::vector<std::vector<int>> m_clauses;
 public:
     void add_clause(std::vector<int> clause) {
-        clauses.push_back(std::move(clause));
+        for (int lit : clause)
+            m_num_vars = std::max(m_num_vars, std::abs(lit));
+        m_clauses.push_back(std::move(clause));
+    }
+    int get_number_of_variables() const {
+        return m_num_vars;
+    }
+    int get_number_of_clauses() const {
+        return m_clauses.size();
     }
     void convert_to_cnf(const std::string& file_path) const {
         std::ofstream file(file_path);
@@ -19,12 +28,8 @@ public:
             std::cerr << "Error: Could not open file " << file_path << " for writing.\n";
             return;
         }
-        int num_vars = 0;
-        for (const auto& clause : clauses)
-            for (int lit : clause)
-                num_vars = std::max(num_vars, std::abs(lit));
-        file << "p cnf " << num_vars << " " << clauses.size() << "\n";
-        for (const auto& clause : clauses) {
+        file << "p cnf " << m_num_vars << " " << m_clauses.size() << "\n";
+        for (const auto& clause : m_clauses) {
             for (int lit : clause)
                 file << lit << " ";
             file << "0\n";
