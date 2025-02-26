@@ -1,5 +1,5 @@
-#ifndef MY_RANDOM_GRAPH_H
-#define MY_RANDOM_GRAPH_H
+#ifndef MY_GRAPH_GENERATORS_H
+#define MY_GRAPH_GENERATORS_H
 
 #include <random>
 #include <algorithm>
@@ -47,50 +47,34 @@ SimpleGraph* generate_connected_random_graph_degree_max_4(size_t number_of_nodes
 }
 
 // n*m grid, n, m > 1
-SimpleGraph *generate_grid_graph(size_t n, size_t m)
-{
+SimpleGraph* generate_grid_graph(size_t n, size_t m) {
     int num_nodes = 2 * n + 2 * m - 4;
     SimpleGraph *g = new SimpleGraph();
     for (int i = 0; i < num_nodes; ++i)
-    {
         g->add_node();
-    }
     for (int i = 0; i < num_nodes - 1; ++i)
-    {
         g->add_undirected_edge(i, i + 1);
-    }
     g->add_undirected_edge(0, num_nodes - 1);
     for (int i = 1; i < n - 1; ++i)
-    {
         g->add_undirected_edge(i, (2 * n) + m - i - 3);
-    }
     m -= 2;
     for (int i = 0; i < m; ++i)
-    {
         g->add_undirected_edge(n + i, (2 * n) + (2 * m) - i - 1);
-    }
     return g;
 }
 
 // num_nodes > 1
-SimpleGraph *generate_triangle_graph(size_t num_nodes)
-{
+SimpleGraph* generate_triangle_graph(size_t num_nodes) {
     num_nodes = 3 * num_nodes;
     SimpleGraph *g = new SimpleGraph();
     for (int i = 0; i < num_nodes; ++i)
-    {
         g->add_node();
-    }
-
-    for (int i = 0; i < num_nodes - 3; ++i)
-    {
-        if (i % 3 == 2)
-        {
+    for (int i = 0; i < num_nodes - 3; ++i) {
+        if (i % 3 == 2) {
             g->add_undirected_edge(i, i + 3);
             g->add_undirected_edge(i + 3, i - 2);
         }
-        else
-        {
+        else {
             g->add_undirected_edge(i, i + 3);
             g->add_undirected_edge(i + 1, i + 3);
         }
