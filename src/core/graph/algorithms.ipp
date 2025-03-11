@@ -11,10 +11,10 @@ bool is_connected(const T& graph) {
     std::vector<size_t> stack;
     stack.push_back(0);
     while (!stack.empty()) {
-        size_t nodeIndex = stack.back();
+        size_t node_index = stack.back();
         stack.pop_back();
-        visited[nodeIndex] = true;
-        for (auto& edge : graph.get_nodes()[nodeIndex].get_edges())
+        visited[node_index] = true;
+        for (auto& edge : graph.get_nodes()[node_index].get_edges())
             if (!visited[edge.get_to()])
                 stack.push_back(edge.get_to());
     }
@@ -165,4 +165,81 @@ bool is_edge_in_graph(const T& graph, int i, int j) {
         if (graph.get_nodes()[i].get_edges()[k].get_to() == j)
             return true;
     return false;
+}
+
+template <GraphTrait T>
+std::vector<size_t> cycle_with_triplet_bfs(const T& graph, size_t i, size_t j, size_t k) {
+    std::vector<size_t> cycle;
+    std::vector<int> prev(graph.size(), -1);
+    prev[j] = i;
+    prev[k] = j;
+    std::queue<size_t> queue;
+    queue.push(k);
+    bool found_prev = false;
+    while (!queue.empty()) {
+        size_t node_index = queue.front();
+        queue.pop();
+        for (auto& edge : graph.get_nodes()[node_index].get_edges()) {
+            size_t neighbor = edge.get_to();
+            if (neighbor == i) {
+                found_prev = true;
+                prev[i] = node_index;
+                break;
+            }
+            if (prev[neighbor] != -1) continue;
+            prev[neighbor] = node_index;
+            queue.push(neighbor);
+        }
+        if (found_prev) break;
+    }
+    if (!found_prev) return {}; // No cycle found
+    size_t v = i;
+    while (true) {
+        cycle.push_back(v);
+        if (v == j) break; // Completed the cycle
+        v = prev[v];
+    }
+    std::reverse(cycle.begin(), cycle.end());
+    return cycle;
+}
+
+template <GraphTrait T>
+std::vector<std::vector<size_t>> compute_cycles_in_undirected_graph_triplets(const T& graph) {
+    bool triplets[graph.size()][graph.size()][graph.size()];
+    for (int i = 0; i < graph.size(); ++i)
+        for (int j = 0; j < graph.size(); ++j)
+            for (int k = 0; k < graph.size(); ++k)
+                triplets[i][j][k] = false;
+    for (int i = 0; i < graph.size(); ++i) {
+        if (graph.get_nodes()[i].get_edges().size() < 3) continue;
+        int number_of_edges = graph.get_nodes()[i].get_edges().size();
+        for (int j = 0; j < number_of_edges-1; ++j) {
+            int u = graph.get_nodes()[i].get_edges()[j].get_to();
+            for (int k = j + 1; k < number_of_edges; ++k) {
+                int v = graph.get_nodes()[i].get_edges()[k].get_to();
+                triplets[u][i][v] = true;
+                triplets[v][i][u] = true;
+            }
+        }
+    }
+    std::vector<std::vector<size_t>> cycles;
+    for (int i = 0; i < graph.size(); ++i)
+        for (int j = 0; j < graph.size(); ++j)
+            for (int k = 0; k < graph.size(); ++k) {
+                if (i < k) continue;
+                if (triplets[i][j][k]) {
+                    std::vector<size_t> cycle = cycle_with_triplet_bfs(graph, i, j, k);
+                    // triplets[i][j][k] = false;
+                    // triplets[k][j][i] = false;
+                    // for (int i_ = 0; i_ < cycle.size(); ++i_) {
+                    //     int j_ = (i_ + 1) % cycle.size();
+                    //     int k_ = (i_ + 2) % cycle.size();
+                    //     triplets[cycle[i_]][cycle[j_]][cycle[k_]] = false;
+                    //     triplets[cycle[k_]][cycle[j_]][cycle[i_]] = false;
+                    // }
+                    if (!cycle.empty())
+                        cycles.push_back(cycle);
+                }
+            }
+    return cycles;
 }

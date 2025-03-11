@@ -32,6 +32,9 @@ std::vector<size_t> make_topological_ordering(const T& graph);
 template <GraphTrait T>
 bool is_edge_in_graph(const T& graph, int i, int j);
 
+template <GraphTrait T>
+std::vector<std::vector<size_t>> compute_cycles_in_undirected_graph_triplets(const T& graph);
+
 #include "algorithms.ipp"
 
 #endif
