@@ -30,4 +30,22 @@ SimpleGraph* loadSimpleUndirectedGraphFromFile(std::string filename) {
     std::cout << "Unable to open file\n";
     return nullptr;
 }
+
+template <GraphTrait T>
+void save_undirected_graph_to_file(const T& graph, std::string filename) {
+    std::ofstream outfile(filename);
+    if (outfile.is_open()) {
+        outfile << graph.size() << std::endl;
+        for (int i = 0; i < graph.size(); i++) {
+            for (auto& edge : graph.get_node(i).get_edges()) {
+                int j = edge.get_to();
+                if (i < j)
+                    outfile << i << " " << j << std::endl;
+            }
+        }
+        outfile.close();
+    } else
+        std::cout << "Unable to open file\n";
+}
+
 #endif

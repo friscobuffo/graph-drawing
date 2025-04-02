@@ -18,6 +18,8 @@ concept GraphNodeTrait = requires(T node, const T constNode) {
     { node.get_index() } -> std::convertible_to<int>;
     { node.set_index(0) } -> std::same_as<void>;
     { constNode.get_edges() } -> std::same_as<const Container<typename T::GraphEdgeType>&>;
+    { constNode.get_edge(0) } -> std::same_as<const typename T::GraphEdgeType&>;
+    { constNode.get_degree() } -> std::convertible_to<size_t>;
     { node.add_edge(std::declval<typename T::GraphEdgeType*>()) } -> std::same_as<void>;
     { node.remove_edge(0) } -> std::same_as<void>;
     { node.get_edges() } -> std::same_as<Container<typename T::GraphEdgeType>&>;
@@ -34,7 +36,9 @@ public:
     int get_index() const { return m_index; }
     void set_index(int index) { m_index = index; }
     Container<T>& get_edges() { return m_edges; }
+    const T& get_edge(size_t index) const { return m_edges[index]; }
     const Container<T>& get_edges() const { return m_edges; }
+    size_t get_degree() const { return m_edges.size(); }
     void add_edge(T* edge) { m_edges.add_element(std::unique_ptr<T>(edge)); }
     void remove_edge(size_t neighbor_index) {
         for (size_t i = 0; i < get_edges().size(); i++)
@@ -67,6 +71,8 @@ public:
     void set_index(int index) { m_node.set_index(index); }
     Container<T>& get_edges() { return m_node.get_edges(); }
     const Container<T>& get_edges() const { return m_node.get_edges(); }
+    const T& get_edge(size_t index) const { return m_node.get_edge(index); }
+    size_t get_degree() const { return m_node.get_degree(); }
     void add_edge(T* edge) { m_node.add_edge(edge); }
     void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
     Color get_color() const { return m_color; }
@@ -91,6 +97,8 @@ public:
     void set_index(int index) { m_node.set_index(index); }
     Container<GraphEdge>& get_edges() { return m_node.get_edges(); }
     const Container<GraphEdge>& get_edges() const { return m_node.get_edges(); }
+    const GraphEdge& get_edge(size_t index) const { return m_node.get_edge(index); }
+    size_t get_degree() const { return m_node.get_degree(); }
     void add_edge(GraphEdge* edge) { m_node.add_edge(edge); }
     void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
     std::string to_string() const { return m_node.to_string(); }

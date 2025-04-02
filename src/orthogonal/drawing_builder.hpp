@@ -45,8 +45,8 @@ void make_rectilinear_drawing_incremental(const T& graph, std::vector<std::vecto
     for (int i = 0; i < graph.size(); i++)
         colored_graph.add_node(Color::BLACK);
     for (int i = 0; i < graph.size(); i++) {
-        assert(graph.get_nodes()[i].get_edges().size() <= 4);
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        assert(graph.get_node(i).get_degree() <= 4);
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             colored_graph.add_edge(i, j);
         }
@@ -87,10 +87,26 @@ void make_rectilinear_drawing_incremental_triplets(const T& graph) {
 }
 
 template <GraphTrait T>
+void make_rectilinear_drawing_incremental_triplets_basis(const T& graph) {
+    auto cycles = compute_cycles_in_undirected_graph_triplets(graph);
+    auto cycles_basis = compute_cycle_basis(graph);
+    for (auto& cycle : cycles_basis)
+        cycles.push_back(cycle);
+    make_rectilinear_drawing_incremental(graph, cycles);
+}
+
+template <GraphTrait T>
 void make_rectilinear_drawing_incremental_no_cycles(const T& graph) {
     std::vector<std::vector<size_t>> cycles;
     make_rectilinear_drawing_incremental(graph, cycles);
 }
+
+template <GraphTrait T>
+void make_rectilinear_drawing_incremental_pairs(const T& graph) {
+    auto cycles = compute_smallest_cycle_between_pair_nodes(graph);
+    make_rectilinear_drawing_incremental(graph, cycles);
+}
+
 
 template <GraphTrait T>
 void make_rectilinear_drawing_all_cycles(const T& graph) {
@@ -99,8 +115,8 @@ void make_rectilinear_drawing_all_cycles(const T& graph) {
     for (int i = 0; i < graph.size(); i++)
         colored_graph.add_node(Color::BLACK);
     for (int i = 0; i < graph.size(); i++) {
-        assert(graph.get_nodes()[i].get_edges().size() <= 4);
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        assert(graph.get_node(i).get_degree() <= 4);
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             colored_graph.add_edge(i, j);
         }

@@ -124,7 +124,7 @@ const std::tuple<EquivalenceClasses*, EquivalenceClasses*> build_equivalence_cla
     int next_class_y = 0;
     std::vector<std::vector<bool>> is_edge_visited(graph.size(), std::vector<bool>(graph.size(), false));
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (is_edge_visited[i][j]) continue;
             is_edge_visited[i][j] = true;
@@ -188,15 +188,15 @@ auto equivalence_classes_to_ordering(
     const std::tuple<size_t, size_t>** ordering_y_edge_to_graph_edge =
         (const std::tuple<size_t, size_t>**)malloc(sizeof(const std::tuple<size_t, size_t>*) * ordering_y->size() * ordering_y->size());
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (shape.is_horizontal(i, j)) {
                 int node_class_x = equivalence_classes_x.get_class(i);
                 int neighbor_class_x = equivalence_classes_x.get_class(j);
                 if (shape.is_right(i, j)) {
                     ordering_x->add_edge(node_class_x, neighbor_class_x, std::make_tuple(i, j));
-                    int last_edge_index = ordering_x->get_nodes()[node_class_x].get_edges().size() - 1;
-                    auto& edge = ordering_x->get_nodes()[node_class_x].get_edges()[last_edge_index];
+                    int last_edge_index = ordering_x->get_node(node_class_x).get_degree() - 1;
+                    auto& edge = ordering_x->get_node(node_class_x).get_edge(last_edge_index);
                     ordering_x_edge_to_graph_edge[node_class_x * ordering_x->size() + neighbor_class_x] = &edge.get_label();
                 }
             } else {
@@ -204,8 +204,8 @@ auto equivalence_classes_to_ordering(
                 int neighbor_class_y = equivalence_classes_y.get_class(j);
                 if (shape.is_up(i, j)) {
                     ordering_y->add_edge(node_class_y, neighbor_class_y, std::make_tuple(i, j));
-                    int last_edge_index = ordering_y->get_nodes()[node_class_y].get_edges().size() - 1;
-                    auto& edge = ordering_y->get_nodes()[node_class_y].get_edges()[last_edge_index];
+                    int last_edge_index = ordering_y->get_node(node_class_y).get_degree() - 1;
+                    auto& edge = ordering_y->get_node(node_class_y).get_edge(last_edge_index);
                     ordering_y_edge_to_graph_edge[node_class_y * ordering_y->size() + neighbor_class_y] = &edge.get_label();
                 }
             }
@@ -342,13 +342,13 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
         points.push_back(Point2D{x, y});
     }
     for (size_t i = 0; i < graph.size(); ++i)
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             size_t j = edge.get_to();
             Line2D line{points[i], points[j]};
             drawer.add(line);
         }
     for (size_t i = 0; i < graph.size(); ++i) {
-        Color color = graph.get_nodes()[i].get_color();
+        Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
     drawer.saveToFile("graph.svg");

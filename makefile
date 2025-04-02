@@ -4,6 +4,7 @@ COMPILER = g++
 # Source Files
 SRCS = src/main.cpp \
 		src/sat/glucose.cpp \
+		src/sat/cnf_builder.cpp \
 		src/orthogonal/shape.cpp \
 		src/orthogonal/shape_builder.cpp \
 		src/drawing/polygon.cpp \

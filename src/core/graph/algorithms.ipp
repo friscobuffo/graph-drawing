@@ -14,7 +14,7 @@ bool is_connected(const T& graph) {
         size_t node_index = stack.back();
         stack.pop_back();
         visited[node_index] = true;
-        for (auto& edge : graph.get_nodes()[node_index].get_edges())
+        for (auto& edge : graph.get_node(node_index).get_edges())
             if (!visited[edge.get_to()])
                 stack.push_back(edge.get_to());
     }
@@ -50,7 +50,7 @@ std::vector<std::vector<size_t>> compute_all_cycles_with_node_in_undirected_grap
         }
         visited[current] = true;
         path.push_back(current);
-        for (auto& edge : graph.get_nodes()[current].get_edges()) {
+        for (auto& edge : graph.get_node(current).get_edges()) {
             size_t neighbor = edge.get_to();
             if (path.size() > 2 && neighbor == start)
                 cycles.push_back(path);
@@ -67,7 +67,7 @@ std::vector<std::vector<size_t>> compute_all_cycles_with_node_in_undirected_grap
 template <GraphTrait T>
 bool dfs_find_cycle(int u, const T& graph, std::vector<int>& state, std::vector<int>& parent, int& cycle_start, int& cycle_end) {
     state[u] = 1; // mark as visiting (gray)
-    for (auto& edge : graph.get_nodes()[u].get_edges()) {
+    for (auto& edge : graph.get_node(u).get_edges()) {
         int v = edge.get_to();
         if (state[v] == 0) { // unvisited
             parent[v] = u;
@@ -106,7 +106,7 @@ std::vector<std::vector<size_t>> compute_cycle_basis(const T& graph) {
     SimpleTree* spanning = build_simple_spanning_tree(graph);
     std::vector<std::vector<size_t>> cycles;
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (i > j) continue;
             if (is_edge_in_tree(*spanning, i, j)) continue;
@@ -133,7 +133,7 @@ template <GraphTrait T>
 std::vector<size_t> make_topological_ordering(const T& graph) {
     std::vector<int> in_degree(graph.size(), 0);
     for (int u = 0; u < graph.size(); ++u)
-        for (auto& edge : graph.get_nodes()[u].get_edges()) {
+        for (auto& edge : graph.get_node(u).get_edges()) {
             int v = edge.get_to();
             in_degree[v]++;
         }
@@ -148,7 +148,7 @@ std::vector<size_t> make_topological_ordering(const T& graph) {
         ++count;
         queue.pop();
         topological_order.push_back(u);
-        for (auto& edge : graph.get_nodes()[u].get_edges()) {
+        for (auto& edge : graph.get_node(u).get_edges()) {
             int v = edge.get_to();
             if (--in_degree[v] == 0)
                 queue.push(v);
@@ -161,8 +161,8 @@ std::vector<size_t> make_topological_ordering(const T& graph) {
 
 template <GraphTrait T>
 bool is_edge_in_graph(const T& graph, int i, int j) {
-    for (int k = 0; k < graph.get_nodes()[i].get_edges().size(); ++k)
-        if (graph.get_nodes()[i].get_edges()[k].get_to() == j)
+    for (int k = 0; k < graph.get_node(i).get_degree(); ++k)
+        if (graph.get_node(i).get_edge(k).get_to() == j)
             return true;
     return false;
 }
@@ -179,7 +179,7 @@ std::vector<size_t> cycle_with_triplet_bfs(const T& graph, size_t i, size_t j, s
     while (!queue.empty()) {
         size_t node_index = queue.front();
         queue.pop();
-        for (auto& edge : graph.get_nodes()[node_index].get_edges()) {
+        for (auto& edge : graph.get_node(node_index).get_edges()) {
             size_t neighbor = edge.get_to();
             if (neighbor == i) {
                 found_prev = true;
@@ -211,12 +211,12 @@ std::vector<std::vector<size_t>> compute_cycles_in_undirected_graph_triplets(con
             for (int k = 0; k < graph.size(); ++k)
                 triplets[i][j][k] = false;
     for (int i = 0; i < graph.size(); ++i) {
-        if (graph.get_nodes()[i].get_edges().size() < 3) continue;
-        int number_of_edges = graph.get_nodes()[i].get_edges().size();
+        if (graph.get_node(i).get_degree() < 2) continue;
+        int number_of_edges = graph.get_node(i).get_degree();
         for (int j = 0; j < number_of_edges-1; ++j) {
-            int u = graph.get_nodes()[i].get_edges()[j].get_to();
+            int u = graph.get_node(i).get_edge(j).get_to();
             for (int k = j + 1; k < number_of_edges; ++k) {
-                int v = graph.get_nodes()[i].get_edges()[k].get_to();
+                int v = graph.get_node(i).get_edge(k).get_to();
                 triplets[u][i][v] = true;
                 triplets[v][i][u] = true;
             }
@@ -241,5 +241,34 @@ std::vector<std::vector<size_t>> compute_cycles_in_undirected_graph_triplets(con
                         cycles.push_back(cycle);
                 }
             }
+    return cycles;
+}
+
+
+template <GraphTrait T>
+std::vector<std::vector<size_t>> compute_smallest_cycle_between_pair_nodes(const T& graph) {
+    bool is_pair_added[graph.size()][graph.size()];
+    for (int i = 0; i < graph.size(); ++i)
+        for (int j = 0; j < graph.size(); ++j)
+            is_pair_added[i][j] = false;
+    auto all_cycles = compute_all_cycles_in_undirected_graph(graph);
+    // sort cycles by length
+    std::sort(all_cycles.begin(), all_cycles.end(), [](const std::vector<size_t>& a, const std::vector<size_t>& b) {
+        return a.size() < b.size();
+    });
+    std::vector<std::vector<size_t>> cycles;
+    for (auto& cycle : all_cycles) {
+        bool found_new_pair = false;
+        for (int i = 0; i < cycle.size(); ++i) {
+            int j = (i + 1) % cycle.size();
+            if (!is_pair_added[cycle[i]][cycle[j]]) {
+                found_new_pair = true;
+                is_pair_added[cycle[i]][cycle[j]] = true;
+                is_pair_added[cycle[j]][cycle[i]] = true;
+            }
+        }
+        if (found_new_pair)
+            cycles.push_back(cycle);
+    }
     return cycles;
 }

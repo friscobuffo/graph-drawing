@@ -16,6 +16,7 @@ concept GraphTrait = requires(T graph, const T constGraph) {
     requires GraphNodeTrait<typename T::GraphNodeType>;
     
     { constGraph.get_nodes() } -> std::same_as<const Container<typename T::GraphNodeType>&>;
+    { constGraph.get_node(0) } -> std::same_as<const typename T::GraphNodeType&>;
     { graph.add_node(std::declval<typename T::GraphNodeType*>()) } -> std::same_as<void>;
     { graph.add_edge(0, std::declval<typename T::GraphNodeType::GraphEdgeType*>()) } -> std::same_as<void>;
     { constGraph.size() } -> std::convertible_to<size_t>;
@@ -30,6 +31,7 @@ private:
 public:
     Graph() {}
     const Container<T>& get_nodes() const { return m_nodes; }
+    const T& get_node(int index) const { return m_nodes[index]; }
     void add_node(T* node) {
         node->set_index(size());
         m_nodes.add_element(std::unique_ptr<T>(node));
@@ -56,6 +58,7 @@ private:
     Graph<GraphNode<GraphEdge>> m_graph{};
 public:
     const Container<GraphNode<GraphEdge>>& get_nodes() const { return m_graph.get_nodes(); }
+    const GraphNode<GraphEdge>& get_node(int index) const { return m_graph.get_node(index); }
     void add_node(GraphNode<GraphEdge>* node) { m_graph.add_node(node); }
     void add_edge(size_t from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
     size_t size() const { return m_graph.size(); }
@@ -82,6 +85,7 @@ private:
     Graph<ColoredNode<GraphEdge>> m_graph{};
 public:
     const Container<ColoredNode<GraphEdge>>& get_nodes() const { return m_graph.get_nodes(); }
+    const ColoredNode<GraphEdge>& get_node(int index) const { return m_graph.get_node(index); }
     void add_node(ColoredNode<GraphEdge>* node) { m_graph.add_node(node); }
     void add_edge(size_t from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
     size_t size() const { return m_graph.size(); }
@@ -109,6 +113,7 @@ private:
     Graph<GraphNode<LabeledGraphEdge<T>>> m_graph{};
 public:
     const Container<GraphNode<LabeledGraphEdge<T>>>& get_nodes() const { return m_graph.get_nodes(); }
+    const GraphNode<LabeledGraphEdge<T>>& get_node(int index) const { return m_graph.get_node(index); }
     void add_node(GraphNode<LabeledGraphEdge<T>>* node) { m_graph.add_node(node); }
     void add_edge(size_t from, LabeledGraphEdge<T>* edge) { m_graph.add_edge(from, edge); }
     size_t size() const { return m_graph.size(); }

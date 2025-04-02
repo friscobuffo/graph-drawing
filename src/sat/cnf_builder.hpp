@@ -3,39 +3,29 @@
 
 #include <vector>
 #include <string>
-#include <fstream>
-#include <iostream>
 
-class CNFBuilder {
+enum class CnfRowType {
+    CLAUSE,
+    COMMENT,
+};
+
+struct CnfRow {
+    CnfRowType m_type;
+    std::vector<int> m_clause;
+    std::string m_comment;
+};
+
+class CnfBuilder {
 private:
     int m_num_vars = 0;
-    std::vector<std::vector<int>> m_clauses;
+    int m_num_clauses = 0;
+    std::vector<CnfRow> m_rows;
 public:
-    void add_clause(std::vector<int> clause) {
-        for (int lit : clause)
-            m_num_vars = std::max(m_num_vars, std::abs(lit));
-        m_clauses.push_back(std::move(clause));
-    }
-    int get_number_of_variables() const {
-        return m_num_vars;
-    }
-    int get_number_of_clauses() const {
-        return m_clauses.size();
-    }
-    void convert_to_cnf(const std::string& file_path) const {
-        std::ofstream file(file_path);
-        if (!file) {
-            std::cerr << "Error: Could not open file " << file_path << " for writing.\n";
-            return;
-        }
-        file << "p cnf " << m_num_vars << " " << m_clauses.size() << "\n";
-        for (const auto& clause : m_clauses) {
-            for (int lit : clause)
-                file << lit << " ";
-            file << "0\n";
-        }
-        file.close();
-    }
+    void add_clause(std::vector<int> clause);
+    void add_comment(const std::string& comment);
+    int get_number_of_variables() const;
+    int get_number_of_clauses() const;
+    void convert_to_cnf(const std::string& file_path) const;
 };
 
 #endif
