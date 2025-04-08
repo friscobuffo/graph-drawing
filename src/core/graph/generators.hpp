@@ -7,7 +7,7 @@
 #include <unordered_set>
 
 #include "graph.hpp"
-#include "algorithms.hpp"
+#include "graphs_algorithms.hpp"
 
 SimpleGraph* generate_connected_random_graph_degree_max_4(size_t number_of_nodes, size_t number_of_edges) {
     if (number_of_edges > 2*number_of_nodes)

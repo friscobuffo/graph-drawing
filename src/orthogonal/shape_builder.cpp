@@ -271,9 +271,6 @@ const Shape* build_shape_or_add_corner(
         PROOF_FILE
     ));
     if (results->result == GlucoseResultType::UNSAT) {
-        // press key to continue
-        std::cout << "UNSAT" << std::endl;
-        std::cin.get();
         size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
         int i = handler.variable_to_edge[variable_edge].first;
         int j = handler.variable_to_edge[variable_edge].second;

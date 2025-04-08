@@ -2,13 +2,14 @@
 #define MY_DRAWING_BUILDER_H
 
 #include <cassert>
+#include <vector>
 #include <unordered_set>
+#include <tuple>
 
 #include "shape.hpp"
 #include "../core/graph/graph.hpp"
-#include "../core/graph/node.hpp"
 #include "../core/utils.hpp"
-#include "../core/graph/algorithms.hpp"
+#include "../core/graph/graphs_algorithms.hpp"
 #include "../drawing/svg_drawer.hpp"
 #include "../drawing/linear_scale.hpp"
 #include "shape_builder.hpp"
@@ -25,12 +26,12 @@ public:
 
 enum class BuildingResultType {
     OK,
-    CYCLE_TO_BE_ADDED,
+    CYCLES_TO_BE_ADDED,
 };
 
 struct BuildingResult {
     const NodesPositions* positions{nullptr};
-    std::vector<size_t> cycle_to_be_added;
+    std::vector<std::vector<size_t>> cycles_to_be_added;
     BuildingResultType type;
 };
 
@@ -39,72 +40,73 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
 void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental(const T& graph, std::vector<std::vector<size_t>>& cycles) {
-    std::cout << "Number of cycles: " << cycles.size() << std::endl;
-    ColoredNodesGraph colored_graph{};
+std::tuple<const ColoredNodesGraph*,const Shape*> make_rectilinear_drawing_incremental(const T& graph, std::vector<std::vector<size_t>>& cycles) {
+    ColoredNodesGraph* colored_graph = new ColoredNodesGraph{};
     for (int i = 0; i < graph.size(); i++)
-        colored_graph.add_node(Color::BLACK);
+        colored_graph->add_node(Color::BLACK);
     for (int i = 0; i < graph.size(); i++) {
         assert(graph.get_node(i).get_degree() <= 4);
         for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
-            colored_graph.add_edge(i, j);
+            colored_graph->add_edge(i, j);
         }
     }
-    auto shape_added_corners = build_shape(colored_graph, cycles);
+    auto shape_added_corners = build_shape(*colored_graph, cycles);
     const Shape* shape = shape_added_corners.first;
     int number_of_added_corners = shape_added_corners.second;
-    BuildingResult* result = build_nodes_positions(*shape, colored_graph);
+    BuildingResult* result = build_nodes_positions(*shape, *colored_graph);
     int number_of_added_cycles = 0;
-    while (result->type == BuildingResultType::CYCLE_TO_BE_ADDED) {
-        cycles.push_back(result->cycle_to_be_added);
-        number_of_added_cycles++;
+    while (result->type == BuildingResultType::CYCLES_TO_BE_ADDED) {
+        for (auto& cycle_to_add : result->cycles_to_be_added)
+            cycles.push_back(cycle_to_add);
+        number_of_added_cycles += result->cycles_to_be_added.size();
         delete shape;
         delete result;
-        auto shape_added_corners_2 = build_shape(colored_graph, cycles);
+        auto shape_added_corners_2 = build_shape(*colored_graph, cycles);
         shape = shape_added_corners_2.first;
         number_of_added_corners += shape_added_corners_2.second;
-        result = build_nodes_positions(*shape, colored_graph);
+        result = build_nodes_positions(*shape, *colored_graph);
     }
-    node_positions_to_svg(*result->positions, colored_graph);
-    delete shape;
+    node_positions_to_svg(*result->positions, *colored_graph);
     delete result->positions;
     delete result;
+    std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
     std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
     std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
+    return {colored_graph, shape};
 }
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental_basis(const T& graph) {
+auto make_rectilinear_drawing_incremental_basis(const T& graph) {
     auto cycles = compute_cycle_basis(graph);
-    make_rectilinear_drawing_incremental(graph, cycles);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental_triplets(const T& graph) {
+auto make_rectilinear_drawing_incremental_triplets(const T& graph) {
     auto cycles = compute_cycles_in_undirected_graph_triplets(graph);
-    make_rectilinear_drawing_incremental(graph, cycles);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental_triplets_basis(const T& graph) {
+auto make_rectilinear_drawing_incremental_triplets_basis(const T& graph) {
     auto cycles = compute_cycles_in_undirected_graph_triplets(graph);
     auto cycles_basis = compute_cycle_basis(graph);
     for (auto& cycle : cycles_basis)
         cycles.push_back(cycle);
-    make_rectilinear_drawing_incremental(graph, cycles);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental_no_cycles(const T& graph) {
+auto make_rectilinear_drawing_incremental_no_cycles(const T& graph) {
     std::vector<std::vector<size_t>> cycles;
-    make_rectilinear_drawing_incremental(graph, cycles);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-void make_rectilinear_drawing_incremental_pairs(const T& graph) {
+auto make_rectilinear_drawing_incremental_pairs(const T& graph) {
     auto cycles = compute_smallest_cycle_between_pair_nodes(graph);
-    make_rectilinear_drawing_incremental(graph, cycles);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 

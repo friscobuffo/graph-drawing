@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <tuple>
 #include <string>
 #include <cassert>
 #include <fstream>
@@ -232,5 +233,29 @@ std::string to_string_generic(const std::tuple<Args...>& t) {
     }, t);
     return oss.str();
 }
+
+struct Int {
+    int value;
+    std::string to_string() const {
+        return std::to_string(value);
+    }
+    void print() const {
+        std::cout << to_string() << std::endl;
+    }
+};
+
+static_assert(PrintTrait<Int>);
+
+template <PrintTrait T>
+struct Pair {
+    T first;
+    T second;
+    std::string to_string() const {
+        return "[" + first.to_string() + " " + second.to_string() + "]";
+    }
+    void print() const {
+        std::cout << to_string() << std::endl;
+    }
+};
 
 #endif

@@ -21,7 +21,7 @@ CXXFLAGS = -std=c++20 $(OPTFLAGS)
 OBJS = $(SRCS:%.cpp=$(OBJ_DIR)/%.o)
 
 # Output directories
-OBJ_DIR = bin
+OBJ_DIR = obj
 
 # Target output
 TARGET = main
@@ -36,4 +36,4 @@ $(TARGET): $(OBJS)
 # Rule to compile .cpp files to .o files
 $(OBJ_DIR)/%.o: %.cpp
 	@mkdir -p $(dir $@)
-	$(COMPILER) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
+	$(COMPILER) $(CXXFLAGS) -c $< -o $@

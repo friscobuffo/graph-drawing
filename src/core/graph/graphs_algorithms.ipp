@@ -1,8 +1,10 @@
 #include <algorithm>
 #include <queue>
+#include <functional>
 
+#include "graphs_algorithms.hpp"
 #include "../tree/tree.hpp"
-#include "../tree/algorithms.hpp"
+#include "../tree/tree_algorithms.hpp"
 
 template <GraphTrait T>
 bool is_connected(const T& graph) {
@@ -271,4 +273,46 @@ std::vector<std::vector<size_t>> compute_smallest_cycle_between_pair_nodes(const
             cycles.push_back(cycle);
     }
     return cycles;
+}
+
+template <GraphTrait T>
+std::vector<std::vector<size_t>> compute_all_faces_of_embedding(const T& embedding) {
+    std::vector<std::vector<size_t>> faces;
+    std::vector<std::vector<bool>> visited(
+        embedding.size(), std::vector<bool>(embedding.size(), false)
+    );
+    for (size_t i = 0; i < embedding.size(); ++i) {
+        for (const auto& edge : embedding.get_node(i).get_edges()) {
+            size_t j = edge.get_to();
+            if (visited[i][j]) continue;
+            std::vector<size_t> face;
+            while (!visited[i][j]) {
+                face.push_back(j);
+                visited[i][j] = true;
+                int i_position = 0;
+                for (const auto& edge2 : embedding.get_node(j).get_edges()) {
+                    size_t k = edge2.get_to();
+                    if (k == i) break;
+                    ++i_position;
+                }
+                int next_edge_position = (i_position + 1) % embedding.get_node(j).get_degree();
+                const auto& next_edge = embedding.get_node(j).get_edge(next_edge_position);
+                i = j;
+                j = next_edge.get_to();
+            }
+            if (face.size() > 2)
+                faces.push_back(face);
+        }
+    }
+    return faces;
+}
+
+inline int compute_embedding_genus(
+    int number_of_nodes, int number_of_edges, int number_of_faces, int connected_components
+) {
+    // f - e + v = 2(p - g)
+    // f - e + v = 2p - 2g
+    // 2g = 2p - f + e - v
+    // g = p - (f - e + v) / 2
+    return connected_components - (number_of_faces - number_of_edges + number_of_nodes)/2;
 }

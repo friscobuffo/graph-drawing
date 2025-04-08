@@ -19,6 +19,7 @@ concept GraphNodeTrait = requires(T node, const T constNode) {
     { node.set_index(0) } -> std::same_as<void>;
     { constNode.get_edges() } -> std::same_as<const Container<typename T::GraphEdgeType>&>;
     { constNode.get_edge(0) } -> std::same_as<const typename T::GraphEdgeType&>;
+    { node.get_edge(0) } -> std::same_as<typename T::GraphEdgeType&>;
     { constNode.get_degree() } -> std::convertible_to<size_t>;
     { node.add_edge(std::declval<typename T::GraphEdgeType*>()) } -> std::same_as<void>;
     { node.remove_edge(0) } -> std::same_as<void>;
@@ -37,6 +38,7 @@ public:
     void set_index(int index) { m_index = index; }
     Container<T>& get_edges() { return m_edges; }
     const T& get_edge(size_t index) const { return m_edges[index]; }
+    T& get_edge(size_t index) { return m_edges[index]; }
     const Container<T>& get_edges() const { return m_edges; }
     size_t get_degree() const { return m_edges.size(); }
     void add_edge(T* edge) { m_edges.add_element(std::unique_ptr<T>(edge)); }
@@ -72,6 +74,7 @@ public:
     Container<T>& get_edges() { return m_node.get_edges(); }
     const Container<T>& get_edges() const { return m_node.get_edges(); }
     const T& get_edge(size_t index) const { return m_node.get_edge(index); }
+    T& get_edge(size_t index) { return m_node.get_edge(index); }
     size_t get_degree() const { return m_node.get_degree(); }
     void add_edge(T* edge) { m_node.add_edge(edge); }
     void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
@@ -98,6 +101,7 @@ public:
     Container<GraphEdge>& get_edges() { return m_node.get_edges(); }
     const Container<GraphEdge>& get_edges() const { return m_node.get_edges(); }
     const GraphEdge& get_edge(size_t index) const { return m_node.get_edge(index); }
+    GraphEdge& get_edge(size_t index) { return m_node.get_edge(index); }
     size_t get_degree() const { return m_node.get_degree(); }
     void add_edge(GraphEdge* edge) { m_node.add_edge(edge); }
     void remove_edge(size_t neighbor_index) { m_node.remove_edge(neighbor_index); }
