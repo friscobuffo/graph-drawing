@@ -135,7 +135,9 @@ public:
     void add_edge(size_t from, LabeledGraphEdge<T>* edge) { m_graph.add_edge(from, edge); }
     size_t size() const { return m_graph.size(); }
     void add_node() { m_graph.add_node(new GraphNode<LabeledGraphEdge<T>>()); }
-    void add_edge(size_t from, size_t to, T label) { m_graph.add_edge(from, new LabeledGraphEdge<T>(to, label)); }
+    void add_edge(size_t from, size_t to, T label) {
+        m_graph.add_edge(from, new LabeledGraphEdge<T>(to, label));
+    }
     void remove_edge(size_t from, size_t to) { m_graph.remove_edge(from, to); }
     size_t get_number_of_edges() const { return m_graph.get_number_of_edges(); }
     std::string to_string() const { return m_graph.to_string(); }

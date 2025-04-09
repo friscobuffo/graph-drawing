@@ -1,6 +1,8 @@
 #include <algorithm>
 #include <queue>
 #include <functional>
+#include <limits>
+#include <utility>
 
 #include "graphs_algorithms.hpp"
 #include "../tree/tree.hpp"
@@ -315,4 +317,180 @@ inline int compute_embedding_genus(
     // 2g = 2p - f + e - v
     // g = p - (f - e + v) / 2
     return connected_components - (number_of_faces - number_of_edges + number_of_nodes)/2;
+}
+
+template <typename GraphTrait>
+std::vector<std::vector<size_t>> find_disjoint_paths(
+    const GraphTrait& graph, size_t s, size_t t
+) {
+    const int n = graph.size();
+    // In our flow network, we “split” each vertex into two:
+    // - v_in is represented as index v
+    // - v_out is represented as index v+n
+    // The total number of nodes in the flow network is 2*n.
+    const int N = 2 * n;
+    const int INF = 1000000; // A large capacity for the source/target splitting edge.
+    
+    // Define our flow edge structure.
+    struct FlowEdge {
+        int capacity, flow;
+        int rev; // index of the reverse edge in the adjacent list of 'to'
+        std::string to_string() const {
+                   "capacity: " + std::to_string(capacity) +
+                   ", flow: " + std::to_string(flow);
+        }
+        void print() const {
+            std::cout << to_string() << std::endl;
+        }
+    };
+    
+    // Build the flow network.
+    LabeledEdgeGraph<FlowEdge> flow_graph;
+
+    for (int i = 0; i < N; ++i) flow_graph.add_node();
+    
+    // For every vertex v, add an edge from v_in (v) to v_out (v+n).
+    // For vertices other than s and t we use capacity 1; for s and t we use INF.
+    for (int v = 0; v < n; v++) {
+        int cap = (v == s || v == t) ? INF : 1;
+        int degree_1 = flow_graph.get_node(v).get_degree();
+        int degree_2 = flow_graph.get_node(v+n).get_degree();
+        flow_graph.add_edge(v, v+n, FlowEdge{v+n, cap, 0, degree_2});
+        flow_graph.add_edge(v+n, v, FlowEdge{v,   0,   0, degree_1});
+    }
+    
+    // Now add edges corresponding to the undirected edges of the original graph.
+    // Since each edge is represented twice, we add an edge only once (e.g. when u < v).
+    for (int u = 0; u < n; u++) {
+        for (const auto& edge : graph.get_node(u).get_edges()) {
+            int v = edge.get_to();
+            if (u < v) {
+                // In the flow network, add an edge from u_out (u+n) to v_in (v)
+                // and an edge from v_out (v+n) to u_in (u) with capacity 1.
+                int degree_1 = flow_graph.get_node(v).get_degree();
+                int degree_2 = flow_graph.get_node(u+n).get_degree();
+
+                flow_graph.add_edge(u+n, v, FlowEdge{v, 1, 0, degree_1});
+                flow_graph.add_edge(v, u+n, FlowEdge{u+n, 0, 0, degree_2});
+
+                int degree_3 = flow_graph.get_node(v+n).get_degree();
+                int degree_4 = flow_graph.get_node(u).get_degree();
+
+                flow_graph.add_edge(v+n, u, FlowEdge{u, 1, 0, degree_4});
+                flow_graph.add_edge(u, v+n, FlowEdge{v+n, 0, 0, degree_3});
+            }
+        }
+    }
+    
+    // For the flow network, choose:
+    //   source = s_out (s + n)
+    //   sink   = t_in  (t)
+    int source_flow = s + n; // s_out
+    int sink_flow   = t;     // t_in
+    
+    // Now run Edmonds–Karp (BFS-based max flow) to compute the maximum flow.
+    int max_flow = 0;
+    while (true) {
+        std::vector<int> parent(N, -1);
+        std::vector<int> parentEdge(N, -1);
+        std::queue<int> q;
+        q.push(source_flow);
+        std::vector<bool> visited(N, false);
+        visited[source_flow] = true;
+        while (!q.empty() && !visited[sink_flow]) {
+            int u = q.front();
+            q.pop();
+            for (int i = 0; i < flow_graph.get_node(u).get_degree(); i++) {
+                FlowEdge& e = flow_graph.get_node(u).get_edges()[i].get_label();
+                if (!visited[e.to] && e.capacity - e.flow > 0) {
+                    visited[e.to] = true;
+                    parent[e.to] = u;
+                    parentEdge[e.to] = i;
+                    q.push(e.to);
+                }
+            }
+        }
+        if (!visited[sink_flow])
+            break; // No more augmenting paths.
+        
+        int flow = INF;
+        int cur = sink_flow;
+        while (cur != source_flow) {
+            int p = parent[cur];
+            int edge_idx = parentEdge[cur];
+            int cap = flow_graph.get_node(p).get_edges()[edge_idx].get_label().capacity;
+            int f = flow_graph.get_node(p).get_edges()[edge_idx].get_label().flow;
+            flow = std::min(flow, cap - f);
+            cur = p;
+        }
+        
+        cur = sink_flow;
+        while (cur != source_flow) {
+            int p = parent[cur];
+            int edge_idx = parentEdge[cur];
+            flow_graph.get_node(p).get_edges()[edge_idx].get_label().flow += flow;
+            int rev_idx = flow_graph.get_node(p).get_edges()[edge_idx].get_label().rev;
+            flow_graph.get_node(cur).get_edges()[rev_idx].get_label().flow -= flow;
+            cur = p;
+        }
+        
+        max_flow += flow;
+    }
+    // If we did not get at least two units of flow, then two disjoint paths do not exist.
+    if (max_flow < 1)
+        return std::nullopt;
+    
+    // To extract the two disjoint paths, we “peel off” paths carrying flow.
+    // We follow edges with positive flow from source_flow to sink_flow and subtract the used flow.
+    auto extract_flow_path = [&](int start, int end) -> std::vector<int> {
+        std::vector<int> path;
+        std::vector<bool> used(N, false);
+        std::function<bool(int)> dfs = [&](int u) -> bool {
+            if (u == end) {
+                path.push_back(u);
+                return true;
+            }
+            used[u] = true;
+            for (auto &edge : flow_graph.get_node(u).get_edges()) {
+                auto& e = edge.get_label();
+                if (e.flow > 0 && !used[e.to]) {
+                    if (dfs(e.to)) {
+                        e.flow -= 1; // use up one unit of flow along this edge
+                        // Also update the reverse edge
+                        flow_graph.get_node(e.to).get_edges()[e.rev].get_label().flow += 1;
+                        path.push_back(u);
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        dfs(start);
+        std::reverse(path.begin(), path.end());
+        return path;
+    };
+    
+    // Extract two paths from the flow network.
+    std::vector<std::vector<int>> flow_paths;
+    for (int i = 0; i < max_flow; i++)
+        flow_paths.push_back(extract_flow_path(source_flow, sink_flow));
+    
+    // Convert the flow network nodes back to the original graph’s vertex indices.
+    // Recall that for a node v, v_in is v and v_out is (v + n). Consecutive nodes that differ only
+    // by the splitting can be merged.
+    auto convert_path = [&](const std::vector<int>& fpath) -> std::vector<size_t> {
+        std::vector<size_t> orig_path;
+        for (int node : fpath) {
+            int v = (node < n) ? node : (node - n);
+            if (orig_path.empty() || orig_path.back() != v)
+                orig_path.push_back(v);
+        }
+        return orig_path;
+    };
+    
+    std::vector<std::vector<size_t>> paths;
+    for (const auto& flow_path : flow_paths)
+        paths.push_back(convert_path(flow_path));
+    
+    return std::make_optional(paths);
 }
