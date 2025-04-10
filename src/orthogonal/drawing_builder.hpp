@@ -4,6 +4,7 @@
 #include <cassert>
 #include <vector>
 #include <unordered_set>
+#include <memory>
 #include <tuple>
 
 #include "shape.hpp"
@@ -40,7 +41,9 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
 void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
 template <GraphTrait T>
-std::tuple<const ColoredNodesGraph*,const Shape*> make_rectilinear_drawing_incremental(const T& graph, std::vector<std::vector<size_t>>& cycles) {
+std::tuple<std::unique_ptr<const ColoredNodesGraph>, std::unique_ptr<const Shape>> make_rectilinear_drawing_incremental(
+    const T& graph, std::vector<std::vector<size_t>>& cycles
+) {
     ColoredNodesGraph* colored_graph = new ColoredNodesGraph{};
     for (int i = 0; i < graph.size(); i++)
         colored_graph->add_node(Color::BLACK);
@@ -73,7 +76,10 @@ std::tuple<const ColoredNodesGraph*,const Shape*> make_rectilinear_drawing_incre
     std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
     std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
     std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
-    return {colored_graph, shape};
+    return {
+        std::unique_ptr<const ColoredNodesGraph>(colored_graph),
+        std::unique_ptr<const Shape>(shape)
+    };
 }
 
 template <GraphTrait T>

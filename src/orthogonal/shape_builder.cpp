@@ -3,9 +3,15 @@
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
 
+#ifdef __linux__
 const std::string CONJUNCTIVE_NORMAL_FORM_FILE = "/dev/shm/.conjunctive_normal_form.cnf";
 const std::string OUTPUT_FILE = "/dev/shm/.output.txt";
 const std::string PROOF_FILE = "/dev/shm/.proof.txt";
+#elif __APPLE__
+const std::string CONJUNCTIVE_NORMAL_FORM_FILE = ".conjunctive_normal_form.cnf";
+const std::string OUTPUT_FILE = ".output.txt";
+const std::string PROOF_FILE = ".proof.txt";
+#endif
 
 struct VariablesHandler {
     std::vector<std::vector<int>> is_edge_up_variable;

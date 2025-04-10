@@ -321,7 +321,7 @@ inline int compute_embedding_genus(
 
 template <typename GraphTrait>
 std::vector<std::vector<size_t>> find_disjoint_paths(
-    const GraphTrait& graph, size_t s, size_t t
+    const GraphTrait& graph, const int source, const int target
 ) {
     const int n = graph.size();
     // In our flow network, we “split” each vertex into two:
@@ -329,14 +329,13 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
     // - v_out is represented as index v+n
     // The total number of nodes in the flow network is 2*n.
     const int N = 2 * n;
-    const int INF = 1000000; // A large capacity for the source/target splitting edge.
+    const int INF = 1000; // A large capacity for the source/target splitting edge.
     
-    // Define our flow edge structure.
     struct FlowEdge {
         int capacity, flow;
         int rev; // index of the reverse edge in the adjacent list of 'to'
         std::string to_string() const {
-                   "capacity: " + std::to_string(capacity) +
+            return "capacity: " + std::to_string(capacity) +
                    ", flow: " + std::to_string(flow);
         }
         void print() const {
@@ -346,17 +345,16 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
     
     // Build the flow network.
     LabeledEdgeGraph<FlowEdge> flow_graph;
-
     for (int i = 0; i < N; ++i) flow_graph.add_node();
     
     // For every vertex v, add an edge from v_in (v) to v_out (v+n).
     // For vertices other than s and t we use capacity 1; for s and t we use INF.
     for (int v = 0; v < n; v++) {
-        int cap = (v == s || v == t) ? INF : 1;
+        int cap = (v == source || v == target) ? INF : 1;
         int degree_1 = flow_graph.get_node(v).get_degree();
         int degree_2 = flow_graph.get_node(v+n).get_degree();
-        flow_graph.add_edge(v, v+n, FlowEdge{v+n, cap, 0, degree_2});
-        flow_graph.add_edge(v+n, v, FlowEdge{v,   0,   0, degree_1});
+        flow_graph.add_edge(v, v+n, FlowEdge{cap, 0, degree_2});
+        flow_graph.add_edge(v+n, v, FlowEdge{0,   0, degree_1});
     }
     
     // Now add edges corresponding to the undirected edges of the original graph.
@@ -370,29 +368,27 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
                 int degree_1 = flow_graph.get_node(v).get_degree();
                 int degree_2 = flow_graph.get_node(u+n).get_degree();
 
-                flow_graph.add_edge(u+n, v, FlowEdge{v, 1, 0, degree_1});
-                flow_graph.add_edge(v, u+n, FlowEdge{u+n, 0, 0, degree_2});
+                flow_graph.add_edge(u+n, v, FlowEdge{1, 0, degree_1});
+                flow_graph.add_edge(v, u+n, FlowEdge{0, 0, degree_2});
 
                 int degree_3 = flow_graph.get_node(v+n).get_degree();
                 int degree_4 = flow_graph.get_node(u).get_degree();
 
-                flow_graph.add_edge(v+n, u, FlowEdge{u, 1, 0, degree_4});
-                flow_graph.add_edge(u, v+n, FlowEdge{v+n, 0, 0, degree_3});
+                flow_graph.add_edge(v+n, u, FlowEdge{1, 0, degree_4});
+                flow_graph.add_edge(u, v+n, FlowEdge{0, 0, degree_3});
             }
         }
     }
     
     // For the flow network, choose:
-    //   source = s_out (s + n)
-    //   sink   = t_in  (t)
-    int source_flow = s + n; // s_out
-    int sink_flow   = t;     // t_in
+    int source_flow = source + n; // s_out
+    int sink_flow   = target;     // t_in
     
     // Now run Edmonds–Karp (BFS-based max flow) to compute the maximum flow.
     int max_flow = 0;
     while (true) {
         std::vector<int> parent(N, -1);
-        std::vector<int> parentEdge(N, -1);
+        std::vector<int> parent_edge(N, -1);
         std::queue<int> q;
         q.push(source_flow);
         std::vector<bool> visited(N, false);
@@ -401,12 +397,13 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
             int u = q.front();
             q.pop();
             for (int i = 0; i < flow_graph.get_node(u).get_degree(); i++) {
-                FlowEdge& e = flow_graph.get_node(u).get_edges()[i].get_label();
-                if (!visited[e.to] && e.capacity - e.flow > 0) {
-                    visited[e.to] = true;
-                    parent[e.to] = u;
-                    parentEdge[e.to] = i;
-                    q.push(e.to);
+                auto& edge = flow_graph.get_node(u).get_edges()[i];
+                FlowEdge& label = edge.get_label();
+                if (!visited[edge.get_to()] && label.capacity - label.flow > 0) {
+                    visited[edge.get_to()] = true;
+                    parent[edge.get_to()] = u;
+                    parent_edge[edge.get_to()] = i;
+                    q.push(edge.get_to());
                 }
             }
         }
@@ -417,7 +414,7 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
         int cur = sink_flow;
         while (cur != source_flow) {
             int p = parent[cur];
-            int edge_idx = parentEdge[cur];
+            int edge_idx = parent_edge[cur];
             int cap = flow_graph.get_node(p).get_edges()[edge_idx].get_label().capacity;
             int f = flow_graph.get_node(p).get_edges()[edge_idx].get_label().flow;
             flow = std::min(flow, cap - f);
@@ -427,7 +424,7 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
         cur = sink_flow;
         while (cur != source_flow) {
             int p = parent[cur];
-            int edge_idx = parentEdge[cur];
+            int edge_idx = parent_edge[cur];
             flow_graph.get_node(p).get_edges()[edge_idx].get_label().flow += flow;
             int rev_idx = flow_graph.get_node(p).get_edges()[edge_idx].get_label().rev;
             flow_graph.get_node(cur).get_edges()[rev_idx].get_label().flow -= flow;
@@ -438,7 +435,7 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
     }
     // If we did not get at least two units of flow, then two disjoint paths do not exist.
     if (max_flow < 1)
-        return std::nullopt;
+        return {};
     
     // To extract the two disjoint paths, we “peel off” paths carrying flow.
     // We follow edges with positive flow from source_flow to sink_flow and subtract the used flow.
@@ -452,12 +449,12 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
             }
             used[u] = true;
             for (auto &edge : flow_graph.get_node(u).get_edges()) {
-                auto& e = edge.get_label();
-                if (e.flow > 0 && !used[e.to]) {
-                    if (dfs(e.to)) {
-                        e.flow -= 1; // use up one unit of flow along this edge
+                auto& label = edge.get_label();
+                if (label.flow > 0 && !used[edge.get_to()]) {
+                    if (dfs(edge.get_to())) {
+                        label.flow -= 1; // use up one unit of flow along this edge
                         // Also update the reverse edge
-                        flow_graph.get_node(e.to).get_edges()[e.rev].get_label().flow += 1;
+                        flow_graph.get_node(edge.get_to()).get_edges()[label.rev].get_label().flow += 1;
                         path.push_back(u);
                         return true;
                     }
@@ -492,5 +489,5 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
     for (const auto& flow_path : flow_paths)
         paths.push_back(convert_path(flow_path));
     
-    return std::make_optional(paths);
+    return paths;
 }

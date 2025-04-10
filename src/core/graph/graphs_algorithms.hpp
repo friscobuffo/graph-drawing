@@ -49,7 +49,7 @@ inline int compute_embedding_genus(
 // vectors (each a sequence of vertex indices representing a path).
 template <typename GraphTrait>
 std::vector<std::vector<size_t>> find_disjoint_paths(
-    const GraphTrait& graph, size_t s, size_t t);
+    const GraphTrait& graph, const int source, const int target);
 
 #include "graphs_algorithms.ipp"
 
