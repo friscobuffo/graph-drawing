@@ -515,3 +515,36 @@ std::vector<std::vector<size_t>> find_disjoint_paths(
     
     return paths;
 }
+
+inline bool are_cycles_equivalent(
+    const std::vector<size_t>& cycle1,
+    const std::vector<size_t>& cycle2
+) {
+    if (cycle1.size() != cycle2.size()) return false;
+    int v = cycle1[0];
+    int v_pos_in_cycle2 = -1;
+    for (int i = 0; i < cycle2.size(); ++i) {
+        if (cycle2[i] == v) {
+            v_pos_in_cycle2 = i;
+            break;
+        }
+    }
+    if (v_pos_in_cycle2 == -1) return false;
+    bool are_the_same = true;
+    for (int i = 0; i < cycle1.size(); ++i) {
+        int j = (v_pos_in_cycle2 + i) % cycle2.size();
+        if (cycle1[i] != cycle2[j]) {
+            are_the_same = false;
+            break;
+        }
+    }
+    if (are_the_same) return true;
+    // Check the reverse
+    for (int i = 0; i < cycle1.size(); ++i) {
+        int j = (v_pos_in_cycle2 - i + cycle2.size()) % cycle2.size();
+        if (cycle1[i] != cycle2[j]) {
+            return false;
+        }
+    }
+    return true;
+}

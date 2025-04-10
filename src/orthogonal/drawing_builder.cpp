@@ -354,3 +354,74 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
     }
     drawer.saveToFile("graph.svg");
 }
+
+int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph) {
+    int min_x = graph.size();
+    int min_y = graph.size();
+    int max_x = 0;
+    int max_y = 0;
+    for (size_t i = 0; i < graph.size(); ++i) {
+        min_x = std::min(min_x, positions.get_position_x(i));
+        min_y = std::min(min_y, positions.get_position_y(i));
+        max_x = std::max(max_x, positions.get_position_x(i));
+        max_y = std::max(max_y, positions.get_position_y(i));
+    }
+    return (max_x - min_x) * (max_y - min_y);
+}
+
+bool do_edges_cross(
+    const NodesPositions& positions,
+    size_t i, size_t j,
+    size_t k, size_t l
+) {
+    int i_pos_x = positions.get_position_x(i);
+    int i_pos_y = positions.get_position_y(i);
+    int j_pos_x = positions.get_position_x(j);
+    int j_pos_y = positions.get_position_y(j);
+    int k_pos_x = positions.get_position_x(k);
+    int k_pos_y = positions.get_position_y(k);
+    int l_pos_x = positions.get_position_x(l);
+    int l_pos_y = positions.get_position_y(l);
+
+    bool is_i_j_horizontal = i_pos_y == j_pos_y;
+    bool is_k_l_horizontal = k_pos_y == l_pos_y;
+
+    if (is_i_j_horizontal && is_k_l_horizontal) {
+        return (i_pos_y == k_pos_y) && ((i_pos_x <= k_pos_x && j_pos_x >= k_pos_x) ||
+                                        (i_pos_x <= l_pos_x && j_pos_x >= l_pos_x) ||
+                                        (j_pos_x <= k_pos_x && i_pos_x >= k_pos_x) ||
+                                        (j_pos_x <= l_pos_x && i_pos_x >= l_pos_x));
+    }
+    if (!is_i_j_horizontal && !is_k_l_horizontal) {
+        return (i_pos_x == k_pos_x) && ((i_pos_y <= k_pos_y && j_pos_y >= k_pos_y) ||
+                                        (i_pos_y <= l_pos_y && j_pos_y >= l_pos_y) ||
+                                        (j_pos_y <= k_pos_y && i_pos_y >= k_pos_y) ||
+                                        (j_pos_y <= l_pos_y && i_pos_y >= l_pos_y));
+    }
+    if (!is_i_j_horizontal)
+        return do_edges_cross(positions, k, l, i, j);
+    if (k_pos_x < std::min(i_pos_x, j_pos_x) || k_pos_x > std::max(i_pos_x, j_pos_x))
+        return false;
+    if (i_pos_y < std::min(k_pos_y, l_pos_y) || i_pos_y > std::max(k_pos_y, l_pos_y))
+        return false;
+    return true;
+}
+
+int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph) {
+    int total_crossings = 0;
+    // for each pair of edges, check if they cross
+    for (size_t i = 0; i < graph.size(); ++i) {
+        for (auto& edge1 : graph.get_node(i).get_edges()) {
+            size_t j = edge1.get_to();
+            for (size_t k = i+1; k < graph.size(); ++k) {
+                for (auto& edge2 : graph.get_node(k).get_edges()) {
+                    size_t l = edge2.get_to();
+                    if (j == l || i == l || j == k) continue;
+                    if (do_edges_cross(positions, i, j, k, l))
+                        total_crossings++;
+                }
+            }
+        }
+    }
+    return total_crossings/4;
+}

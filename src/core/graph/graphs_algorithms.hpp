@@ -54,6 +54,11 @@ template <typename GraphTrait>
 std::vector<std::vector<size_t>> find_disjoint_paths(
     const GraphTrait& graph, const int source, const int target);
 
+inline bool are_cycles_equivalent(
+    const std::vector<size_t>& cycle1,
+    const std::vector<size_t>& cycle2
+);
+
 #include "graphs_algorithms.ipp"
 
 #endif

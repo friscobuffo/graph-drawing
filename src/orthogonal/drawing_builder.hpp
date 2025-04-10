@@ -4,6 +4,7 @@
 #include <cassert>
 #include <vector>
 #include <unordered_set>
+#include <unordered_map>
 #include <memory>
 #include <tuple>
 
@@ -24,6 +25,10 @@ public:
     int get_position_x(size_t node) const;
     int get_position_y(size_t node) const;
 };
+
+int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph);
+
+int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
 enum class BuildingResultType {
     OK,
@@ -82,6 +87,10 @@ DrawingResult make_rectilinear_drawing_incremental(
     std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
     std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
     std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
+    std::cout << "Total area: "
+              << compute_total_area(*positions, *colored_graph) << "\n";
+    std::cout << "Number of total crossings: "
+              << compute_total_crossings(*positions, *colored_graph) << "\n";
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
         std::unique_ptr<const Shape>(shape),
@@ -125,7 +134,27 @@ auto make_rectilinear_drawing_incremental_pairs(const T& graph) {
 template <GraphTrait T>
 auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph) {
     auto cycles = compute_cycles_disjoint_paths(graph);
-    return make_rectilinear_drawing_incremental(graph, cycles);
+    std::unordered_map<int, std::vector<std::vector<size_t>>> cycles_map;
+    for (auto& cycle : cycles) {
+        int sum = 0;
+        for (auto& node : cycle) sum += node;
+        if (cycles_map.find(sum) == cycles_map.end())
+            cycles_map[sum] = std::vector<std::vector<size_t>>{};
+        cycles_map[sum].push_back(cycle);
+    }
+    // lets find duplicates
+    std::vector<std::vector<size_t>> cycles_filtered;
+    for (auto& [key, cycles_same_sum] : cycles_map) {
+        for (int i = 0; i < cycles_same_sum.size(); i++)
+            for (int j = i + 1; j < cycles_same_sum.size(); j++)
+                if (are_cycles_equivalent(cycles_same_sum[i], cycles_same_sum[j])) {
+                    cycles_same_sum.erase(cycles_same_sum.begin() + j);
+                    j--;
+                }
+        for (auto& cycle : cycles_same_sum)
+            cycles_filtered.push_back(cycle);
+    }
+    return make_rectilinear_drawing_incremental(graph, cycles_filtered);
 }
 
 template <GraphTrait T>
