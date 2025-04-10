@@ -40,6 +40,9 @@ std::vector<std::vector<size_t>> compute_smallest_cycle_between_pair_nodes(const
 template <GraphTrait T>
 std::vector<std::vector<size_t>> compute_all_faces_of_embedding(const T& embedding);
 
+template <GraphTrait G>
+std::vector<std::vector<size_t>> compute_cycles_disjoint_paths(const G& graph);
+
 inline int compute_embedding_genus(
     int number_of_nodes, int number_of_edges, int number_of_faces, int connected_components
 );

@@ -40,8 +40,14 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
 
 void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
+struct DrawingResult {
+    std::unique_ptr<const ColoredNodesGraph> augmented_graph;
+    std::unique_ptr<const Shape> shape;
+    std::unique_ptr<const NodesPositions> positions;
+};
+
 template <GraphTrait T>
-std::tuple<std::unique_ptr<const ColoredNodesGraph>, std::unique_ptr<const Shape>> make_rectilinear_drawing_incremental(
+DrawingResult make_rectilinear_drawing_incremental(
     const T& graph, std::vector<std::vector<size_t>>& cycles
 ) {
     ColoredNodesGraph* colored_graph = new ColoredNodesGraph{};
@@ -71,14 +77,15 @@ std::tuple<std::unique_ptr<const ColoredNodesGraph>, std::unique_ptr<const Shape
         result = build_nodes_positions(*shape, *colored_graph);
     }
     node_positions_to_svg(*result->positions, *colored_graph);
-    delete result->positions;
+    const NodesPositions* positions = result->positions;
     delete result;
     std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
     std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
     std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
-        std::unique_ptr<const Shape>(shape)
+        std::unique_ptr<const Shape>(shape),
+        std::unique_ptr<const NodesPositions>(positions)
     };
 }
 
@@ -115,6 +122,11 @@ auto make_rectilinear_drawing_incremental_pairs(const T& graph) {
     return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
+template <GraphTrait T>
+auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph) {
+    auto cycles = compute_cycles_disjoint_paths(graph);
+    return make_rectilinear_drawing_incremental(graph, cycles);
+}
 
 template <GraphTrait T>
 void make_rectilinear_drawing_all_cycles(const T& graph) {
