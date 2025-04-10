@@ -19,6 +19,6 @@ size_t compute_common_ancestor(const T& tree, size_t node1, size_t node2);
 template <TreeTrait T>
 bool is_edge_in_tree(const T& tree, size_t node1, size_t node2);
 
-#include "algorithms.ipp"
+#include "tree_algorithms.ipp"
 
 #endif

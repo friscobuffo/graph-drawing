@@ -1,43 +1,43 @@
 #include <chrono>
+#include <functional>
+#include <iostream>
 
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
 #include "orthogonal/drawing_builder.hpp"
 #include "core/graph/generators.hpp"
+#include "orthogonal/orthogonal_algorithms.hpp"
+#include "core/graph/graphs_algorithms.hpp"
 
-#include "core/graph/algorithms.hpp"
+template <GraphTrait G, typename Func>
+void time_function(Func& func, const G& graph, const std::string& func_name) {
+    std::cout << "start: " << func_name << "\n";
+    auto start = std::chrono::high_resolution_clock::now();
+    auto result = func(graph);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    std::cout << "time: " << elapsed.count() << " seconds\n";
+}
 
 int main() {
-    // SimpleGraph* graph = generate_connected_random_graph_degree_max_4(45, 60);
-    SimpleGraph* graph = generate_connected_random_graph_degree_max_4(70, 110);
-    // SimpleGraph* graph = loadSimpleUndirectedGraphFromFile("example-graphs/g8.txt");
-    // SimpleGraph *graph = generate_grid_graph(15, 10);
-    // SimpleGraph *graph = generate_triangle_graph(2);
+    // auto graph = generate_connected_random_graph_degree_max_4(45, 60);
+    // auto graph = generate_connected_random_graph_degree_max_4(55, 80);
+    // auto graph = generate_connected_random_graph_degree_max_4(70, 110);
+    // auto graph = generate_connected_random_graph_degree_max_4(150, 220);
+    auto graph = load_simple_undirected_graph_from_file(
+        "example-graphs/random_graph_augmented.txt"
+    );
+    
+    time_function(
+        make_rectilinear_drawing_incremental_basis<SimpleGraph>,
+        *graph,
+        "incremental from basis"
+    );
+    time_function(
+        make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>,
+        *graph,
+        "incremental from disjoint paths"
+    );
 
-    auto start_inc = std::chrono::high_resolution_clock::now();
-    make_rectilinear_drawing_incremental_basis(*graph);
-    auto end_inc = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_inc = end_inc - start_inc;
-    std::cout << "make_rectilinear_drawing_incremental_basis\ntime: " << elapsed_inc.count() << " seconds\n";
-
-    // auto start_inc_trips = std::chrono::high_resolution_clock::now();
-    // make_rectilinear_drawing_incremental_triplets(*graph);
-    // auto end_inc_trips = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed_inc_trips = end_inc_trips - start_inc_trips;
-    // std::cout << "make_rectilinear_drawing_incremental_triplets\ntime: " << elapsed_inc_trips.count() << " seconds\n";
-
-    // auto start_inc_no_cycles = std::chrono::high_resolution_clock::now();
-    // make_rectilinear_drawing_incremental_no_cycles(*graph);
-    // auto end_inc_no_cycles = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed_inc_no_cycles = end_inc_no_cycles - start_inc_no_cycles;
-    // std::cout << "make_rectilinear_drawing_incremental_no_cycles\ntime: " << elapsed_inc_no_cycles.count() << " seconds\n";
-
-    // auto start_all = std::chrono::high_resolution_clock::now();
-    // make_rectilinear_drawing_all_cycles(*graph);
-    // auto end_all = std::chrono::high_resolution_clock::now();
-    // std::chrono::duration<double> elapsed_all = end_all - start_all;
-    // std::cout << "make_rectilinear_drawing_all_cycles\ntime: " << elapsed_all.count() << " seconds\n";
-
-    delete graph;
     return 0;
 }

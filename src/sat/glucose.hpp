@@ -20,6 +20,10 @@ struct GlucoseResult {
 
 static_assert(PrintTrait<GlucoseResult>);
 
-const GlucoseResult* launch_glucose();
+const GlucoseResult* launch_glucose(
+    const std::string& conjunctive_normal_form_file,
+    const std::string& output_file,
+    const std::string& proof_file
+);
 
 #endif

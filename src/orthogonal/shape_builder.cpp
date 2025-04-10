@@ -3,12 +3,23 @@
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
 
+#ifdef __linux__
+const std::string CONJUNCTIVE_NORMAL_FORM_FILE = "/dev/shm/.conjunctive_normal_form.cnf";
+const std::string OUTPUT_FILE = "/dev/shm/.output.txt";
+const std::string PROOF_FILE = "/dev/shm/.proof.txt";
+#elif __APPLE__
+const std::string CONJUNCTIVE_NORMAL_FORM_FILE = ".conjunctive_normal_form.cnf";
+const std::string OUTPUT_FILE = ".output.txt";
+const std::string PROOF_FILE = ".proof.txt";
+#endif
+
 struct VariablesHandler {
     std::vector<std::vector<int>> is_edge_up_variable;
     std::vector<std::vector<int>> is_edge_down_variable;
     std::vector<std::vector<int>> is_edge_right_variable;
     std::vector<std::vector<int>> is_edge_left_variable;
     std::vector<std::pair<int, int>> variable_to_edge;
+    std::vector<Direction> variable_to_direction;
 };
 
 const VariablesHandler initialize_variables(const ColoredNodesGraph& graph) {
@@ -17,25 +28,30 @@ const VariablesHandler initialize_variables(const ColoredNodesGraph& graph) {
         std::vector<std::vector<int>>(graph.size(), std::vector<int>(graph.size(), -1)),
         std::vector<std::vector<int>>(graph.size(), std::vector<int>(graph.size(), -1)),
         std::vector<std::vector<int>>(graph.size(), std::vector<int>(graph.size(), -1)),
-        std::vector<std::pair<int, int>>()
+        std::vector<std::pair<int, int>>(),
+        std::vector<Direction>()
     };
     int next_var = 1;
     handler.variable_to_edge.push_back(std::make_pair(-1, -1));
     for (int i = 0; i < graph.size(); i++) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             handler.is_edge_up_variable[i][j] = next_var;
+            handler.variable_to_edge.push_back(std::make_pair(i, j));
+            handler.variable_to_direction.push_back(Direction::UP);
             next_var++;
             handler.is_edge_down_variable[i][j] = next_var;
+            handler.variable_to_edge.push_back(std::make_pair(i, j));
+            handler.variable_to_direction.push_back(Direction::DOWN);
             next_var++;
             handler.is_edge_left_variable[i][j] = next_var;
+            handler.variable_to_edge.push_back(std::make_pair(i, j));
+            handler.variable_to_direction.push_back(Direction::LEFT);
             next_var++;
             handler.is_edge_right_variable[i][j] = next_var;
+            handler.variable_to_edge.push_back(std::make_pair(i, j));
+            handler.variable_to_direction.push_back(Direction::RIGHT);
             next_var++;
-            handler.variable_to_edge.push_back(std::make_pair(i, j));
-            handler.variable_to_edge.push_back(std::make_pair(i, j));
-            handler.variable_to_edge.push_back(std::make_pair(i, j));
-            handler.variable_to_edge.push_back(std::make_pair(i, j));
         }
     }
     return handler;
@@ -44,11 +60,11 @@ const VariablesHandler initialize_variables(const ColoredNodesGraph& graph) {
 // each edge can only be in one direction
 void add_constraints_one_direction_per_edge(
     const ColoredNodesGraph& graph,
-    CNFBuilder& cnf_builder,
+    CnfBuilder& cnf_builder,
     const VariablesHandler& handler
 ) {
     for (int i = 0; i < graph.size(); i++)
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             auto up = handler.is_edge_up_variable[i][j];
             auto down = handler.is_edge_down_variable[i][j];
@@ -70,11 +86,11 @@ void add_constraints_one_direction_per_edge(
 // if edge i,j is up, edge j,i is down (etc)
 void add_constraints_opposite_edges(
     const ColoredNodesGraph& graph,
-    CNFBuilder& cnf_builder,
+    CnfBuilder& cnf_builder,
     const VariablesHandler& handler
 ) {
     for (int i = 0; i < graph.size(); i++)
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (i > j) continue;
             int up = handler.is_edge_up_variable[i][j];
@@ -100,11 +116,11 @@ void add_constraints_opposite_edges(
         }
 }
 
-void one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CNFBuilder& cnf_builder,
+void one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CnfBuilder& cnf_builder,
     const std::vector<std::vector<int>>& is_edge_in_direction
 ) {
     for (int i = 0; i < graph.size(); i++) {
-        auto& neighbors = graph.get_nodes()[i].get_edges();
+        auto& neighbors = graph.get_node(i).get_edges();
         if (neighbors.size() == 4) {
             auto direction0 = is_edge_in_direction[i][neighbors[0].get_to()];
             auto direction1 = is_edge_in_direction[i][neighbors[1].get_to()];
@@ -134,20 +150,18 @@ void one_edge_per_direction_clauses(const ColoredNodesGraph& graph, CNFBuilder& 
 template <GraphTrait T>
 void add_nodes_constraints(
     const T& graph,
-    CNFBuilder& cnf_builder,
+    CnfBuilder& cnf_builder,
     const VariablesHandler& handler
 ) {
-    for (int node = 0; node < graph.size(); node++) {
-        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_up_variable);
-        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_down_variable);
-        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_right_variable);
-        one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_left_variable);
-    }
+    one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_up_variable);
+    one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_down_variable);
+    one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_right_variable);
+    one_edge_per_direction_clauses(graph, cnf_builder, handler.is_edge_left_variable);
 }
 
 void add_cycles_constraints(
     const ColoredNodesGraph& graph,
-    CNFBuilder& cnf_builder,
+    CnfBuilder& cnf_builder,
     const std::vector<std::vector<size_t>>& cycles,
     const VariablesHandler& handler
 ) {
@@ -182,7 +196,7 @@ const Shape* result_to_shape(
     }
     auto shape = new Shape();
     for (int i = 0; i < graph.size(); i++) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             int up = handler.is_edge_up_variable[i][j];
             int down = handler.is_edge_down_variable[i][j];
@@ -245,13 +259,23 @@ const Shape* build_shape_or_add_corner(
     std::vector<std::vector<size_t>>& cycles
 ) {
     const VariablesHandler handler = initialize_variables(colored_graph);
-    CNFBuilder cnf_builder;
+    CnfBuilder cnf_builder;
+    cnf_builder.add_comment("constraints one direction per edge");
     add_constraints_one_direction_per_edge(colored_graph, cnf_builder, handler);
+    cnf_builder.add_comment("constraints opposite edges");
     add_constraints_opposite_edges(colored_graph, cnf_builder, handler);
-    add_nodes_constraints(colored_graph, cnf_builder, handler);
+    // for (int i = 0; i < colored_graph.size(); ++i) {
+        cnf_builder.add_comment("constraints nodes");
+        add_nodes_constraints(colored_graph, cnf_builder, handler);
+    // }
+    cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
-    cnf_builder.convert_to_cnf(".conjunctive_normal_form.cnf");
-    std::unique_ptr<const GlucoseResult> results = std::unique_ptr<const GlucoseResult>(launch_glucose());
+    cnf_builder.convert_to_cnf(CONJUNCTIVE_NORMAL_FORM_FILE);
+    auto results = std::unique_ptr<const GlucoseResult>(launch_glucose(
+        CONJUNCTIVE_NORMAL_FORM_FILE,
+        OUTPUT_FILE,
+        PROOF_FILE
+    ));
     if (results->result == GlucoseResultType::UNSAT) {
         size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
         int i = handler.variable_to_edge[variable_edge].first;

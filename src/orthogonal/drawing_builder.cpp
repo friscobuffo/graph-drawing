@@ -1,14 +1,7 @@
 #include "drawing_builder.hpp"
 
-#include <unordered_set>
-#include <vector>
 #include <memory>
-#include <tuple>
 #include <list>
-#include <optional>
-#include <cassert>
-
-#include "../core/graph/algorithms.hpp"
 
 class EquivalenceClasses {
 private:
@@ -124,7 +117,7 @@ const std::tuple<EquivalenceClasses*, EquivalenceClasses*> build_equivalence_cla
     int next_class_y = 0;
     std::vector<std::vector<bool>> is_edge_visited(graph.size(), std::vector<bool>(graph.size(), false));
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (is_edge_visited[i][j]) continue;
             is_edge_visited[i][j] = true;
@@ -177,35 +170,35 @@ auto equivalence_classes_to_ordering(
     const ColoredNodesGraph& graph,
     const Shape& shape
 ) {
-    auto* ordering_x = new LabeledEdgeGraph<std::tuple<size_t,size_t>>();
-    auto* ordering_y = new LabeledEdgeGraph<std::tuple<size_t,size_t>>();
+    auto* ordering_x = new LabeledEdgeGraph<Pair<Int>>();
+    auto* ordering_y = new LabeledEdgeGraph<Pair<Int>>();
     for (int i = 0; i < equivalence_classes_x.number_of_classes(); ++i)
         ordering_x->add_node();
     for (int i = 0; i < equivalence_classes_y.number_of_classes(); ++i)
         ordering_y->add_node();
-    const std::tuple<size_t, size_t>** ordering_x_edge_to_graph_edge =
-        (const std::tuple<size_t, size_t>**)malloc(sizeof(const std::tuple<size_t, size_t>*) * ordering_x->size() * ordering_x->size());
-    const std::tuple<size_t, size_t>** ordering_y_edge_to_graph_edge =
-        (const std::tuple<size_t, size_t>**)malloc(sizeof(const std::tuple<size_t, size_t>*) * ordering_y->size() * ordering_y->size());
+    const Pair<Int>** ordering_x_edge_to_graph_edge =
+        (const Pair<Int>**)malloc(sizeof(const Pair<Int>*) * ordering_x->size() * ordering_x->size());
+    const Pair<Int>** ordering_y_edge_to_graph_edge =
+        (const Pair<Int>**)malloc(sizeof(const Pair<Int>*) * ordering_y->size() * ordering_y->size());
     for (int i = 0; i < graph.size(); ++i) {
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             int j = edge.get_to();
             if (shape.is_horizontal(i, j)) {
                 int node_class_x = equivalence_classes_x.get_class(i);
                 int neighbor_class_x = equivalence_classes_x.get_class(j);
                 if (shape.is_right(i, j)) {
-                    ordering_x->add_edge(node_class_x, neighbor_class_x, std::make_tuple(i, j));
-                    int last_edge_index = ordering_x->get_nodes()[node_class_x].get_edges().size() - 1;
-                    auto& edge = ordering_x->get_nodes()[node_class_x].get_edges()[last_edge_index];
+                    ordering_x->add_edge(node_class_x, neighbor_class_x, Pair<Int>{i, j});
+                    int last_edge_index = ordering_x->get_node(node_class_x).get_degree() - 1;
+                    auto& edge = ordering_x->get_node(node_class_x).get_edge(last_edge_index);
                     ordering_x_edge_to_graph_edge[node_class_x * ordering_x->size() + neighbor_class_x] = &edge.get_label();
                 }
             } else {
                 int node_class_y = equivalence_classes_y.get_class(i);
                 int neighbor_class_y = equivalence_classes_y.get_class(j);
                 if (shape.is_up(i, j)) {
-                    ordering_y->add_edge(node_class_y, neighbor_class_y, std::make_tuple(i, j));
-                    int last_edge_index = ordering_y->get_nodes()[node_class_y].get_edges().size() - 1;
-                    auto& edge = ordering_y->get_nodes()[node_class_y].get_edges()[last_edge_index];
+                    ordering_y->add_edge(node_class_y, neighbor_class_y, Pair<Int>{i, j});
+                    int last_edge_index = ordering_y->get_node(node_class_y).get_degree() - 1;
+                    auto& edge = ordering_y->get_node(node_class_y).get_edge(last_edge_index);
                     ordering_y_edge_to_graph_edge[node_class_y * ordering_y->size() + neighbor_class_y] = &edge.get_label();
                 }
             }
@@ -260,19 +253,19 @@ std::vector<size_t> path_in_class(size_t from, size_t to, const std::vector<size
 
 std::vector<size_t> build_cycle_in_graph_from_cycle_in_ordering(
     const std::vector<size_t>& cycle_in_ordering,
-    const LabeledEdgeGraph<std::tuple<size_t, size_t>>& ordering,
+    const LabeledEdgeGraph<Pair<Int>>& ordering,
     const EquivalenceClasses& equivalence_classes,
-    const std::tuple<size_t, size_t>** ordering_edge_to_graph_edge
+    const Pair<Int>** ordering_edge_to_graph_edge
 ) {
     std::vector<size_t> cycle;
     for (int i = 0; i < cycle_in_ordering.size(); ++i) {
         size_t class_id = cycle_in_ordering[i];
         size_t next_class_id = cycle_in_ordering[(i+1)%cycle_in_ordering.size()];
-        size_t from = get<0>(*ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id]);
-        size_t to = get<1>(*ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id]);
+        int from = (ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id])->first.value;
+        int to = (ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id])->second.value;
         cycle.push_back(from);
         size_t next_next_class_id = cycle_in_ordering[(i+2)%cycle_in_ordering.size()];
-        size_t next_from = get<0>(*ordering_edge_to_graph_edge[next_class_id * ordering.size() + next_next_class_id]);
+        size_t next_from = (ordering_edge_to_graph_edge[next_class_id * ordering.size() + next_next_class_id])->first.value;
         if (to != next_from) {
             auto path = path_in_class(to, next_from, equivalence_classes.get_elems(next_class_id));
             for (int i = 0; i < path.size()-1; ++i)
@@ -287,23 +280,31 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
     auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
     auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
     auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
-    auto ordering_x = std::unique_ptr<LabeledEdgeGraph<std::tuple<size_t, size_t>>>(std::get<0>(ordering));
-    auto ordering_y = std::unique_ptr<LabeledEdgeGraph<std::tuple<size_t, size_t>>>(std::get<1>(ordering));
+    auto ordering_x = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<0>(ordering));
+    auto ordering_y = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<1>(ordering));
     auto ordering_x_edge_to_graph_edge = std::get<2>(ordering);
     auto ordering_y_edge_to_graph_edge = std::get<3>(ordering);
     auto cycle_x = find_a_cycle_directed_graph(*ordering_x);
-    if (cycle_x.has_value()) {
-        auto cycle = build_cycle_in_graph_from_cycle_in_ordering(cycle_x.value(), *ordering_x, *classes_x, ordering_x_edge_to_graph_edge);
-        free(ordering_x_edge_to_graph_edge);
-        free(ordering_y_edge_to_graph_edge);
-        return new BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
-    }
     auto cycle_y = find_a_cycle_directed_graph(*ordering_y);
-    if (cycle_y.has_value()) {
-        auto cycle = build_cycle_in_graph_from_cycle_in_ordering(cycle_y.value(), *ordering_y, *classes_y, ordering_y_edge_to_graph_edge);
+    // std::vector<size_t> cycle_y_in_original_graph;
+
+    if (cycle_x.has_value() || cycle_y.has_value()) {
+        std::vector<std::vector<size_t>> cycles_to_be_added;
+        if (cycle_x.has_value()) {
+            auto cycle_x_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
+                cycle_x.value(), *ordering_x, *classes_x, ordering_x_edge_to_graph_edge
+            );
+            cycles_to_be_added.push_back(cycle_x_in_original_graph);
+        }
+        if (cycle_y.has_value()) {
+            auto cycle_y_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
+                cycle_y.value(), *ordering_y, *classes_y, ordering_y_edge_to_graph_edge
+            );
+            cycles_to_be_added.push_back(cycle_y_in_original_graph);
+        }
         free(ordering_x_edge_to_graph_edge);
         free(ordering_y_edge_to_graph_edge);
-        return new BuildingResult{nullptr, cycle, BuildingResultType::CYCLE_TO_BE_ADDED};
+        return new BuildingResult{nullptr, cycles_to_be_added, BuildingResultType::CYCLES_TO_BE_ADDED};
     }
     auto classes_x_ordering = make_topological_ordering(*ordering_x);
     auto classes_y_ordering = make_topological_ordering(*ordering_y);
@@ -342,13 +343,13 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
         points.push_back(Point2D{x, y});
     }
     for (size_t i = 0; i < graph.size(); ++i)
-        for (auto& edge : graph.get_nodes()[i].get_edges()) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
             size_t j = edge.get_to();
             Line2D line{points[i], points[j]};
             drawer.add(line);
         }
     for (size_t i = 0; i < graph.size(); ++i) {
-        Color color = graph.get_nodes()[i].get_color();
+        Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
     drawer.saveToFile("graph.svg");

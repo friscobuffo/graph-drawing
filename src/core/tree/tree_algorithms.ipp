@@ -1,8 +1,7 @@
-#include "tree.hpp"
-#include "../graph/graph.hpp"
-
 #include <list>
 #include <cassert>
+
+#include "tree_algorithms.hpp"
 
 template <GraphTrait T>
 SimpleTree* build_simple_spanning_tree(const T& graph) {
