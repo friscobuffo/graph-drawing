@@ -7,7 +7,7 @@
 #include "core/graph/generators.hpp"
 #include "orthogonal/orthogonal_algorithms.hpp"
 #include "core/graph/graphs_algorithms.hpp"
-#include "globals/globals.h"
+#include "globals/globals.hpp"
 
 #include "../baseline-ogdf/drawer.h"
 
@@ -57,14 +57,11 @@ SimpleGraph *read_gml(const std::string &filename)
         {
             iss >> target;
         }
-        else if (token == "]")
-        {
-            if (in_node_block)
-            {
+        else if (token == "]") {
+            if (in_node_block) {
                 in_node_block = false;
             }
-            else if (in_edge_block)
-            {
+            else if (in_edge_block) {
                 if (source != -1 && target != -1)
                 {
                     if (graph->get_nodes()[source].get_edges().size() < 4 && graph->get_nodes()[target].get_edges().size() < 4)
@@ -91,8 +88,9 @@ SimpleGraph *read_gml(const std::string &filename)
 }
 
 template <typename Func, typename Arg>
-std::tuple<int, int, int, int> time_function(Func &&func, Arg &&arg, const std::string &func_name)
-{
+std::tuple<int, int, int, int> time_function(
+    Func &&func, Arg &&arg, const std::string &func_name
+) {
     std::cout << "start: " << func_name << "\n";
     auto start = std::chrono::high_resolution_clock::now();
     auto result = std::invoke(std::forward<Func>(func), std::forward<Arg>(arg));
@@ -104,25 +102,20 @@ std::tuple<int, int, int, int> time_function(Func &&func, Arg &&arg, const std::
 
 void save_stats(const std::string metric, const auto value_shape_metrics, const auto value_ogdf)
 {
-    std::string filename = std::format("{}{}{}.txt", stats_path, metric, iteration);
-    std::ofstream outFile(filename, std::ios::app);
-    if (outFile.is_open())
-    {
-        outFile << value_shape_metrics << "," << value_ogdf << std::endl;
-        outFile.close();
+    std::string filename = std::format("{}{}.txt", stats_path, metric);
+    std::ofstream out_file(filename, std::ios::app);
+    if (out_file.is_open()) {
+        out_file << value_shape_metrics << "," << value_ogdf << std::endl;
+        out_file.close();
     }
-    else
-    {
+    else {
         std::cerr << "Error: Could not open for writing!" << std::endl;
     }
 }
 
-void save_drawing_to_file(const std::string input_folder)
-{
-    for (const auto &entry : fs::directory_iterator(input_folder))
-    {
-        if (entry.path().extension() == ".gml")
-        {
+void save_drawing_to_file(const std::string input_folder) {
+    for (const auto &entry : fs::directory_iterator(input_folder)) {
+        if (entry.path().extension() == ".gml") {
 
             std::string input_file = entry.path().string();
             graph_file = entry.path().stem().string();
@@ -145,8 +138,7 @@ void save_drawing_to_file(const std::string input_folder)
     }
 }
 
-int main()
-{
+int main() {
     std::string input_folder = "test-graphs/input/generated_gml/";
     save_drawing_to_file(input_folder);
     return 0;

@@ -1,7 +1,6 @@
 #include "drawing_builder.hpp"
-#include "../globals/globals.h"
+#include "../globals/globals.hpp"
 
-#include <memory>
 #include <list>
 #include <format>
 
@@ -354,7 +353,7 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
-    std::string filename = std::format("{}{}{}.svg", output_graph_path, graph_file, iteration);
+    std::string filename = std::format("{}{}.svg", output_graph_path, graph_file);
     drawer.saveToFile(filename);
 }
 

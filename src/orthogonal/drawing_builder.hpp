@@ -5,7 +5,6 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
-#include <format>
 #include <memory>
 #include <tuple>
 
@@ -15,7 +14,6 @@
 #include "../core/graph/graphs_algorithms.hpp"
 #include "../drawing/svg_drawer.hpp"
 #include "../drawing/linear_scale.hpp"
-#include "../globals/globals.h"
 #include "shape_builder.hpp"
 
 class NodesPositions {

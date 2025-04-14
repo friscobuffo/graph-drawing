@@ -16,7 +16,6 @@ SRCS =  src/stats.cpp \
 		src/drawing/polygon.cpp \
 		src/drawing/svg_drawer.cpp \
 		src/orthogonal/drawing_builder.cpp \
-		src/globals/globals.cpp \
         baseline-ogdf/drawer.cpp
 
 # Object files
