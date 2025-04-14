@@ -4,7 +4,7 @@
 #include <string>
 
 const std::string output_graph_path = "test-graphs/output/shape-metrics/";
-const std::string graph_file = "graph";
+extern std::string graph_file;
 const std::string stats_path = "test-graphs/output/stats/";
 const std::string crossings_file = "crossings";
 const std::string bends_file = "bends";

@@ -35,11 +35,11 @@ int compute_area(const GraphAttributes &GA, const Graph &G)
     }
     int x = 0;
     int y = 0;
-    for (int i = 0; i < x_coords.size(); i++)
+    for (int i = 0; i < x_coords.size() - 1; i++)
     {
         x++;
     }
-    for (int i = 0; i < y_coords.size(); i++)
+    for (int i = 0; i < y_coords.size() - 1; i++)
     {
         y++;
     }

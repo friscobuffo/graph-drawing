@@ -8,8 +8,7 @@
 #include "orthogonal/orthogonal_algorithms.hpp"
 #include "core/graph/graphs_algorithms.hpp"
 #include "globals/globals.hpp"
-
-#include "../baseline-ogdf/drawer.h"
+#include "../baseline-ogdf/drawer.hpp"
 
 namespace fs = std::filesystem;
 using namespace std;
@@ -32,7 +31,6 @@ SimpleGraph *read_gml(const std::string &filename)
         std::istringstream iss(line);
         std::string token;
         iss >> token;
-        // std::cout << token << std::endl;
 
         if (token == "node")
         {
@@ -88,7 +86,7 @@ SimpleGraph *read_gml(const std::string &filename)
 }
 
 template <typename Func, typename Arg>
-std::tuple<int, int, int, int> time_function(
+std::tuple<int, int, int, double> time_function(
     Func &&func, Arg &&arg, const std::string &func_name
 ) {
     std::cout << "start: " << func_name << "\n";
@@ -123,10 +121,10 @@ void save_drawing_to_file(const std::string input_folder) {
             // SHAPE-METRICS
             auto graph = read_gml(input_file);
             auto result_shape_metrics = time_function(make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>,
-                                                      *graph,
+                                                   *graph,
                                                       "incremental from disjoint paths");
 
-            // OGDF
+            // OGDF 
             auto result_ogdf = time_function(create_drawing, input_file, "create drawing");
 
             save_stats(crossings_file, get<0>(result_shape_metrics), get<0>(result_ogdf));
