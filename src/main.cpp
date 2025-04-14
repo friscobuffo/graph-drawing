@@ -9,11 +9,14 @@
 #include "orthogonal/orthogonal_algorithms.hpp"
 #include "core/graph/graphs_algorithms.hpp"
 
+#include "orthogonal/file_loader.hpp"
+#include <cassert>
+
 template <GraphTrait G, typename Func>
 void time_function(Func& func, const G& graph, const std::string& func_name) {
     std::cout << "start: " << func_name << "\n";
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = func(graph);
+    DrawingResult result = func(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     std::cout << "time: " << elapsed.count() << " seconds\n";
@@ -27,7 +30,6 @@ int main() {
     auto graph = load_simple_undirected_graph_from_file(
         "example-graphs/random_graph_augmented.txt"
     );
-    
     time_function(
         make_rectilinear_drawing_incremental_basis<SimpleGraph>,
         *graph,

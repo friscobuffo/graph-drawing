@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 #include <memory>
+#include <vector>
+#include <stdexcept>
 
 #include "graph.hpp"
 
@@ -19,13 +21,13 @@ std::unique_ptr<SimpleGraph> load_simple_undirected_graph_from_file(std::string 
         SimpleGraph* graph = new SimpleGraph();
         for (int i = 0; i < nodes_number; ++i)
             graph->add_node();
-        int fromIndex, toIndex;
+        int from_index, to_index;
         while (std::getline(infile, line)) {
             if (line.find("//") == 0)
                 continue;
             std::istringstream iss(line);
-            if (iss >> fromIndex >> toIndex)
-                graph->add_undirected_edge(fromIndex, toIndex);
+            if (iss >> from_index >> to_index)
+                graph->add_undirected_edge(from_index, to_index);
         }
         infile.close();
         return std::unique_ptr<SimpleGraph>(graph);
@@ -47,7 +49,41 @@ void save_undirected_graph_to_file(const T& graph, std::string filename) {
         }
         outfile.close();
     } else
-        std::cout << "Unable to open file\n";
+        throw std::runtime_error("Unable to save graph: " + filename);
+}
+
+template <GraphTrait T>
+void save_directed_graph_to_file(const T& graph, std::string filename) {
+    std::ofstream outfile(filename);
+    if (outfile.is_open()) {
+        outfile << graph.size() << std::endl;
+        for (int i = 0; i < graph.size(); i++) {
+            for (const auto& edge : graph.get_node(i).get_edges()) {
+                int j = edge.get_to();
+                outfile << i << " " << j << std::endl;
+            }
+        }
+        outfile.close();
+    } else
+        throw std::runtime_error("Unable to save graph: " + filename);
+}
+
+inline void save_cycles_to_file(
+    const std::vector<std::vector<size_t>>& cycles, const std::string filename
+) {
+    std::ofstream outfile(filename);
+    if (outfile.is_open()) {
+        for (const auto& cycle: cycles) {
+            for (size_t i = 0; i < cycle.size(); ++i) {
+                outfile << cycle[i];
+                if (i != cycle.size() - 1)
+                    outfile << " ";
+            }
+            outfile << std::endl;
+        }
+        outfile.close();
+    } else
+        throw std::runtime_error("Unable to save cycles: " + filename);
 }
 
 #endif

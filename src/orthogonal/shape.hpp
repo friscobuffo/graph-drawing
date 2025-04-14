@@ -25,6 +25,14 @@ inline const std::string direction_to_string(const Direction direction) {
     }
 }
 
+inline Direction string_to_direction(const std::string& direction) {
+    if (direction == "left") return Direction::LEFT;
+    if (direction == "right") return Direction::RIGHT;
+    if (direction == "up") return Direction::UP;
+    if (direction == "down") return Direction::DOWN;
+    throw std::invalid_argument("Invalid direction string: " + direction);
+}
+
 struct pair_hash {
     template <typename T1, typename T2>
     std::size_t operator()(const std::pair<T1, T2>& p) const {
