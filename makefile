@@ -9,7 +9,8 @@ SRCS = src/main.cpp \
 		src/orthogonal/shape_builder.cpp \
 		src/drawing/polygon.cpp \
 		src/drawing/svg_drawer.cpp \
-		src/orthogonal/drawing_builder.cpp
+		src/orthogonal/drawing_builder.cpp \
+		src/globals/globals.cpp 
 
 # Optimization flags
 OPTFLAGS = -O3 -march=native

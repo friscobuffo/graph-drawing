@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <format>
 #include <memory>
 #include <tuple>
 
@@ -14,6 +15,7 @@
 #include "../core/graph/graphs_algorithms.hpp"
 #include "../drawing/svg_drawer.hpp"
 #include "../drawing/linear_scale.hpp"
+#include "../globals/globals.h"
 #include "shape_builder.hpp"
 
 class NodesPositions {
@@ -49,6 +51,9 @@ struct DrawingResult {
     std::unique_ptr<const ColoredNodesGraph> augmented_graph;
     std::unique_ptr<const Shape> shape;
     std::unique_ptr<const NodesPositions> positions;
+    int crossings;
+    int bends;
+    int area;
 };
 
 template <GraphTrait T>
@@ -84,6 +89,7 @@ DrawingResult make_rectilinear_drawing_incremental(
     node_positions_to_svg(*result->positions, *colored_graph);
     const NodesPositions* positions = result->positions;
     delete result;
+
     std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
     std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
     std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
@@ -96,6 +102,14 @@ DrawingResult make_rectilinear_drawing_incremental(
         std::unique_ptr<const Shape>(shape),
         std::unique_ptr<const NodesPositions>(positions)
     };
+
+    return {
+        std::unique_ptr<const ColoredNodesGraph>(colored_graph),
+        std::unique_ptr<const Shape>(shape),
+        std::unique_ptr<const NodesPositions>(positions),
+        compute_total_crossings(*positions, *colored_graph),
+        number_of_added_corners,
+        compute_total_area(*positions, *colored_graph)};
 }
 
 template <GraphTrait T>

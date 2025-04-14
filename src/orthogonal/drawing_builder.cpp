@@ -1,7 +1,9 @@
 #include "drawing_builder.hpp"
+#include "../globals/globals.h"
 
 #include <memory>
 #include <list>
+#include <format>
 
 class EquivalenceClasses {
 private:
@@ -352,7 +354,8 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
-    drawer.saveToFile("graph.svg");
+    std::string filename = std::format("{}{}{}.svg", output_graph_path, graph_file, iteration);
+    drawer.saveToFile(filename);
 }
 
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph) {
