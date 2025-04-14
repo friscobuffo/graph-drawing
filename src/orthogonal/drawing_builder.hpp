@@ -95,11 +95,6 @@ DrawingResult make_rectilinear_drawing_incremental(
               << compute_total_area(*positions, *colored_graph) << "\n";
     std::cout << "Number of total crossings: "
               << compute_total_crossings(*positions, *colored_graph) << "\n";
-    return {
-        std::unique_ptr<const ColoredNodesGraph>(colored_graph),
-        std::unique_ptr<const Shape>(shape),
-        std::unique_ptr<const NodesPositions>(positions)
-    };
 
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),

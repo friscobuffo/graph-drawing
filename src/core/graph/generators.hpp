@@ -9,7 +9,9 @@
 #include "graph.hpp"
 #include "graphs_algorithms.hpp"
 
-SimpleGraph* generate_connected_random_graph_degree_max_4(size_t number_of_nodes, size_t number_of_edges) {
+SimpleGraph* generate_connected_random_graph_degree_max_4(size_t number_of_nodes, size_t number_of_edges, bool random_seed = false) {
+    if (random_seed)
+        std::srand(static_cast<unsigned int>(std::time(nullptr)));
     if (number_of_edges > 2*number_of_nodes)
         throw std::runtime_error("Number of edges is too large");
     SimpleGraph* graph = new SimpleGraph();

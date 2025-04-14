@@ -86,4 +86,24 @@ inline void save_cycles_to_file(
         throw std::runtime_error("Unable to save cycles: " + filename);
 }
 
+inline std::vector<std::vector<size_t>> load_cycles_from_file(std::string filename) {
+    std::ifstream infile(filename);
+    if (infile.is_open()) {
+        std::vector<std::vector<size_t>> cycles;
+        std::string line;
+        while (std::getline(infile, line)) {
+            std::istringstream iss(line);
+            std::vector<size_t> cycle;
+            size_t node;
+            while (iss >> node) {
+                cycle.push_back(node);
+            }
+            cycles.push_back(cycle);
+        }
+        infile.close();
+        return cycles;
+    }
+    throw std::runtime_error("Unable to open file: " + filename);
+}
+
 #endif

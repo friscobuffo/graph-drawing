@@ -313,9 +313,9 @@ template <GraphTrait G>
 std::vector<std::vector<size_t>> compute_cycles_disjoint_paths(const G& graph) {
     std::vector<std::vector<size_t>> cycles;
     for (int i = 0; i < graph.size()-1; i++) {
-        if (graph.get_node(i).get_degree() <= 2) continue;
+        if (graph.get_node(i).get_degree() < 2) continue;
         for (int j = i + 1; j < graph.size(); j++) {
-            if (graph.get_node(j).get_degree() <= 2) continue;
+            if (graph.get_node(j).get_degree() < 2) continue;
             auto paths = find_disjoint_paths(graph, i, j);
             if (paths.size() <= 1) continue;
             for (int p1 = 0; p1 < paths.size()-1; ++p1) {
