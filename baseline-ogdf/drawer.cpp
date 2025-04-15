@@ -25,24 +25,14 @@ int compute_area(const GraphAttributes &GA, const Graph &G)
 {
     std::set<double> x_coords;
     std::set<double> y_coords;
-    for (node v : G.nodes)
-    {
+    for (node v : G.nodes) {
         double x = GA.x(v);
         double y = GA.y(v);
-
         x_coords.insert(x);
         y_coords.insert(y);
     }
-    int x = 0;
-    int y = 0;
-    for (int i = 0; i < x_coords.size() - 1; i++)
-    {
-        x++;
-    }
-    for (int i = 0; i < y_coords.size() - 1; i++)
-    {
-        y++;
-    }
+    int x = x_coords.size() - 1;
+    int y = y_coords.size() - 1;
     int area = x * y;
     return area;
 }
@@ -50,8 +40,7 @@ int compute_area(const GraphAttributes &GA, const Graph &G)
 int count_crossings(const GraphAttributes &GA, const LayoutStatistics &stats)
 {
     int crossings = 0;
-    for (auto &elem : stats.numberOfCrossings(GA))
-    {
+    for (auto &elem : stats.numberOfCrossings(GA)) {
         crossings += elem;
     }
     return crossings / 2;
@@ -60,13 +49,11 @@ int count_crossings(const GraphAttributes &GA, const LayoutStatistics &stats)
 int count_bends(const GraphAttributes &GA, const Graph &G)
 {
     int bends = 0;
-    for (edge e : G.edges)
-    {
+    for (edge e : G.edges)  {
         int bend_size = GA.bends(e).size();
-        while (bend_size > 2)
-        {
-            bends++;
-            bend_size--;
+        if (bend_size > 2) {
+            int i = bend_size - 2;
+            bends += i;
         }
     }
     return bends;
@@ -77,17 +64,18 @@ OGDFResult create_drawing(const std::string input_file)
     Graph G;
     GraphAttributes GA(G,
                        GraphAttributes::nodeGraphics | GraphAttributes::nodeType |
-                           GraphAttributes::edgeGraphics | GraphAttributes::edgeType);
+                           GraphAttributes::edgeGraphics | GraphAttributes::edgeType |
+                           GraphAttributes::nodeLabel | GraphAttributes::nodeStyle |
+                           GraphAttributes::nodeTemplate);
 
-    if (!GraphIO::read(GA, G, input_file, GraphIO::readGML))
-    {
+    if (!GraphIO::read(GA, G, input_file, GraphIO::readGML)) {
         std::cerr << "Could not read " << input_file << std::endl;
     }
 
-    for (node v : G.nodes)
-    {
+    for (node v : G.nodes)   {
         GA.width(v) /= 2;
         GA.height(v) /= 2;
+        GA.label(v) = std::to_string(v->index());
     }
 
     PlanarizationLayout pl;
