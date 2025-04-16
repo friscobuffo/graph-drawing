@@ -27,6 +27,7 @@ int main() {
     // auto graph = generate_connected_random_graph_degree_max_4(55, 80);
     // auto graph = generate_connected_random_graph_degree_max_4(70, 110);
     // auto graph = generate_connected_random_graph_degree_max_4(150, 220);
+    /*
     auto graph = load_simple_undirected_graph_from_file(
         "example-graphs/random_graph_augmented.txt"
     );
@@ -40,6 +41,18 @@ int main() {
         *graph,
         "incremental from disjoint paths"
     );
+    */
+    int test_number = 0;
+    while (true) {
+        std::cout << "\rtest number: " << ++test_number << std::flush;
+        auto graph = generate_connected_random_graph_degree_max_4(12, 16);
+        auto result = make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>(*graph);
+        if (result.number_of_added_cycles > 0) {
+            std::cout << std::endl;
+            graph->print();
+            break;
+        }
+    }
 
     return 0;
 }

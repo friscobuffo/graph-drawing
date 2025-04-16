@@ -52,6 +52,8 @@ struct DrawingResult {
     int crossings;
     int bends;
     int area;
+    int initial_number_of_cycles;
+    int number_of_added_cycles;
 };
 
 template <GraphTrait T>
@@ -87,22 +89,16 @@ DrawingResult make_rectilinear_drawing_incremental(
     node_positions_to_svg(*result->positions, *colored_graph);
     const NodesPositions* positions = result->positions;
     delete result;
-
-    std::cout << "Number of initial cycles: " << cycles.size() - number_of_added_cycles << std::endl;
-    std::cout << "Number of added cycles: " << number_of_added_cycles << std::endl;
-    std::cout << "Number of added corners: " << number_of_added_corners << std::endl;
-    std::cout << "Total area: "
-              << compute_total_area(*positions, *colored_graph) << "\n";
-    std::cout << "Number of total crossings: "
-              << compute_total_crossings(*positions, *colored_graph) << "\n";
-
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
         std::unique_ptr<const Shape>(shape),
         std::unique_ptr<const NodesPositions>(positions),
         compute_total_crossings(*positions, *colored_graph),
         number_of_added_corners,
-        compute_total_area(*positions, *colored_graph)};
+        compute_total_area(*positions, *colored_graph),
+        (int)cycles.size() - number_of_added_cycles,
+        number_of_added_cycles
+    };
 }
 
 template <GraphTrait T>
