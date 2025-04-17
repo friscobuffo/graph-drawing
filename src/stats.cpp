@@ -116,10 +116,10 @@ std::tuple<int, int, int, double> test_shape_metrics_approach(
 }
 
 std::tuple<int, int, int, double> test_ogdf_approach(
-    const std::string& input_graph_file, const std::string& svg_filename
+    const std::string& input_graph_file, const std::string& svg_output_filename, const std::string& gml_output_filename
 ) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = create_drawing(input_graph_file);
+    auto result = create_drawing(input_graph_file, svg_output_filename, gml_output_filename);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
@@ -142,12 +142,14 @@ void save_stats(
 
 void compare_approaches(std::unordered_map<std::string, std::string>& config) {
     std::string test_results_folder = config["tests_results_folder"];
+    std::filesystem::create_directories(test_results_folder);
+    for (const auto& entry : std::filesystem::directory_iterator(test_results_folder))
+        std::filesystem::remove_all(entry.path());
     for (const auto &entry : std::filesystem::directory_iterator(config["test_input_folder"])) {
         if (entry.path().extension() == ".gml") {
             const std::string input_file = entry.path().string();
             const std::string graph_filename = entry.path().stem().string();
             auto graph = read_gml(input_file);
-
 
             // SHAPE-METRICS
             std::string svg_filename_shape_metrics = std::format("{}{}-shape-metrics.svg", test_results_folder, graph_filename);
@@ -158,11 +160,16 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
 
             // OGDF
             std::string svg_filename_ogdf = std::format("{}{}-ogdf.svg", test_results_folder, graph_filename);
-            auto result_ogdf = test_ogdf_approach(input_file, svg_filename_ogdf);
+            std::string gml_filename_ogdf = std::format("{}{}-ogdf.gml", test_results_folder, graph_filename);
 
-            save_stats(test_results_folder, "crossings", get<0>(result_shape_metrics), get<0>(result_ogdf));
-            save_stats(test_results_folder, "bends", get<1>(result_shape_metrics), get<1>(result_ogdf));
-            save_stats(test_results_folder, "running_time", get<3>(result_shape_metrics), get<3>(result_ogdf));
+            auto result_ogdf = test_ogdf_approach(input_file, svg_filename_ogdf, gml_filename_ogdf);
+
+            std::string crossings_filename = std::format("{}-crossings.txt", graph_filename);
+            std::string bends_filename = std::format("{}-bends.txt", graph_filename);
+            std::string running_time_filename = std::format("{}-running-time.txt", graph_filename);
+            save_stats(test_results_folder, crossings_filename, get<0>(result_shape_metrics), get<0>(result_ogdf));
+            save_stats(test_results_folder, bends_filename, get<1>(result_shape_metrics), get<1>(result_ogdf));
+            save_stats(test_results_folder, running_time_filename, get<3>(result_shape_metrics), get<3>(result_ogdf));
 
             std::cout << "Done with file: " << input_file << std::endl;
         }

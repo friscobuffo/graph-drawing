@@ -8,6 +8,10 @@ struct OGDFResult
     int area;
 };
 
-OGDFResult create_drawing(const std::string inputFile);
+OGDFResult create_drawing(
+    const std::string input_file,
+    const std::string& svg_output_filename,
+    const std::string& gml_output_filename
+);
 
 #endif

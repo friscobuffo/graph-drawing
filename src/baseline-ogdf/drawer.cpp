@@ -155,7 +155,11 @@ int count_bends(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     return bends;
 }
 
-OGDFResult create_drawing(const std::string input_file) {
+OGDFResult create_drawing(
+    const std::string input_file,
+    const std::string& svg_output_filename,
+    const std::string& gml_output_filename
+) {
     ogdf::Graph G;
     ogdf::GraphAttributes GA(G,
                              ogdf::GraphAttributes::nodeGraphics | ogdf::GraphAttributes::nodeType |
@@ -195,13 +199,8 @@ OGDFResult create_drawing(const std::string input_file) {
 
     pl.call(GA);
     ogdf::LayoutStatistics stats;
-
-    std::string output_file = input_file.substr(input_file.find_last_of("/\\") + 1);
-    output_file = output_file.substr(0, output_file.find_last_of('.'));
-    std::string output_file_gml = std::format("test-graphs/output/ogdf/{}.gml", output_file);
-    std::string output_file_svg = std::format("test-graphs/output/ogdf/{}.svg", output_file);
-    ogdf::GraphIO::write(GA, output_file_gml, ogdf::GraphIO::writeGML);
-    ogdf::GraphIO::write(GA, output_file_svg, ogdf::GraphIO::drawSVG);
+    ogdf::GraphIO::write(GA, gml_output_filename, ogdf::GraphIO::writeGML);
+    ogdf::GraphIO::write(GA, svg_output_filename, ogdf::GraphIO::drawSVG);
 
     return {
         count_crossings(GA, stats),

@@ -5,4 +5,6 @@ graph.svg
 main
 glucose
 /OGDF
+stats
 *.svg
+/test-results
