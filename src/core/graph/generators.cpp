@@ -44,6 +44,37 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t
     return std::unique_ptr<SimpleGraph>(graph);
 }
 
+std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_uniform(
+    size_t number_of_nodes, size_t number_of_edges
+) {
+    if (number_of_edges > 2*number_of_nodes)
+        throw std::runtime_error("Number of edges is too large");
+    SimpleGraph* graph = new SimpleGraph();
+    for (int i = 0; i < number_of_nodes; ++i)
+        graph->add_node();
+    std::vector<std::vector<bool>> added_edge(number_of_nodes, std::vector<bool>(number_of_nodes, false));
+    size_t added_edges = 0;
+    while (added_edges < number_of_edges) {
+        size_t i = rand() % number_of_nodes;
+        size_t j = rand() % number_of_nodes;
+        if (i == j || added_edge[i][j])
+            continue;
+        if (graph->get_nodes()[i].get_edges().size() >= 4)
+            continue;
+        if (graph->get_nodes()[j].get_edges().size() >= 4)
+            continue;
+        graph->add_undirected_edge(i, j);
+        added_edge[i][j] = true;
+        added_edge[j][i] = true;
+        ++added_edges;
+    }
+    if (!is_connected(*graph)) {
+        delete graph;
+        return generate_connected_random_graph_degree_max_4(number_of_nodes, number_of_edges);
+    }
+    return std::unique_ptr<SimpleGraph>(graph);
+}
+
 // n*m grid, n, m > 1
 std::unique_ptr<SimpleGraph> generate_grid_graph(size_t n, size_t m) {
     int num_nodes = 2 * n + 2 * m - 4;

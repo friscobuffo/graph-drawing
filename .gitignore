@@ -8,3 +8,5 @@ glucose
 stats
 *.svg
 /test-results
+gen
+/generated-graphs

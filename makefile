@@ -13,21 +13,28 @@ COMMON_SRCS = src/sat/glucose.cpp \
               src/drawing/polygon.cpp \
               src/drawing/svg_drawer.cpp \
               src/orthogonal/drawing_builder.cpp \
-              src/config/config.cpp
+              src/config/config.cpp \
+			  src/core/graph/generators.cpp
 
 # Program-specific sources
-MAIN_SRCS = src/main.cpp src/core/graph/generators.cpp
+MAIN_SRCS = src/main.cpp
 STATS_SRCS = src/stats.cpp src/baseline-ogdf/drawer.cpp
+GEN_SRCS = src/gen.cpp
 
 # Object files (all in obj/)
 MAIN_OBJS = $(MAIN_SRCS:%.cpp=obj/%.o) $(COMMON_SRCS:%.cpp=obj/%.o)
 STATS_OBJS = $(STATS_SRCS:%.cpp=obj/%.o) $(COMMON_SRCS:%.cpp=obj/%.o)
+GEN_OBJS = $(GEN_SRCS:%.cpp=obj/%.o) $(COMMON_SRCS:%.cpp=obj/%.o)
 
 # Default: build both
-all: main stats
+all: main stats gen
 
 # Main program (no OGDF)
 main: $(MAIN_OBJS)
+	$(COMPILER) $(CXXFLAGS) $^ -o $@
+
+# Gen program (no OGDF)
+gen: $(GEN_OBJS)
 	$(COMPILER) $(CXXFLAGS) $^ -o $@
 
 # Stats program (with OGDF)
