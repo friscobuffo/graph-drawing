@@ -22,8 +22,6 @@
 #include <format>
 #include <set>
 
-namespace fs = std::filesystem;
-
 void set_horizontal_direction(Shape *shape, int id_source, int x_source, int id_target, int x_target) {
     if (x_source < x_target) {
         shape->set_direction(id_source, id_target, Direction::RIGHT);
@@ -156,20 +154,29 @@ int count_bends(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
 }
 
 OGDFResult create_drawing(
-    const std::string input_file,
-    const std::string& svg_output_filename,
-    const std::string& gml_output_filename
+    const SimpleGraph& graph,
+    const std::string svg_output_filename,
+    const std::string gml_output_filename
 ) {
     ogdf::Graph G;
-    ogdf::GraphAttributes GA(G,
-                             ogdf::GraphAttributes::nodeGraphics | ogdf::GraphAttributes::nodeType |
-                                 ogdf::GraphAttributes::edgeGraphics | ogdf::GraphAttributes::edgeType |
-                                 ogdf::GraphAttributes::nodeLabel | ogdf::GraphAttributes::nodeStyle |
-                                 ogdf::GraphAttributes::nodeTemplate);
-
-    if (!ogdf::GraphIO::read(GA, G, input_file, ogdf::GraphIO::readGML)) {
-        std::cerr << "Could not read " << input_file << std::endl;
+    ogdf::GraphAttributes GA(
+        G, ogdf::GraphAttributes::nodeGraphics | ogdf::GraphAttributes::nodeType |
+        ogdf::GraphAttributes::edgeGraphics | ogdf::GraphAttributes::edgeType |
+        ogdf::GraphAttributes::nodeLabel | ogdf::GraphAttributes::nodeStyle |
+        ogdf::GraphAttributes::nodeTemplate
+    );
+    std::vector<ogdf::node> nodes;
+    for (int i = 0; i < graph.size(); ++i)
+        nodes.push_back(G.newNode());
+    for (int i = 0; i < graph.size(); ++i) {
+        for (const auto& edge : graph.get_node(i).get_edges()) {
+            int j = edge.get_to();
+            if (i < j)
+                G.newEdge(nodes[i], nodes[j]);
+        }
     }
+    // if (!ogdf::GraphIO::read(GA, G, input_file, ogdf::GraphIO::readGML))
+    //     std::cerr << "Could not read " << input_file << std::endl;
 
     for (ogdf::node v : G.nodes) {
         GA.width(v) /= 2;
@@ -199,8 +206,10 @@ OGDFResult create_drawing(
 
     pl.call(GA);
     ogdf::LayoutStatistics stats;
-    ogdf::GraphIO::write(GA, gml_output_filename, ogdf::GraphIO::writeGML);
-    ogdf::GraphIO::write(GA, svg_output_filename, ogdf::GraphIO::drawSVG);
+    if (svg_output_filename != "")
+        ogdf::GraphIO::write(GA, svg_output_filename, ogdf::GraphIO::drawSVG);
+    if (gml_output_filename != "")
+        ogdf::GraphIO::write(GA, gml_output_filename, ogdf::GraphIO::writeGML);
 
     return {
         count_crossings(GA, stats),

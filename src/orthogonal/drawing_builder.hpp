@@ -62,8 +62,7 @@ struct DrawingResult {
 
 template <GraphTrait T>
 DrawingResult make_rectilinear_drawing_incremental(
-    const T& graph, std::vector<std::vector<size_t>>& cycles,
-    const std::string& svg_filename
+    const T& graph, std::vector<std::vector<size_t>>& cycles
 ) {
     ColoredNodesGraph* colored_graph = new ColoredNodesGraph{};
     for (int i = 0; i < graph.size(); i++)
@@ -91,7 +90,6 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_added_corners += shape_added_corners_2.second;
         result = build_nodes_positions(*shape, *colored_graph);
     }
-    node_positions_to_svg(*result->positions, *colored_graph, svg_filename);
     const NodesPositions* positions = result->positions;
     delete result;
     return {
@@ -107,40 +105,40 @@ DrawingResult make_rectilinear_drawing_incremental(
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_basis(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_basis(const T& graph) {
     auto cycles = compute_cycle_basis(graph);
-    return make_rectilinear_drawing_incremental(graph, cycles, svg_filename);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_triplets(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_triplets(const T& graph) {
     auto cycles = compute_cycles_in_undirected_graph_triplets(graph);
-    return make_rectilinear_drawing_incremental(graph, cycles, svg_filename);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_triplets_basis(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_triplets_basis(const T& graph) {
     auto cycles = compute_cycles_in_undirected_graph_triplets(graph);
     auto cycles_basis = compute_cycle_basis(graph);
     for (auto& cycle : cycles_basis)
         cycles.push_back(cycle);
-    return make_rectilinear_drawing_incremental(graph, cycles, svg_filename);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_no_cycles(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_no_cycles(const T& graph) {
     std::vector<std::vector<size_t>> cycles;
-    return make_rectilinear_drawing_incremental(graph, cycles, svg_filename);
+    return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_pairs(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_pairs(const T& graph) {
     auto cycles = compute_smallest_cycle_between_pair_nodes(graph);
     return make_rectilinear_drawing_incremental(graph, cycles);
 }
 
 template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph, const std::string& svg_filename) {
+auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph) {
     auto cycles = compute_cycles_disjoint_paths(graph);
     std::unordered_map<int, std::vector<std::vector<size_t>>> cycles_map;
     for (auto& cycle : cycles) {
@@ -162,29 +160,28 @@ auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph, const s
         for (auto& cycle : cycles_same_sum)
             cycles_filtered.push_back(cycle);
     }
-    return make_rectilinear_drawing_incremental(graph, cycles_filtered, svg_filename);
+    return make_rectilinear_drawing_incremental(graph, cycles_filtered);
 }
 
-template <GraphTrait T>
-void make_rectilinear_drawing_all_cycles(const T& graph, const std::string& svg_filename) {
-    auto cycles = compute_all_cycles_in_undirected_graph(graph);
-    ColoredNodesGraph colored_graph{};
-    for (int i = 0; i < graph.size(); i++)
-        colored_graph.add_node(Color::BLACK);
-    for (int i = 0; i < graph.size(); i++) {
-        assert(graph.get_node(i).get_degree() <= 4);
-        for (auto& edge : graph.get_node(i).get_edges()) {
-            int j = edge.get_to();
-            colored_graph.add_edge(i, j);
-        }
-    }
-    const Shape* shape = build_shape(colored_graph, cycles);
-    BuildingResult* result = build_nodes_positions(*shape, colored_graph);
-    assert(result->type == BuildingResultType::OK);
-    node_positions_to_svg(*result->positions, colored_graph, svg_filename);
-    delete shape;
-    delete result->positions;
-    delete result;
-}
+// template <GraphTrait T>
+// void make_rectilinear_drawing_all_cycles(const T& graph) {
+//     auto cycles = compute_all_cycles_in_undirected_graph(graph);
+//     ColoredNodesGraph colored_graph{};
+//     for (int i = 0; i < graph.size(); i++)
+//         colored_graph.add_node(Color::BLACK);
+//     for (int i = 0; i < graph.size(); i++) {
+//         assert(graph.get_node(i).get_degree() <= 4);
+//         for (auto& edge : graph.get_node(i).get_edges()) {
+//             int j = edge.get_to();
+//             colored_graph.add_edge(i, j);
+//         }
+//     }
+//     const Shape* shape = build_shape(colored_graph, cycles);
+//     BuildingResult* result = build_nodes_positions(*shape, colored_graph);
+//     assert(result->type == BuildingResultType::OK);
+//     delete shape;
+//     delete result->positions;
+//     delete result;
+// }
 
 #endif

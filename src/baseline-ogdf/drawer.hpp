@@ -1,17 +1,16 @@
 #ifndef DRAWER_H
 #define DRAWER_H
 
-struct OGDFResult
-{
+struct OGDFResult {
     int crossings;
     int bends;
     int area;
 };
 
 OGDFResult create_drawing(
-    const std::string input_file,
-    const std::string& svg_output_filename,
-    const std::string& gml_output_filename
+    const SimpleGraph& graph,
+    const std::string svg_output_filename = "",
+    const std::string gml_output_filename = ""
 );
 
 #endif
