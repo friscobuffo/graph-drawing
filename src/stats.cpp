@@ -5,6 +5,8 @@
 #include <set>
 #include <vector>
 #include <tuple>
+#include <filesystem>
+
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
 #include "orthogonal/drawing_builder.hpp"
@@ -15,45 +17,35 @@
 #include "globals/globals.hpp"
 #include "../baseline-ogdf/drawer.hpp"
 
-namespace fs = std::filesystem;
-
-SimpleGraph *read_gml(const std::string &filename)
-{
+SimpleGraph *read_gml(const std::string &filename) {
     SimpleGraph *graph = new SimpleGraph();
     std::ifstream file(filename);
-    if (!file.is_open())
-    {
+    if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filename);
     }
     std::string line;
     bool in_node_block = false, in_edge_block = false;
     int node_id = -1, source = -1, target = -1;
-    while (std::getline(file, line))
-    {
+    while (std::getline(file, line)) {
         std::istringstream iss(line);
         std::string token;
         iss >> token;
-        if (token == "node")
-        {
+        if (token == "node") {
             in_node_block = true;
             node_id = -1;
         }
-        else if (token == "edge")
-        {
+        else if (token == "edge") {
             in_edge_block = true;
             source = target = -1;
         }
-        else if (token == "id" && in_node_block)
-        {
+        else if (token == "id" && in_node_block) {
             iss >> node_id;
             graph->add_node(); // Add node to graph
         }
-        else if (token == "source" && in_edge_block)
-        {
+        else if (token == "source" && in_edge_block) {
             iss >> source;
         }
-        else if (token == "target" && in_edge_block)
-        {
+        else if (token == "target" && in_edge_block) {
             iss >> target;
         }
         else if (token == "]") {
@@ -61,10 +53,8 @@ SimpleGraph *read_gml(const std::string &filename)
                 in_node_block = false;
             }
             else if (in_edge_block) {
-                if (source != -1 && target != -1)
-                {
-                    if (graph->get_nodes()[source].get_edges().size() < 4 && graph->get_nodes()[target].get_edges().size() < 4)
-                    {
+                if (source != -1 && target != -1) {
+                    if (graph->get_nodes()[source].get_edges().size() < 4 && graph->get_nodes()[target].get_edges().size() < 4) {
                         graph->add_edge(source, target);
                         graph->add_edge(target, source);
                     }
@@ -86,19 +76,16 @@ SimpleGraph *read_gml(const std::string &filename)
     return graph;
 }
 
-ColoredNodesGraph *parse_shape_file(const std::string shape_file)
-{
+ColoredNodesGraph *parse_shape_file(const std::string shape_file) {
     std::ifstream infile(shape_file);
     std::string line;
     std::set<int> nodes;
     std::vector<std::pair<int, int>> edges;
-    while (std::getline(infile, line))
-    {
+    while (std::getline(infile, line)) {
         std::istringstream iss(line);
         int u, v;
         std::string direction;
-        if (!(iss >> u >> v >> direction))
-        {
+        if (!(iss >> u >> v >> direction)) {
             std::cerr << "Invalid line: " << line << std::endl;
             continue;
         }
@@ -127,8 +114,7 @@ std::tuple<int, int, int, double> time_function(
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
 }
 
-void save_stats(const std::string metric, const auto value_shape_metrics, const auto value_ogdf)
-{
+void save_stats(const std::string metric, const auto value_shape_metrics, const auto value_ogdf) {
     std::string filename = std::format("{}{}.txt", stats_path, metric);
     std::ofstream out_file(filename, std::ios::app);
     if (out_file.is_open()) {
@@ -141,7 +127,7 @@ void save_stats(const std::string metric, const auto value_shape_metrics, const 
 }
 
 void save_drawing_to_file(const std::string input_folder) {
-    for (const auto &entry : fs::directory_iterator(input_folder)) {
+    for (const auto &entry : std::filesystem::directory_iterator(input_folder)) {
         if (entry.path().extension() == ".gml") {
 
             std::string input_file = entry.path().string();

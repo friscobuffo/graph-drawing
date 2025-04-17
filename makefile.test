@@ -4,8 +4,8 @@ COMPILER = g++
 OBJ_DIR = obj-test
 
 OPTFLAGS = -O3 -march=native
-CXXFLAGS = -std=c++20 $(OPTFLAGS) -I baseline-ogdf/OGDF/include -I baseline-ogdf/OGDF-build/include
-LDFLAGS = -L baseline-ogdf/OGDF-build -lOGDF -lCOIN
+CXXFLAGS = -std=c++20 $(OPTFLAGS) -I OGDF/include -I
+LDFLAGS = -L OGDF -lOGDF -lCOIN
 
 # Source files
 SRCS =  src/stats.cpp \
