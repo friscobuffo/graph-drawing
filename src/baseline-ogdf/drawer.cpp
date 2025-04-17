@@ -10,11 +10,10 @@
 #include <ogdf/planarity/SubgraphPlanarizer.h>
 #include <ogdf/planarity/VariableEmbeddingInserter.h>
 #include <ogdf/basic/LayoutStatistics.h>
-#include "../src/core/graph/graph.hpp"
-#include "../src/orthogonal/drawing_builder.hpp"
-#include "../src/orthogonal/orthogonal_algorithms.hpp"
-#include "../src/core/graph/graphs_algorithms.hpp"
-#include "../src/globals/globals.hpp"
+#include "../core/graph/graph.hpp"
+#include "../orthogonal/drawing_builder.hpp"
+#include "../orthogonal/orthogonal_algorithms.hpp"
+#include "../core/graph/graphs_algorithms.hpp"
 #include "drawer.hpp"
 
 #include <iostream>
@@ -60,7 +59,9 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     for (ogdf::edge e : G.edges) {
         int bend_size = GA.bends(e).size();
         if (bend_size > 2) {
-            std::vector<ogdf::DPoint> bendVec(GA.bends(e).begin(), GA.bends(e).end());
+            std::vector<ogdf::DPoint> bendVec;
+            for (auto& elem : GA.bends(e))
+                bendVec.push_back(elem);
             for (size_t j = 1; j < bendVec.size() - 1; ++j) {
                 double x_source = bendVec[j - 1].m_x;
                 double y_source = bendVec[j - 1].m_y;
@@ -82,7 +83,7 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
 
 int compute_area_2(Shape *shape, ColoredNodesGraph *colored_graph) {
     BuildingResult *result = build_nodes_positions(*shape, *colored_graph);
-    node_positions_to_svg(*result->positions, *colored_graph);
+    // node_positions_to_svg(*result->positions, *colored_graph);
 
     return compute_total_area(*result->positions, *colored_graph);
 }
@@ -97,7 +98,9 @@ int compute_area_from_shape(const ogdf::GraphAttributes &GA, ogdf::Graph &G) {
         auto source = e->source();
         int bend_size = GA.bends(e).size();
         if (bend_size > 2) {
-            std::vector<ogdf::DPoint> bendVec(GA.bends(e).begin(), GA.bends(e).end());
+            std::vector<ogdf::DPoint> bendVec;
+            for (auto& elem : GA.bends(e))
+                bendVec.push_back(elem);
             for (size_t j = 1; j < bendVec.size(); ++j) {
                 int source_id = bend_id - 1;
                 int target_id = bend_id;

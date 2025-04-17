@@ -1,0 +1,3 @@
+tests_results_folder=test-results/
+
+test_input_folder=test-graphs/input/generated_gml/

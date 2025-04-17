@@ -1,8 +1,6 @@
 #include "drawing_builder.hpp"
-#include "../globals/globals.hpp"
 
 #include <list>
-#include <format>
 
 class EquivalenceClasses {
 private:
@@ -327,7 +325,11 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
     return new BuildingResult{positions, {}, BuildingResultType::OK};
 }
 
-void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGraph& graph) {
+void node_positions_to_svg(
+    const NodesPositions& positions,
+    const ColoredNodesGraph& graph,
+    const std::string& filename
+) {
     int max_x = 0;
     int max_y = 0;
     for (size_t i = 0; i < graph.size(); ++i) {
@@ -353,7 +355,6 @@ void node_positions_to_svg(const NodesPositions& positions, const ColoredNodesGr
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
-    std::string filename = std::format("{}{}.svg", output_graph_path, graph_file);
     drawer.saveToFile(filename);
 }
 

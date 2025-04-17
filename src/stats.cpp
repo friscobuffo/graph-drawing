@@ -5,6 +5,8 @@
 #include <set>
 #include <vector>
 #include <tuple>
+#include <memory>
+#include <format>
 #include <filesystem>
 
 #include "core/graph/graph.hpp"
@@ -14,11 +16,11 @@
 #include "orthogonal/orthogonal_algorithms.hpp"
 #include "orthogonal/file_loader.hpp"
 #include "core/graph/graphs_algorithms.hpp"
-#include "globals/globals.hpp"
-#include "../baseline-ogdf/drawer.hpp"
+#include "config/config.hpp"
+#include "baseline-ogdf/drawer.hpp"
 
-SimpleGraph *read_gml(const std::string &filename) {
-    SimpleGraph *graph = new SimpleGraph();
+std::unique_ptr<SimpleGraph> read_gml(const std::string& filename) {
+    SimpleGraph* graph = new SimpleGraph();
     std::ifstream file(filename);
     if (!file.is_open()) {
         throw std::runtime_error("Failed to open file: " + filename);
@@ -73,10 +75,10 @@ SimpleGraph *read_gml(const std::string &filename) {
     // }
 
     file.close();
-    return graph;
+    return std::unique_ptr<SimpleGraph>(graph);
 }
 
-ColoredNodesGraph *parse_shape_file(const std::string shape_file) {
+std::unique_ptr<ColoredNodesGraph> parse_shape_file(const std::string& shape_file) {
     std::ifstream infile(shape_file);
     std::string line;
     std::set<int> nodes;
@@ -93,29 +95,41 @@ ColoredNodesGraph *parse_shape_file(const std::string shape_file) {
         nodes.insert(u);
         nodes.insert(v);
     }
-    ColoredNodesGraph *colored_graph = new ColoredNodesGraph();
+    ColoredNodesGraph* colored_graph = new ColoredNodesGraph();
     for (int i = 0; i < nodes.size(); ++i)
         colored_graph->add_node(Color::BLACK);
     for (const auto &[u, v] : edges)
         colored_graph->add_edge(u, v);
-    return colored_graph;
+    return std::unique_ptr<ColoredNodesGraph>(colored_graph);
 }
 
-template <typename Func, typename Arg>
-std::tuple<int, int, int, double> time_function(
-    Func &&func, Arg &&arg, const std::string &func_name
+std::tuple<int, int, int, double> test_shape_metrics_approach(
+    const SimpleGraph& graph, const std::string& svg_filename
 ) {
-    std::cout << "start: " << func_name << "\n";
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = std::invoke(std::forward<Func>(func), std::forward<Arg>(arg));
+    auto result = make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>(
+        graph, svg_filename
+    );
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    std::cout << "time: " << elapsed.count() << " seconds\n";
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
 }
 
-void save_stats(const std::string metric, const auto value_shape_metrics, const auto value_ogdf) {
-    std::string filename = std::format("{}{}.txt", stats_path, metric);
+std::tuple<int, int, int, double> test_ogdf_approach(
+    const std::string& input_graph_file, const std::string& svg_filename
+) {
+    auto start = std::chrono::high_resolution_clock::now();
+    auto result = create_drawing(input_graph_file);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> elapsed = end - start;
+    return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
+}
+
+void save_stats(
+    const std::string& folder_path, const std::string& metric,
+    const auto value_shape_metrics, const auto value_ogdf
+) {
+    std::string filename = std::format("{}{}.txt", folder_path, metric);
     std::ofstream out_file(filename, std::ios::app);
     if (out_file.is_open()) {
         out_file << value_shape_metrics << "," << value_ogdf << std::endl;
@@ -126,35 +140,37 @@ void save_stats(const std::string metric, const auto value_shape_metrics, const 
     }
 }
 
-void save_drawing_to_file(const std::string input_folder) {
-    for (const auto &entry : std::filesystem::directory_iterator(input_folder)) {
+void compare_approaches(std::unordered_map<std::string, std::string>& config) {
+    std::string test_results_folder = config["tests_results_folder"];
+    for (const auto &entry : std::filesystem::directory_iterator(config["test_input_folder"])) {
         if (entry.path().extension() == ".gml") {
+            const std::string input_file = entry.path().string();
+            const std::string graph_filename = entry.path().stem().string();
+            auto graph = read_gml(input_file);
 
-            std::string input_file = entry.path().string();
-            // graph_file = entry.path().stem().string();
 
             // SHAPE-METRICS
-            auto graph = read_gml(input_file);
-            auto result_shape_metrics = time_function(make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>,
-                                                   *graph,
-                                                      "incremental from disjoint paths");
+            std::string svg_filename_shape_metrics = std::format("{}{}-shape-metrics.svg", test_results_folder, graph_filename);
+            auto result_shape_metrics = test_shape_metrics_approach(
+                *graph,
+                svg_filename_shape_metrics
+            );
 
             // OGDF
-            auto result_ogdf = time_function(create_drawing, input_file, "create drawing");
-            save_stats(crossings_file, get<0>(result_shape_metrics), get<0>(result_ogdf));
-            save_stats(bends_file, get<1>(result_shape_metrics), get<1>(result_ogdf));
-            // std::unique_ptr<Shape> shape = load_shape_from_file("shape.txt");
-            // ColoredNodesGraph *colored_graph = parse_shape_file("shape.txt");
-            // save_stats(area_file, get<2>(result_shape_metrics), get<2>(result_ogdf));
-            // save_stats("area_2", get<2>(result_shape_metrics), area);
-            save_stats(running_time_file, get<3>(result_shape_metrics), get<3>(result_ogdf));
+            std::string svg_filename_ogdf = std::format("{}{}-ogdf.svg", test_results_folder, graph_filename);
+            auto result_ogdf = test_ogdf_approach(input_file, svg_filename_ogdf);
+
+            save_stats(test_results_folder, "crossings", get<0>(result_shape_metrics), get<0>(result_ogdf));
+            save_stats(test_results_folder, "bends", get<1>(result_shape_metrics), get<1>(result_ogdf));
+            save_stats(test_results_folder, "running_time", get<3>(result_shape_metrics), get<3>(result_ogdf));
+
             std::cout << "Done with file: " << input_file << std::endl;
         }
     }
 }
 
 int main() {
-    std::string input_folder = "test-graphs/input/generated_gml/";
-    save_drawing_to_file(input_folder);
+    auto config = parse_config("stats_config.txt");
+    compare_approaches(config);
     return 0;
 }
