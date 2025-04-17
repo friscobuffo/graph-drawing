@@ -1,17 +1,21 @@
 #include <chrono>
 #include <iostream>
 #include <fstream>
+#include <sstream>
+#include <set>
+#include <vector>
+#include <tuple>
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
 #include "orthogonal/drawing_builder.hpp"
 #include "core/graph/generators.hpp"
 #include "orthogonal/orthogonal_algorithms.hpp"
+#include "orthogonal/file_loader.hpp"
 #include "core/graph/graphs_algorithms.hpp"
 #include "globals/globals.hpp"
 #include "../baseline-ogdf/drawer.hpp"
 
 namespace fs = std::filesystem;
-using namespace std;
 
 SimpleGraph *read_gml(const std::string &filename)
 {
@@ -21,17 +25,14 @@ SimpleGraph *read_gml(const std::string &filename)
     {
         throw std::runtime_error("Failed to open file: " + filename);
     }
-
     std::string line;
     bool in_node_block = false, in_edge_block = false;
     int node_id = -1, source = -1, target = -1;
-
     while (std::getline(file, line))
     {
         std::istringstream iss(line);
         std::string token;
         iss >> token;
-
         if (token == "node")
         {
             in_node_block = true;
@@ -85,6 +86,34 @@ SimpleGraph *read_gml(const std::string &filename)
     return graph;
 }
 
+ColoredNodesGraph *parse_shape_file(const std::string shape_file)
+{
+    std::ifstream infile(shape_file);
+    std::string line;
+    std::set<int> nodes;
+    std::vector<std::pair<int, int>> edges;
+    while (std::getline(infile, line))
+    {
+        std::istringstream iss(line);
+        int u, v;
+        std::string direction;
+        if (!(iss >> u >> v >> direction))
+        {
+            std::cerr << "Invalid line: " << line << std::endl;
+            continue;
+        }
+        edges.emplace_back(u, v);
+        nodes.insert(u);
+        nodes.insert(v);
+    }
+    ColoredNodesGraph *colored_graph = new ColoredNodesGraph();
+    for (int i = 0; i < nodes.size(); ++i)
+        colored_graph->add_node(Color::BLACK);
+    for (const auto &[u, v] : edges)
+        colored_graph->add_edge(u, v);
+    return colored_graph;
+}
+
 template <typename Func, typename Arg>
 std::tuple<int, int, int, double> time_function(
     Func &&func, Arg &&arg, const std::string &func_name
@@ -116,7 +145,7 @@ void save_drawing_to_file(const std::string input_folder) {
         if (entry.path().extension() == ".gml") {
 
             std::string input_file = entry.path().string();
-            graph_file = entry.path().stem().string();
+            // graph_file = entry.path().stem().string();
 
             // SHAPE-METRICS
             auto graph = read_gml(input_file);
@@ -124,12 +153,14 @@ void save_drawing_to_file(const std::string input_folder) {
                                                    *graph,
                                                       "incremental from disjoint paths");
 
-            // OGDF 
+            // OGDF
             auto result_ogdf = time_function(create_drawing, input_file, "create drawing");
-
             save_stats(crossings_file, get<0>(result_shape_metrics), get<0>(result_ogdf));
             save_stats(bends_file, get<1>(result_shape_metrics), get<1>(result_ogdf));
-            save_stats(area_file, get<2>(result_shape_metrics), get<2>(result_ogdf));
+            // std::unique_ptr<Shape> shape = load_shape_from_file("shape.txt");
+            // ColoredNodesGraph *colored_graph = parse_shape_file("shape.txt");
+            // save_stats(area_file, get<2>(result_shape_metrics), get<2>(result_ogdf));
+            // save_stats("area_2", get<2>(result_shape_metrics), area);
             save_stats(running_time_file, get<3>(result_shape_metrics), get<3>(result_ogdf));
             std::cout << "Done with file: " << input_file << std::endl;
         }
