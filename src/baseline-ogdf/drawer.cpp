@@ -44,6 +44,7 @@ void set_vertical_direction(Shape *shape, int id_source, int y_source, int id_ta
     }
 }
 
+
 int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     std::set<double> x_coords;
     std::set<double> y_coords;
@@ -73,42 +74,51 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
             }
         }
     }
-    // std::cout << "coor before: ";
-    // for (const auto coor : x_coords)
-    // {
-    //     std::cout << coor << " ";
-    // }
-    std::cout << std::endl;
+    /*
+     std::cout << "coor before: ";
+     for (const auto coor : x_coords)
+     {
+         std::cout << coor << " ";
+    }   */
+     std::cout << std::endl;
         std::set<double> x_coords_approx;
+        int x = 0;
         for (auto it = x_coords.begin(); std::next(it) != x_coords.end(); ++it) {
         auto next_it = std::next(it);
         double diff = *next_it - *it;
         if (diff > 10) {
-            x_coords_approx.insert(*it);
+            x_coords_approx.insert(x);
+            x++;
             if(std::next(next_it) == x_coords.end())
-                x_coords_approx.insert(*next_it);
+                x_coords_approx.insert(x);
+            
         }        
     }
         std::set<double> y_coords_approx;
+        int y = 0;
         for (auto it = y_coords.begin(); std::next(it) != y_coords.end(); ++it) {
         auto next_it = std::next(it);
         double diff = *next_it - *it;
         if (diff > 10)  {
-            y_coords_approx.insert(*it);
+            y_coords_approx.insert(y);
+            y++;
             if(std::next(next_it) == y_coords.end())
-                y_coords_approx.insert(*next_it);
+                y_coords_approx.insert(y);
         }
     }
-    // std::cout << "coor after: ";
-    // for (const auto coor : x_coords_approx)
-    // {
-    //     std::cout << coor << " ";
-    // }
-    // std::cout << std::endl;
-    int x = x_coords_approx.size() - 1;
-    int y = y_coords_approx.size() - 1;
+    /*
+     std::cout << "coor after: ";
+     for (const auto coor : x_coords_approx)
+     {
+         std::cout << coor << " ";
+     }
+     std::cout << std::endl;
+      */
+    x++;
+    y++;
     return x * y;
 }
+
 
 int compute_area_2(Shape *shape, ColoredNodesGraph *colored_graph) {
     BuildingResult *result = build_nodes_positions(*shape, *colored_graph);

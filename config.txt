@@ -19,5 +19,5 @@ graphs_generated_per_same_nodes_number=100
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=example-graphs/g13
+test_graphs_folder=example-graphs/g7
 output_result_filename=test_results.csv
