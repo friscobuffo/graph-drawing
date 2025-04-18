@@ -1,6 +1,7 @@
 #include "shape_builder.hpp"
 
 #include <cstdlib>
+#include <algorithm>
 
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
@@ -241,7 +242,8 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
     }
     if (unit_clauses.size() == 0)
         throw std::runtime_error("Could not find the edge to remove");
-    int random_index = rand() % unit_clauses.size();
+    // pick one of the first three unit clauses
+    int random_index = rand() % std::min((int)unit_clauses.size(), 3);
     return std::abs(unit_clauses[random_index]);
 }
 

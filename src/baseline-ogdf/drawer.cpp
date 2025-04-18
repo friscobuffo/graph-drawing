@@ -256,5 +256,3 @@ OGDFResult create_drawing(
         count_bends(GA, G),
         compute_area_1(GA, G)};
 }
-
-

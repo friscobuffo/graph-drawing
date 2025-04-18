@@ -102,10 +102,6 @@ DrawingResult make_rectilinear_drawing_incremental(
             continue;
         real_number_of_corners++;
     }
-    if (real_number_of_corners != number_of_added_corners) {
-        std::cout << std::endl << "real_number_of_corners: " << real_number_of_corners << std::endl;
-        std::cout << std::endl << "number_of_added_corners: " << number_of_added_corners << std::endl;
-    }
     const NodesPositions* positions = result->positions;
     delete result;
     return {
@@ -113,7 +109,7 @@ DrawingResult make_rectilinear_drawing_incremental(
         std::unique_ptr<const Shape>(shape),
         std::unique_ptr<const NodesPositions>(positions),
         compute_total_crossings(*positions, *colored_graph),
-        number_of_added_corners,
+        real_number_of_corners,
         compute_total_area(*positions, *colored_graph),
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles
