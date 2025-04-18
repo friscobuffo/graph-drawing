@@ -47,7 +47,6 @@ void set_vertical_direction(Shape *shape, int id_source, int y_source, int id_ta
 int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     std::set<double> x_coords;
     std::set<double> y_coords;
-    std::vector<int> visited;
     for (ogdf::node v : G.nodes) {
         double x = GA.x(v);
         double y = GA.y(v);
@@ -57,9 +56,7 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     for (ogdf::edge e : G.edges) {
         int bend_size = GA.bends(e).size();
         if (bend_size > 2) {
-            std::vector<ogdf::DPoint> bendVec;
-            for (auto& elem : GA.bends(e))
-                bendVec.push_back(elem);
+            std::vector<ogdf::DPoint> bendVec(GA.bends(e).begin(), GA.bends(e).end());
             for (size_t j = 1; j < bendVec.size() - 1; ++j) {
                 double x_source = bendVec[j - 1].m_x;
                 double y_source = bendVec[j - 1].m_y;
@@ -74,8 +71,40 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
             }
         }
     }
-    int x = x_coords.size() - 1;
-    int y = y_coords.size() - 1;
+    // std::cout << "coor before: ";
+    // for (const auto coor : x_coords)
+    // {
+    //     std::cout << coor << " ";
+    // }
+    std::cout << std::endl;
+        std::set<double> x_coords_approx;
+        for (auto it = x_coords.begin(); std::next(it) != x_coords.end(); ++it) {
+        auto next_it = std::next(it);
+        double diff = *next_it - *it;
+        if (diff > 10) {
+            x_coords_approx.insert(*it);
+            if(std::next(next_it) == x_coords.end())
+                x_coords_approx.insert(*next_it);
+        }        
+    }
+        std::set<double> y_coords_approx;
+        for (auto it = y_coords.begin(); std::next(it) != y_coords.end(); ++it) {
+        auto next_it = std::next(it);
+        double diff = *next_it - *it;
+        if (diff > 10)  {
+            y_coords_approx.insert(*it);
+            if(std::next(next_it) == y_coords.end())
+                y_coords_approx.insert(*next_it);
+        }
+    }
+    // std::cout << "coor after: ";
+    // for (const auto coor : x_coords_approx)
+    // {
+    //     std::cout << coor << " ";
+    // }
+    // std::cout << std::endl;
+    int x = x_coords_approx.size() - 1;
+    int y = y_coords_approx.size() - 1;
     return x * y;
 }
 
