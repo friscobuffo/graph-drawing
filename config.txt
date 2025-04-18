@@ -1,7 +1,8 @@
 #################################
 # MAIN CONFIG
 #################################
-
+input_graph_file=generated-graphs/32/graph_92_n32_m58.txt
+output_svg_shape_metrics=drawing.svg
 
 
 #################################
