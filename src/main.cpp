@@ -5,7 +5,7 @@
 #include "core/graph/file_loader.hpp"
 #include "core/graph/generators.hpp"
 #include "config/config.hpp"
-#include "baseline-ogdf/drawer.hpp"
+// #include "baseline-ogdf/drawer.hpp"
 
 int main() {
     auto config = parse_config("config.txt");
@@ -17,6 +17,6 @@ int main() {
         *result.augmented_graph,
         filename
     );
-    create_drawing(*graph, "output.svg");
+    // create_drawing(*graph, "output.svg");
     return 0;
 }
