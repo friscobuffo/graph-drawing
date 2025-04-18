@@ -23,7 +23,7 @@ std::tuple<int, int, int, double> test_shape_metrics_approach(const SimpleGraph&
     std::chrono::duration<double> elapsed = end - start;
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
 }
-
+ 
 std::tuple<int, int, int, double> test_ogdf_approach(const SimpleGraph& graph) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = create_drawing(graph, "", "");

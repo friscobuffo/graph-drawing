@@ -1,4 +1,10 @@
 #################################
+# MAIN CONFIG
+#################################
+
+
+
+#################################
 # GRAPH GENERATION CONFIG
 #################################
 generated_graphs_folder=generated-graphs/
@@ -12,5 +18,5 @@ graphs_generated_per_same_nodes_number=100
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=generated-graphs/
+test_graphs_folder=example-graphs/g13
 output_result_filename=test_results.csv
