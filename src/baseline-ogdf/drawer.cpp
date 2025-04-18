@@ -56,14 +56,16 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     for (ogdf::edge e : G.edges) {
         int bend_size = GA.bends(e).size();
         if (bend_size > 2) {
-            std::vector<ogdf::DPoint> bendVec(GA.bends(e).begin(), GA.bends(e).end());
-            for (size_t j = 1; j < bendVec.size() - 1; ++j) {
-                double x_source = bendVec[j - 1].m_x;
-                double y_source = bendVec[j - 1].m_y;
-                double x_bend = bendVec[j].m_x;
-                double y_bend = bendVec[j].m_y;
-                double x_target = bendVec[bendVec.size() - 1].m_x;
-                double y_target = bendVec[bendVec.size() - 1].m_y;
+            std::vector<ogdf::DPoint> bend_vec;
+            for (auto& elem : GA.bends(e))
+                bend_vec.push_back(elem);
+            for (size_t j = 1; j < bend_vec.size() - 1; ++j) {
+                double x_source = bend_vec[j - 1].m_x;
+                double y_source = bend_vec[j - 1].m_y;
+                double x_bend = bend_vec[j].m_x;
+                double y_bend = bend_vec[j].m_y;
+                double x_target = bend_vec[bend_vec.size() - 1].m_x;
+                double y_target = bend_vec[bend_vec.size() - 1].m_y;
                 if (x_source != x_bend && x_target != x_bend)
                     x_coords.insert(x_bend);
                 if (y_source != y_bend && y_target != y_bend)

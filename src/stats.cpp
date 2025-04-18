@@ -26,7 +26,7 @@ std::tuple<int, int, int, double> test_shape_metrics_approach(const SimpleGraph&
 
 std::tuple<int, int, int, double> test_ogdf_approach(const SimpleGraph& graph) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = create_drawing(graph);
+    auto result = create_drawing(graph, "", "");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
@@ -60,6 +60,8 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
         }
         if (entry.path().extension() == ".txt") {
             const std::string graph_filename = entry.path().stem().string();
+            std::cout << "\rstarting comparison number: " << ++number_of_comparisons_done << " ";
+            std::cout << graph_filename << std::flush;
             auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
 
             // SHAPE-METRICS
@@ -73,17 +75,25 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                 result_ogdf,
                 graph_filename
             );
-
-            number_of_comparisons_done++;
-            std::cout << "\rComparisons done: " << number_of_comparisons_done << " " << std::flush;
         }
     }
 }
 
 void compare_approaches(std::unordered_map<std::string, std::string>& config) {
-    std::string test_results_filename = "test_results.csv";
-    std::filesystem::remove(test_results_filename);
-    // create the test result file
+    std::cout << "Comparing approaches..." << std::endl;
+    std::string test_results_filename = config["output_result_filename"];
+    if (std::filesystem::exists(test_results_filename)) {
+        std::cout << "File " << test_results_filename << " already exists." << std::endl;
+        std::cout << "Do you want to delete it? (y/n): ";
+        char answer;
+        std::cin >> answer;
+        if (answer == 'y' || answer == 'Y') {
+            std::filesystem::remove(test_results_filename);
+        } else {
+            std::cout << "File not deleted." << std::endl;
+            return;
+        }
+    }
     std::ofstream result_file(test_results_filename);
     if (result_file.is_open()) {
         result_file << "graph_name,";
@@ -103,7 +113,7 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
 }
 
 int main() {
-    auto config = parse_config("stats_config.txt");
+    auto config = parse_config("config.txt");
     compare_approaches(config);
     return 0;
 }
