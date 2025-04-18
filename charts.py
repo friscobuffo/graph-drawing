@@ -29,7 +29,7 @@ for metric, title in metrics:
     plt.figure(figsize=(8, 6))
     sc = plt.scatter(df[f'ogdf_{metric}'], df[f'shape_metrics_{metric}'],
                      c=df['density'], cmap='viridis', vmin=1, vmax=2,
-                     edgecolor='k', s=100)
+                     edgecolor='k', s=35)
     
     plt.colorbar(sc, label='Density (edges/nodes)')
     plt.xlabel(f'OGDF {metric.capitalize()}')
