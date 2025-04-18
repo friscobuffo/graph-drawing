@@ -245,8 +245,7 @@ OGDFResult create_drawing(
     return {
         count_crossings(GA, stats),
         count_bends(GA, G),
-        compute_area_from_shape(GA, G)
-    };
+        compute_area_1(GA, G)};
 }
 
 
