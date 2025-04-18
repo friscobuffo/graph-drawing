@@ -1,13 +1,11 @@
 /obj
 /.vscode
 lines.py
-graph.svg
 main
 glucose
 /OGDF
 stats
 *.svg
-/test-results
 gen
 /generated-graphs
 test_results.csv
