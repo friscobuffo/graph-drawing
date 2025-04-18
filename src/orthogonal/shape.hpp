@@ -55,7 +55,7 @@ public:
     bool is_right(const size_t i, const size_t j) const;
     bool is_left(const size_t i, const size_t j) const;
     bool is_horizontal(const size_t i, const size_t j) const;
-    bool is_Vertical(const size_t i, const size_t j) const;
+    bool is_vertical(const size_t i, const size_t j) const;
     int has_node_a_right_neighbor(const size_t node) const;
     int has_node_a_left_neighbor(const size_t node) const;
     int has_node_a_up_neighbor(const size_t node) const;

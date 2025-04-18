@@ -90,6 +90,22 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_added_corners += shape_added_corners_2.second;
         result = build_nodes_positions(*shape, *colored_graph);
     }
+    int real_number_of_corners = 0;
+    for (int i = graph.size(); i < colored_graph->size(); i++) {
+        auto& node = colored_graph->get_node(i);
+        assert(node.get_color() == Color::RED);
+        int j_1 = node.get_edges()[0].get_to();
+        int j_2 = node.get_edges()[1].get_to();
+        if (shape->is_horizontal(i, j_1) && shape->is_horizontal(i, j_2))
+            continue;
+        if (shape->is_vertical(i, j_1) && shape->is_vertical(i, j_2))
+            continue;
+        real_number_of_corners++;
+    }
+    if (real_number_of_corners != number_of_added_corners) {
+        std::cout << std::endl << "real_number_of_corners: " << real_number_of_corners << std::endl;
+        std::cout << std::endl << "number_of_added_corners: " << number_of_added_corners << std::endl;
+    }
     const NodesPositions* positions = result->positions;
     delete result;
     return {

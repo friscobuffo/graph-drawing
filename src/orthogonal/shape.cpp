@@ -59,7 +59,7 @@ bool Shape::is_horizontal(const size_t i, const size_t j) const {
     return is_right(i, j) || is_left(i, j);
 }
 
-bool Shape::is_Vertical(const size_t i, const size_t j) const {
+bool Shape::is_vertical(const size_t i, const size_t j) const {
     return is_up(i, j) || is_down(i, j);
 }
 
