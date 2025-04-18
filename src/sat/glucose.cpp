@@ -10,10 +10,6 @@
 #include <fcntl.h>
 #include <stdexcept>
 
-std::string CONJUNCTIVE_NORMAL_FORM_FILE = "";
-std::string OUTPUT_FILE = "";
-std::string PROOF_FILE = "";
-
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
     std::string numbers_str = "Numbers: ";
@@ -29,12 +25,16 @@ void GlucoseResult::print() const {
     std::cout << to_string() << std::endl;
 }
 
-const GlucoseResult* get_results();
+const GlucoseResult* get_results(const std::string& output_file, const std::string& proof_file);
 
-void delete_glucose_temp_files() {
-    remove(CONJUNCTIVE_NORMAL_FORM_FILE.c_str());
-    remove(OUTPUT_FILE.c_str());
-    remove(PROOF_FILE.c_str());
+void delete_glucose_temp_files(
+    const std::string& conjunctive_normal_form_file,
+    const std::string& output_file,
+    const std::string& proof_file
+) {
+    remove(conjunctive_normal_form_file.c_str());
+    remove(output_file.c_str());
+    remove(proof_file.c_str());
 }
 
 const GlucoseResult* launch_glucose(
@@ -42,9 +42,6 @@ const GlucoseResult* launch_glucose(
     const std::string& output_file,
     const std::string& proof_file
 ) {
-    CONJUNCTIVE_NORMAL_FORM_FILE = conjunctive_normal_form_file;
-    OUTPUT_FILE = output_file;
-    PROOF_FILE = proof_file;
     pid_t pid = fork();
     if (pid == -1)
         throw std::runtime_error("Failed to fork process");
@@ -58,9 +55,11 @@ const GlucoseResult* launch_glucose(
         dup2(devNull, STDERR_FILENO);
         close(devNull);
         std::string proof_path("-certified-output=");
-        proof_path += PROOF_FILE;
-        execl("./glucose", "glucose", CONJUNCTIVE_NORMAL_FORM_FILE.c_str(), 
-              OUTPUT_FILE.c_str(), "-certified", proof_path.c_str(), (char *)NULL);
+        proof_path += proof_file;
+        execl(
+            "./glucose", "glucose", conjunctive_normal_form_file.c_str(), 
+            output_file.c_str(), "-certified", proof_path.c_str(), (char *)NULL
+        );
         // if exec fails
         _exit(1);
     }
@@ -68,13 +67,17 @@ const GlucoseResult* launch_glucose(
     int status;
     if (waitpid(pid, &status, 0) == -1)
         throw std::runtime_error("Failed to wait for process");
-    const GlucoseResult* result = get_results();
-    delete_glucose_temp_files();
+    const GlucoseResult* result = get_results(output_file, proof_file);
+    delete_glucose_temp_files(
+        conjunctive_normal_form_file,
+        output_file,
+        proof_file
+    );
     return result;
 }
 
-std::vector<std::string> get_proof() {
-    std::ifstream file(PROOF_FILE.c_str());
+std::vector<std::string> get_proof(const std::string& proof_file) {
+    std::ifstream file(proof_file.c_str());
     if (!file)
         throw std::runtime_error("Error: Could not open the file.");
     std::vector<std::string> proof_lines;
@@ -84,20 +87,20 @@ std::vector<std::string> get_proof() {
     return proof_lines;
 }
 
-const GlucoseResult* get_results() {
-    std::ifstream file(OUTPUT_FILE.c_str());
+const GlucoseResult* get_results(const std::string& output_file, const std::string& proof_file) {
+    std::ifstream file(output_file.c_str());
     if (!file)
         throw std::runtime_error("Error: Could not open the file.");
     std::string line;
     if (std::getline(file, line)) {
         if (line == "UNSAT")
-            return new GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof()};
+            return new GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof(proof_file)};
         std::istringstream iss(line);
         std::vector<int> numbers;
         int num;
         while (iss >> num)
             numbers.push_back(num);
-        return new GlucoseResult{GlucoseResultType::SAT, numbers, get_proof()};
+        return new GlucoseResult{GlucoseResultType::SAT, numbers, get_proof(proof_file)};
     }
     throw std::runtime_error("Error: the file is empty.");
 }

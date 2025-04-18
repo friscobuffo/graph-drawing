@@ -18,7 +18,7 @@
 
 std::tuple<int, int, int, double> test_shape_metrics_approach(const SimpleGraph& graph) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = make_rectilinear_drawing_incremental_disjoint_paths<SimpleGraph>(graph);
+    auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     return std::make_tuple(result.crossings, result.bends, result.area, elapsed.count());
@@ -61,7 +61,7 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
         if (entry.path().extension() == ".txt") {
             const std::string graph_filename = entry.path().stem().string();
             std::cout << "\rstarting comparison number: " << ++number_of_comparisons_done << " ";
-            std::cout << graph_filename << std::flush;
+            std::cout << graph_filename << "         " << std::flush;
             auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
 
             // SHAPE-METRICS

@@ -1,5 +1,7 @@
 #include "shape_builder.hpp"
 
+#include <cstdlib>
+
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
 
@@ -219,27 +221,28 @@ const Shape* result_to_shape(
 }
 
 size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
+    std::vector<int> unit_clauses;
     for (int i = proof_lines.size() - 1; i >= 0; i--) {
         const std::string& line = proof_lines[i];
         // split line based on " "
-        std::vector<std::string> tokens;
+        std::vector<int> tokens;
         std::string token;
         for (char c : line) {
+            if (c == 'd') continue;
             if (c == ' ') {
-                tokens.push_back(token);
+                if (token == "") continue;
+                tokens.push_back(std::stoi(token));
                 token = "";
             } else
                 token += c;
         }
-        tokens.push_back(token);
-        assert(tokens.back() == "0");
-        tokens.pop_back();
-        if (tokens[0] == "d") {
-            if (tokens.size() == 2) return abs(std::stoi(tokens[1]));
-        }
-        else if (tokens.size() == 1) return abs(std::stoi(tokens[0]));
+        assert(token == "0");
+        if (tokens.size() == 1) unit_clauses.push_back(tokens[0]);
     }
-    throw std::runtime_error("Could not find the edge to remove");
+    if (unit_clauses.size() == 0)
+        throw std::runtime_error("Could not find the edge to remove");
+    int random_index = rand() % unit_clauses.size();
+    return std::abs(unit_clauses[random_index]);
 }
 
 const Shape* build_shape_or_add_corner(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles);
@@ -264,10 +267,8 @@ const Shape* build_shape_or_add_corner(
     add_constraints_one_direction_per_edge(colored_graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints opposite edges");
     add_constraints_opposite_edges(colored_graph, cnf_builder, handler);
-    // for (int i = 0; i < colored_graph.size(); ++i) {
-        cnf_builder.add_comment("constraints nodes");
-        add_nodes_constraints(colored_graph, cnf_builder, handler);
-    // }
+    cnf_builder.add_comment("constraints nodes");
+    add_nodes_constraints(colored_graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
     cnf_builder.convert_to_cnf(CONJUNCTIVE_NORMAL_FORM_FILE);

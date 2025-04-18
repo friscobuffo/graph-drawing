@@ -80,7 +80,6 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
      {
          std::cout << coor << " ";
     }   */
-     std::cout << std::endl;
         std::set<double> x_coords_approx;
         int x = 0;
         for (auto it = x_coords.begin(); std::next(it) != x_coords.end(); ++it) {

@@ -1,7 +1,7 @@
 #################################
 # MAIN CONFIG
 #################################
-input_graph_file=generated-graphs/32/graph_92_n32_m58.txt
+input_graph_file=example-graphs/g13/g13.txt
 output_svg_shape_metrics=drawing.svg
 
 
@@ -12,12 +12,12 @@ generated_graphs_folder=generated-graphs/
 min_graph_density=1.1
 max_graph_density=1.9
 min_number_of_nodes=10
-max_number_of_nodes=40
-graphs_generated_per_same_nodes_number=100
+max_number_of_nodes=30
+graphs_generated_per_same_nodes_number=20
 
 
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=example-graphs/g7
+test_graphs_folder=generated-graphs/
 output_result_filename=test_results.csv
