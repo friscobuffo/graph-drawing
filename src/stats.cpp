@@ -8,6 +8,9 @@
 #include <memory>
 #include <format>
 #include <filesystem>
+#include <thread>
+#include <mutex>
+#include <atomic>
 
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
@@ -49,34 +52,66 @@ void save_stats(
     results_file << std::get<3>(results_ogdf) << std::endl;
 }
 
-int number_of_comparisons_done = 0;
-
-void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file) {
-    for (const auto &entry : std::filesystem::directory_iterator(folder_path)) {
-        std::string entry_path = entry.path().string();
-        if (entry.is_directory()) {
-            compare_approaches_in_folder(entry_path, results_file);
-            continue;
-        }
-        if (entry.path().extension() == ".txt") {
-            const std::string graph_filename = entry.path().stem().string();
-            std::cout << "\rstarting comparison number: " << ++number_of_comparisons_done << " ";
-            std::cout << graph_filename << "         " << std::flush;
-            auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
-
-            // SHAPE-METRICS
-            auto result_shape_metrics = test_shape_metrics_approach(*graph);
-
-            // OGDF
-            auto result_ogdf = test_ogdf_approach(*graph);
-            save_stats(
-                results_file,
-                result_shape_metrics,
-                result_ogdf,
-                graph_filename
-            );
+std::vector<std::string> collect_txt_files(const std::string& folder_path) {
+    std::vector<std::string> txt_files;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path)) {
+        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+            txt_files.push_back(entry.path().string());
         }
     }
+    return txt_files;
+}
+
+void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file) {
+    auto txt_files = collect_txt_files(folder_path);
+    std::atomic<int> number_of_comparisons_done{0};
+    std::mutex cout_mutex, file_mutex;
+    std::atomic<size_t> index{0};
+
+    unsigned num_threads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (unsigned i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&]() {
+            while (true) {
+                // Get the next file index atomically
+                size_t current = index.fetch_add(1, std::memory_order_relaxed);
+                if (current >= txt_files.size()) break;
+
+                const auto& entry_path = txt_files[current];
+                const std::string graph_filename = std::filesystem::path(entry_path).stem().string();
+
+                // Increment and get the current comparison number
+                int current_number = ++number_of_comparisons_done;
+
+                // Thread-safe console output
+                {
+                    std::lock_guard<std::mutex> lock(cout_mutex);
+                    std::cout << "Processing comparison #" << current_number 
+                              << " - " << graph_filename << std::endl;
+                }
+
+                // Load and process graph
+                auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
+                auto result_shape_metrics = test_shape_metrics_approach(*graph);
+                auto result_ogdf = test_ogdf_approach(*graph);
+
+                // Thread-safe file writing
+                {
+                    std::lock_guard<std::mutex> lock(file_mutex);
+                    save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
+                }
+            }
+        });
+    }
+
+    // Wait for all threads to complete
+    for (auto& t : threads) {
+        if (t.joinable()) t.join();
+    }
+
+    std::cout << "All comparisons done." << std::endl;
+    std::cout << "Threads used: " << num_threads << std::endl;
 }
 
 void compare_approaches(std::unordered_map<std::string, std::string>& config) {

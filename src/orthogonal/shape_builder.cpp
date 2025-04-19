@@ -2,6 +2,9 @@
 
 #include <cstdlib>
 #include <algorithm>
+#include <string>
+#include <unordered_set>
+#include <mutex>
 
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
@@ -259,6 +262,39 @@ std::pair<const Shape*,int> build_shape(ColoredNodesGraph& colored_graph, std::v
     return {shape,added_corners};
 }
 
+std::unordered_set<size_t> used_indices;
+std::mutex mutex;
+
+size_t get_index_to_use() {
+    std::lock_guard<std::mutex> lock(mutex);
+    size_t index = 0;
+    while (used_indices.find(index) != used_indices.end())
+        index++;
+    used_indices.insert(index);
+    return index;
+}
+
+void free_index(size_t index) {
+    std::lock_guard<std::mutex> lock(mutex);
+    used_indices.erase(index);
+}
+
+std::string add_index_to_filename(const std::string& filename, const size_t index) {
+    size_t last_slash = filename.find_last_of('/');
+    std::string path = "";
+    std::string filename_part = filename;
+    if (last_slash != std::string::npos) {
+        path = filename.substr(0, last_slash + 1);
+        filename_part = filename.substr(last_slash + 1);
+    }
+    size_t dot_pos = filename_part.rfind('.');
+    if (dot_pos == std::string::npos || dot_pos == 0) // No extension or hidden file without a real extension
+        filename_part += "_" + std::to_string(index);
+    else
+        filename_part = filename_part.substr(0, dot_pos) + "_" + std::to_string(index) + filename_part.substr(dot_pos);
+    return path + filename_part;
+}
+
 const Shape* build_shape_or_add_corner(
     ColoredNodesGraph& colored_graph,
     std::vector<std::vector<size_t>>& cycles
@@ -273,17 +309,22 @@ const Shape* build_shape_or_add_corner(
     add_nodes_constraints(colored_graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
-    cnf_builder.convert_to_cnf(CONJUNCTIVE_NORMAL_FORM_FILE);
+    const size_t index = get_index_to_use();
+    const std::string cnf = add_index_to_filename(CONJUNCTIVE_NORMAL_FORM_FILE, index);
+    const std::string output = add_index_to_filename(OUTPUT_FILE, index);
+    const std::string proof = add_index_to_filename(PROOF_FILE, index);
+    cnf_builder.convert_to_cnf(cnf);
     auto results = std::unique_ptr<const GlucoseResult>(launch_glucose(
-        CONJUNCTIVE_NORMAL_FORM_FILE,
-        OUTPUT_FILE,
-        PROOF_FILE
+        cnf,
+        output,
+        proof
     ));
+    free_index(index);
     if (results->result == GlucoseResultType::UNSAT) {
-        size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
-        int i = handler.variable_to_edge[variable_edge].first;
-        int j = handler.variable_to_edge[variable_edge].second;
-        size_t new_node_index = colored_graph.size();
+        const size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
+        const int i = handler.variable_to_edge[variable_edge].first;
+        const int j = handler.variable_to_edge[variable_edge].second;
+        const size_t new_node_index = colored_graph.size();
         colored_graph.remove_undirected_edge(i, j);
         colored_graph.add_node(Color::RED);
         colored_graph.add_undirected_edge(i, new_node_index);
