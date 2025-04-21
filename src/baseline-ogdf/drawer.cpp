@@ -15,7 +15,6 @@
 #include "../orthogonal/orthogonal_algorithms.hpp"
 #include "../core/graph/graphs_algorithms.hpp"
 #include "drawer.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -44,80 +43,149 @@ void set_vertical_direction(Shape *shape, int id_source, int y_source, int id_ta
     }
 }
 
+int make_key(int x, int y)
+{
+    return (x << 16) ^ y; // bit shift + XOR
+}
+
+int compute_total_edge_length(const ogdf::GraphAttributes &GA, const ogdf::Graph &G, std::unordered_map<int, std::tuple<int, int>> id_to_coords, std::unordered_map<int, std::vector<int>> edge_to_bend_ids)
+{
+    int edge_length = 0;
+    for (ogdf::edge e : G.edges)
+    {
+        int source = e->source()->index();
+        int target = e->target()->index();
+
+        if (edge_to_bend_ids.find(make_key(source, target)) != edge_to_bend_ids.end())
+        {
+            // std::cout << "found edge with bends: " << source << "," << target << std::endl;
+            std::vector<int> bend_ids = edge_to_bend_ids[make_key(source, target)];
+            bend_ids.insert(bend_ids.begin(), source);
+            bend_ids.push_back(target);
+            int x = 0;
+            int y = 0;
+            for (int i = 0; i < bend_ids.size() - 1; ++i)
+            {
+                x += std::abs(std::get<0>(id_to_coords[bend_ids[i]]) - std::get<0>(id_to_coords[bend_ids[i + 1]]));
+                y += std::abs(std::get<1>(id_to_coords[bend_ids[i]]) - std::get<1>(id_to_coords[bend_ids[i + 1]]));
+            }
+            edge_length += x + y;
+        }
+        else
+        {
+            int x = std::abs(std::get<0>(id_to_coords[source]) - std::get<0>(id_to_coords[target]));
+            int y = std::abs(std::get<1>(id_to_coords[source]) - std::get<1>(id_to_coords[target]));
+            edge_length += x + y;
+        }
+    }
+    std::cout << "total edge length: " << edge_length << std::endl;
+    return edge_length;
+}
 
 int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     std::set<double> x_coords;
     std::set<double> y_coords;
-    for (ogdf::node v : G.nodes) {
+    std::unordered_map<double, std::vector<int>> x_coor_to_ids, y_coor_to_ids;
+    std::unordered_map<int, std::tuple<int, int>> id_to_coords;
+    std::unordered_map<int, std::vector<int>> edge_to_bend_ids;
+    for (ogdf::node v : G.nodes)
+    {
         double x = GA.x(v);
         double y = GA.y(v);
+        int index = v->index();
         x_coords.insert(x);
         y_coords.insert(y);
+        x_coor_to_ids[x].push_back(index);
+        y_coor_to_ids[y].push_back(index);
     }
+    int bend_id = G.numberOfNodes();
     for (ogdf::edge e : G.edges) {
-        int bend_size = GA.bends(e).size();
-        if (bend_size > 2) {
-            std::vector<ogdf::DPoint> bend_vec;
-            for (auto& elem : GA.bends(e))
-                bend_vec.push_back(elem);
-            for (size_t j = 1; j < bend_vec.size() - 1; ++j) {
-                double x_source = bend_vec[j - 1].m_x;
-                double y_source = bend_vec[j - 1].m_y;
-                double x_bend = bend_vec[j].m_x;
-                double y_bend = bend_vec[j].m_y;
-                double x_target = bend_vec[bend_vec.size() - 1].m_x;
-                double y_target = bend_vec[bend_vec.size() - 1].m_y;
-                if (x_source != x_bend && x_target != x_bend)
-                    x_coords.insert(x_bend);
-                if (y_source != y_bend && y_target != y_bend)
-                    y_coords.insert(y_bend);
+        if (GA.bends(e).size() <= 2)
+            continue;
+        std::vector<ogdf::DPoint> bend_vec;
+        for (auto &elem : GA.bends(e))
+            bend_vec.push_back(elem);
+        for (size_t j = 1; j < bend_vec.size() - 1; ++j)
+        {
+            double x_source = bend_vec[j - 1].m_x;
+            double y_source = bend_vec[j - 1].m_y;
+            double x_bend = bend_vec[j].m_x;
+            double y_bend = bend_vec[j].m_y;
+            double x_target = bend_vec[bend_vec.size() - 1].m_x;
+            double y_target = bend_vec[bend_vec.size() - 1].m_y;
+            if (x_source != x_bend && x_target != x_bend)
+            {
+                x_coords.insert(x_bend);
+                y_coords.insert(y_bend);
+                x_coor_to_ids[x_bend].push_back(bend_id);
+                y_coor_to_ids[y_bend].push_back(bend_id);
+                edge_to_bend_ids[make_key(e->source()->index(), e->target()->index())].push_back(bend_id);
+                bend_id++;
+            }
+            if (y_source != y_bend && y_target != y_bend)
+            {
+                x_coords.insert(x_bend);
+                y_coords.insert(y_bend);
+                x_coor_to_ids[x_bend].push_back(bend_id);
+                y_coor_to_ids[y_bend].push_back(bend_id);
+                edge_to_bend_ids[make_key(e->source()->index(), e->target()->index())].push_back(bend_id);
+                bend_id++;
             }
         }
     }
-    /*
-     std::cout << "coor before: ";
-     for (const auto coor : x_coords)
-     {
-         std::cout << coor << " ";
-    }   */
-        std::set<double> x_coords_approx;
-        int x = 0;
-        for (auto it = x_coords.begin(); std::next(it) != x_coords.end(); ++it) {
-        auto next_it = std::next(it);
-        double diff = *next_it - *it;
-        if (diff > 10) {
-            x_coords_approx.insert(x);
+    int x = 0;
+    std::vector<double> queue;
+    for (auto it = x_coords.begin(); std::next(it) != x_coords.end(); ++it)
+    {
+        if ((*std::next(it) - *it) > 10)
+        {
             x++;
-            if(std::next(next_it) == x_coords.end())
-                x_coords_approx.insert(x);
-            
-        }        
-    }
-        std::set<double> y_coords_approx;
-        int y = 0;
-        for (auto it = y_coords.begin(); std::next(it) != y_coords.end(); ++it) {
-        auto next_it = std::next(it);
-        double diff = *next_it - *it;
-        if (diff > 10)  {
-            y_coords_approx.insert(y);
-            y++;
-            if(std::next(next_it) == y_coords.end())
-                y_coords_approx.insert(y);
+            queue.push_back(*it);
+            for (auto elem : queue)
+                for (auto id : x_coor_to_ids[elem])
+                    id_to_coords[id] = std::make_tuple(x, 0);
+            queue.clear();
         }
+        else
+            queue.push_back(*it);
     }
-    /*
-     std::cout << "coor after: ";
-     for (const auto coor : x_coords_approx)
-     {
-         std::cout << coor << " ";
-     }
-     std::cout << std::endl;
-      */
     x++;
+    for (auto elem : queue)
+        for (auto id : x_coor_to_ids[elem])
+            id_to_coords[id] = std::make_tuple(x, 0);
+    queue.clear();
+    auto last_it = std::prev(x_coords.end());
+    for (auto id : x_coor_to_ids[*last_it])
+        id_to_coords[id] = std::make_tuple(x, 0);
+    int y = 0;
+    for (auto it = y_coords.begin(); std::next(it) != y_coords.end(); ++it)
+    {
+        if ((*std::next(it) - *it) > 10)
+        {
+            y++;
+            queue.push_back(*it);
+            for (auto elem : queue)
+                for (auto id : y_coor_to_ids[elem])
+                    id_to_coords[id] = std::make_tuple(std::get<0>(id_to_coords[id]), y);
+            queue.clear();
+        }
+        else
+            queue.push_back(*it);
+    }
     y++;
+    for (auto elem : queue)
+        for (auto id : y_coor_to_ids[elem])
+            id_to_coords[id] = std::make_tuple(std::get<0>(id_to_coords[id]), y);
+    queue.clear();
+    last_it = std::prev(y_coords.end());
+    for (auto id : y_coor_to_ids[*last_it])
+        id_to_coords[id] = std::make_tuple(std::get<0>(id_to_coords[id]), y);
+    // std::cout << "from ids to normalized coordinates: " << std::endl;
+    // for (auto it : id_to_coords)
+    //     std::cout << "id: " << it.first << " coords: (" << std::get<0>(it.second) << ", " << std::get<1>(it.second) << ")" << std::endl;
+    int total_edge_length = compute_total_edge_length(GA, G, id_to_coords, edge_to_bend_ids);
     return x * y;
 }
-
 
 int compute_area_2(Shape *shape, ColoredNodesGraph *colored_graph) {
     BuildingResult *result = build_nodes_positions(*shape, *colored_graph);
