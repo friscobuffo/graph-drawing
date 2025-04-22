@@ -22,6 +22,7 @@ metrics = [
     ('crossings', 'Crossings Comparison'),
     ('bends', 'Bends Comparison'),
     ('area', 'Area Comparison'),
+    ('total_edge_length', 'Total Edge Length Comparison'),
     ('time', 'Time Comparison')
 ]
 

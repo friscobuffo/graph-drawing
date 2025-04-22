@@ -28,6 +28,8 @@ public:
 
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
+int compute_total_edge_length(const NodesPositions &positions, const ColoredNodesGraph &graph);
+
 int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
 enum class BuildingResultType {
@@ -58,6 +60,7 @@ struct DrawingResult {
     int area;
     int initial_number_of_cycles;
     int number_of_added_cycles;
+    int total_edge_length;
 };
 
 template <GraphTrait T>
@@ -90,6 +93,7 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_added_corners += shape_added_corners_2.second;
         result = build_nodes_positions(*shape, *colored_graph);
     }
+    // node_positions_to_svg(*result->positions, *colored_graph, "shape_metrics_output.svg");
     int real_number_of_corners = 0;
     for (int i = graph.size(); i < colored_graph->size(); i++) {
         auto& node = colored_graph->get_node(i);
@@ -112,7 +116,8 @@ DrawingResult make_rectilinear_drawing_incremental(
         real_number_of_corners,
         compute_total_area(*positions, *colored_graph),
         (int)cycles.size() - number_of_added_cycles,
-        number_of_added_cycles
+        number_of_added_cycles,
+        compute_total_edge_length(*positions, *colored_graph),
     };
 }
 

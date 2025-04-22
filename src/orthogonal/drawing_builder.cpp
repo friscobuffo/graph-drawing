@@ -358,6 +358,29 @@ void node_positions_to_svg(
     drawer.saveToFile(filename);
 }
 
+int compute_total_edge_length(
+    const NodesPositions &positions,
+    const ColoredNodesGraph &graph)
+{
+    int total_edge_length = 0;
+    for (size_t i = 0; i < graph.size(); ++i)
+    {
+        for (auto &edge : graph.get_node(i).get_edges())
+        {
+            size_t j = edge.get_to();
+            if (i < j)
+            {
+                int x1 = positions.get_position_x(i);
+                int y1 = positions.get_position_y(i);
+                int x2 = positions.get_position_x(j);
+                int y2 = positions.get_position_y(j);
+                total_edge_length += std::abs(x1 - x2) + std::abs(y1 - y2);
+            }
+        }
+    }
+    return total_edge_length;
+}
+
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph) {
     int min_x = graph.size();
     int min_y = graph.size();

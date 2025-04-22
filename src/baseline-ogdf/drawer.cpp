@@ -78,13 +78,14 @@ int compute_total_edge_length(const ogdf::GraphAttributes &GA, const ogdf::Graph
             edge_length += x + y;
         }
     }
-    std::cout << "total edge length: " << edge_length << std::endl;
     return edge_length;
 }
 
-int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
-    std::set<double> x_coords;
-    std::set<double> y_coords;
+// after normalization, node's coordinates are in range [1, x] and [1, y]
+// in this way, the area of a path is 1*n
+std::tuple<int, int> compute_normalized_area(const ogdf::GraphAttributes &GA, const ogdf::Graph &G)
+{
+    std::set<double> x_coords, y_coords;
     std::unordered_map<double, std::vector<int>> x_coor_to_ids, y_coor_to_ids;
     std::unordered_map<int, std::tuple<int, int>> id_to_coords;
     std::unordered_map<int, std::vector<int>> edge_to_bend_ids;
@@ -183,15 +184,7 @@ int compute_area_1(const ogdf::GraphAttributes &GA, const ogdf::Graph &G) {
     // std::cout << "from ids to normalized coordinates: " << std::endl;
     // for (auto it : id_to_coords)
     //     std::cout << "id: " << it.first << " coords: (" << std::get<0>(it.second) << ", " << std::get<1>(it.second) << ")" << std::endl;
-    int total_edge_length = compute_total_edge_length(GA, G, id_to_coords, edge_to_bend_ids);
-    return x * y;
-}
-
-int compute_area_2(Shape *shape, ColoredNodesGraph *colored_graph) {
-    BuildingResult *result = build_nodes_positions(*shape, *colored_graph);
-    // node_positions_to_svg(*result->positions, *colored_graph);
-
-    return compute_total_area(*result->positions, *colored_graph);
+    return std::make_tuple(x * y, compute_total_edge_length(GA, G, id_to_coords, edge_to_bend_ids));
 }
 
 int compute_area_from_shape(const ogdf::GraphAttributes &GA, ogdf::Graph &G) {
@@ -236,9 +229,9 @@ int compute_area_from_shape(const ogdf::GraphAttributes &GA, ogdf::Graph &G) {
             colored_graph->add_edge(target->index(), source->index());
         }
     }
-    return compute_area_2(shape, colored_graph);
-    // std::cout << shape->to_string() << std::endl;
-    // std::cout << colored_graph->to_string() << std::endl;
+    BuildingResult *result = build_nodes_positions(*shape, *colored_graph);
+    // node_positions_to_svg(*result->positions, *colored_graph);
+    return compute_total_area(*result->positions, *colored_graph);
 }
 
 int count_crossings(const ogdf::GraphAttributes &GA, const ogdf::LayoutStatistics &stats) {
@@ -319,8 +312,10 @@ OGDFResult create_drawing(
     if (gml_output_filename != "")
         ogdf::GraphIO::write(GA, gml_output_filename, ogdf::GraphIO::writeGML);
 
+    std::tuple<int, int> area_edge_length_result = compute_normalized_area(GA, G);
     return {
         count_crossings(GA, stats),
         count_bends(GA, G),
-        compute_area_1(GA, G)};
+        get<0>(area_edge_length_result),
+        get<1>(area_edge_length_result)};
 }

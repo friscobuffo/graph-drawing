@@ -5,6 +5,7 @@ struct OGDFResult {
     int crossings;
     int bends;
     int area;
+    int total_edge_length;
 };
 
 OGDFResult create_drawing(
