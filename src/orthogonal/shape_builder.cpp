@@ -247,6 +247,7 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
         throw std::runtime_error("Could not find the edge to remove");
     // pick one of the first three unit clauses
     int random_index = rand() % std::min((int)unit_clauses.size(), 3);
+    random_index = 0;
     return std::abs(unit_clauses[random_index]);
 }
 

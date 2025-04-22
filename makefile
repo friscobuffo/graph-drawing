@@ -51,8 +51,8 @@ $(GEN_TARGET): $(GEN_OBJ) $(COMMON_OBJS)
 	$(COMPILER) $(CXXFLAGS) -o $@ $^
 
 # Link gen executable (without OGDF)
-$(MAIN_TARGET): $(MAIN_OBJ) $(COMMON_OBJS)
-	$(COMPILER) $(CXXFLAGS) -o $@ $^
+$(MAIN_TARGET): $(MAIN_OBJ) $(COMMON_OBJS) $(OGDF_OBJS)
+	$(COMPILER) $(CXXFLAGS) -o $@ $^ $(OGDF_LDFLAGS)
 
 # Compile normal source files
 $(COMMON_OBJS): $(OBJ_DIR)/%.o: %.cpp

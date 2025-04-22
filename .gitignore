@@ -8,3 +8,4 @@ stats
 *.svg
 gen
 /generated-graphs
+/output-svgs

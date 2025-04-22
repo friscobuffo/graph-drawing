@@ -19,19 +19,21 @@
 #include "config/config.hpp"
 #include "baseline-ogdf/drawer.hpp"
 
-std::tuple<int, int, int, int, double> test_shape_metrics_approach(const SimpleGraph &graph)
-{
+std::tuple<int, int, int, int, double> test_shape_metrics_approach(
+    const SimpleGraph &graph, const std::string& svg_output_filename) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
+    node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
     return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, elapsed.count());
 }
 
-std::tuple<int, int, int, int, double> test_ogdf_approach(const SimpleGraph &graph)
-{
+std::tuple<int, int, int, int, double> test_ogdf_approach(
+    const SimpleGraph &graph, const std::string& svg_output_filename
+) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = create_drawing(graph, "ogdf_output.svg", "ogdf_output.gml");
+    auto result = create_drawing(graph, svg_output_filename, "");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, elapsed.count());
@@ -41,8 +43,8 @@ void save_stats(
     std::ofstream &results_file,
     std::tuple<int, int, int, int, double> &results_shape_metrics,
     std::tuple<int, int, int, int, double> &results_ogdf,
-    const std::string &graph_name)
-{
+    const std::string &graph_name
+) {
     results_file << graph_name << ",";
     results_file << std::get<0>(results_shape_metrics) << ",";
     results_file << std::get<0>(results_ogdf) << ",";
@@ -66,7 +68,10 @@ std::vector<std::string> collect_txt_files(const std::string& folder_path) {
     return txt_files;
 }
 
-void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file) {
+void compare_approaches_in_folder(
+    std::string& folder_path, std::ofstream& results_file,
+    std::string& output_svgs_folder
+) {
     auto txt_files = collect_txt_files(folder_path);
     std::atomic<int> number_of_comparisons_done{0};
     std::mutex cout_mutex, file_mutex;
@@ -85,10 +90,8 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                 const auto& entry_path = txt_files[current];
                 const std::string graph_filename = std::filesystem::path(entry_path).stem().string();
 
-                // Increment and get the current comparison number
                 int current_number = ++number_of_comparisons_done;
 
-                // Thread-safe console output
                 {
                     std::lock_guard<std::mutex> lock(cout_mutex);
                     std::cout << "Processing comparison #" << current_number 
@@ -97,10 +100,13 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
 
                 // Load and process graph
                 auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
-                auto result_shape_metrics = test_shape_metrics_approach(*graph);
-                auto result_ogdf = test_ogdf_approach(*graph);
+                const std::string svg_output_filename_shape_metrics
+                    = output_svgs_folder + graph_filename + "_shape_metrics.svg";
+                const std::string svg_output_filename_ogdf
+                    = output_svgs_folder + graph_filename + "_ogdf.svg";
+                auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
+                auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
 
-                // Thread-safe file writing
                 {
                     std::lock_guard<std::mutex> lock(file_mutex);
                     save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
@@ -108,12 +114,8 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
             }
         });
     }
-
-    // Wait for all threads to complete
-    for (auto& t : threads) {
+    for (auto& t : threads)
         if (t.joinable()) t.join();
-    }
-
     std::cout << "All comparisons done." << std::endl;
     std::cout << "Threads used: " << num_threads << std::endl;
 }
@@ -126,13 +128,27 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
         std::cout << "Do you want to delete it? (y/n): ";
         char answer;
         std::cin >> answer;
-        if (answer == 'y' || answer == 'Y') {
+        if (answer == 'y' || answer == 'Y')
             std::filesystem::remove(test_results_filename);
-        } else {
+        else {
             std::cout << "File not deleted." << std::endl;
             return;
         }
     }
+    std::string output_svgs_folder = config["output_svgs_folder"];
+    if (std::filesystem::exists(output_svgs_folder)) {
+        std::cout << "Folder " << output_svgs_folder << " already exists." << std::endl;
+        std::cout << "Do you want to delete it? (y/n): ";
+        char answer;
+        std::cin >> answer;
+        if (answer == 'y' || answer == 'Y')
+            std::filesystem::remove_all(output_svgs_folder);
+        else {
+            std::cout << "Folder not deleted." << std::endl;
+            return;
+        }
+    }
+    std::filesystem::create_directories(output_svgs_folder);
     std::ofstream result_file(test_results_filename);
     if (result_file.is_open()) {
         result_file << "graph_name,";
@@ -148,7 +164,7 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
         result_file << "ogdf_time" << std::endl;
     }
     std::string test_graphs_folder = config["test_graphs_folder"];
-    compare_approaches_in_folder(test_graphs_folder, result_file);
+    compare_approaches_in_folder(test_graphs_folder, result_file, output_svgs_folder);
     std::cout << std::endl;
     result_file.close();
 }

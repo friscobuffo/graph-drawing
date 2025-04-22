@@ -5,7 +5,7 @@
 #include "core/graph/file_loader.hpp"
 #include "core/graph/generators.hpp"
 #include "config/config.hpp"
-// #include "baseline-ogdf/drawer.hpp"
+#include "baseline-ogdf/drawer.hpp"
 
 int main() {
     auto config = parse_config("config.txt");
@@ -17,6 +17,16 @@ int main() {
         *result.augmented_graph,
         filename
     );
-    // create_drawing(*graph, "output.svg");
+    std::cout << "Shape metrics:\n";
+    std::cout << "Area: " << result.area << "\n";
+    std::cout << "Crossings: " << result.crossings << "\n";
+    std::cout << "Bends: " << result.bends << "\n";
+    std::cout << "Total edge length: " << result.total_edge_length << "\n";
+    auto result_ogdf = create_drawing(*graph, config["output_svg_ogdf"]);
+    std::cout << "OGDF metrics:\n";
+    std::cout << "Area: " << result_ogdf.area << "\n";
+    std::cout << "Crossings: " << result_ogdf.crossings << "\n";
+    std::cout << "Bends: " << result_ogdf.bends << "\n";
+    std::cout << "Total edge length: " << result_ogdf.total_edge_length << "\n";
     return 0;
 }

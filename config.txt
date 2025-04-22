@@ -1,8 +1,9 @@
 #################################
 # MAIN CONFIG
 #################################
-input_graph_file=example-graphs/g13/g13.txt
-output_svg_shape_metrics=drawing.svg
+input_graph_file=example-graphs/g8.txt
+output_svg_shape_metrics=drawing2.svg
+output_svg_ogdf=drawing_ogdf.svg
 
 
 #################################
@@ -11,9 +12,9 @@ output_svg_shape_metrics=drawing.svg
 generated_graphs_folder=generated-graphs/
 min_graph_density=1.1
 max_graph_density=1.9
-min_number_of_nodes=10
-max_number_of_nodes=30
-graphs_generated_per_same_nodes_number=20
+min_number_of_nodes=15
+max_number_of_nodes=25
+graphs_generated_per_same_nodes_number=5
 
 
 #################################
@@ -21,3 +22,4 @@ graphs_generated_per_same_nodes_number=20
 #################################
 test_graphs_folder=generated-graphs/
 output_result_filename=test_results.csv
+output_svgs_folder=output-svgs/
