@@ -6,6 +6,7 @@ glucose
 /OGDF
 stats
 *.svg
+*.DS_Store
 gen
 /generated-graphs
 /output-svgs
