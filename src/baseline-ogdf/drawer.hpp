@@ -6,6 +6,10 @@ struct OGDFResult {
     int bends;
     int area;
     int total_edge_length;
+    // int max_bends_per_edge;
+    // int max_edge_length;
+    // double bends_standard_deviation;
+    // double edge_length_standard_deviation;
 };
 
 OGDFResult create_drawing(
