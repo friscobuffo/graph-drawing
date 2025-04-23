@@ -301,12 +301,7 @@ double compute_standard_deviation(std::vector<int> metric_per_edge)
     double mean = sum / n;
     double variance = 0.0;
     for (int elem : metric_per_edge)
-    {
-        std::cout << "elem: " << elem << "mean: " << mean << std::endl;
         variance += (elem - mean) * (elem - mean);
-    }
-    std::cout << "variance: " << variance << std::endl;
-    std::cout << "n: " << n << std::endl;
     variance /= n;
     return std::sqrt(variance);
 }
@@ -440,9 +435,8 @@ OGDFResult create_drawing(
         bends,
         normalized_area,
         total_edge_length,
-        // max_bends_per_edge,
-        // max_edge_length,
-        // bends_standard_deviation,
-        // edge_length_standard_deviation
-    };
+        max_bends_per_edge,
+        max_edge_length,
+        bends_standard_deviation,
+        edge_length_standard_deviation};
 }
