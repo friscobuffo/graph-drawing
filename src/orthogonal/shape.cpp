@@ -3,7 +3,13 @@
 #include <cassert>
 
 void Shape::set_direction(const size_t i, const size_t j, const Direction direction) {
-    assert(!contains(i, j));
+    if (m_shape.contains(std::make_pair(i, j))) {
+        std::string error = "Direction already set for this pair: (" +
+            std::to_string(i) + ", " + std::to_string(j) + ") -> " +
+            direction_to_string(m_shape.at(std::make_pair(i, j))) + " vs " +
+            direction_to_string(direction);
+        throw std::invalid_argument(error);
+    }
     m_shape[std::make_pair(i, j)] = direction;
     if (m_node_neighbors_direction.contains(i)) {
         switch (direction) {

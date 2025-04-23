@@ -51,6 +51,14 @@ void node_positions_to_svg(
     const std::string& filename
 );
 
+void refine_result(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& positions,
+    ColoredNodesGraph& refined_graph,
+    Shape& refined_shape
+);
+
 struct DrawingResult {
     std::unique_ptr<const ColoredNodesGraph> augmented_graph;
     std::unique_ptr<const Shape> shape;
@@ -77,9 +85,7 @@ DrawingResult make_rectilinear_drawing_incremental(
             colored_graph->add_edge(i, j);
         }
     }
-    auto shape_added_corners = build_shape(*colored_graph, cycles);
-    const Shape* shape = shape_added_corners.first;
-    int number_of_added_corners = shape_added_corners.second;
+    Shape* shape = build_shape(*colored_graph, cycles);
     BuildingResult* result = build_nodes_positions(*shape, *colored_graph);
     int number_of_added_cycles = 0;
     while (result->type == BuildingResultType::CYCLES_TO_BE_ADDED) {
@@ -88,32 +94,35 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_added_cycles += result->cycles_to_be_added.size();
         delete shape;
         delete result;
-        auto shape_added_corners_2 = build_shape(*colored_graph, cycles);
-        shape = shape_added_corners_2.first;
-        number_of_added_corners += shape_added_corners_2.second;
+        shape = build_shape(*colored_graph, cycles);
         result = build_nodes_positions(*shape, *colored_graph);
     }
-    // node_positions_to_svg(*result->positions, *colored_graph, "shape_metrics_output.svg");
-    int real_number_of_corners = 0;
+    const NodesPositions* positions = result->positions;
+    ColoredNodesGraph* refined_colored_graph = new ColoredNodesGraph{};
+    Shape* refined_shape = new Shape{};
+    refine_result(*colored_graph, *shape, *positions, *refined_colored_graph, *refined_shape);
+    delete colored_graph;
+    delete shape;
+    delete positions;
+    delete result;
+    colored_graph = refined_colored_graph;
+    shape = refined_shape;
+    result = build_nodes_positions(*shape, *colored_graph);
+    assert(result->type == BuildingResultType::OK);
+    positions = result->positions;
+    int number_of_corners = 0;
     for (int i = graph.size(); i < colored_graph->size(); i++) {
         auto& node = colored_graph->get_node(i);
         assert(node.get_color() == Color::RED);
-        int j_1 = node.get_edges()[0].get_to();
-        int j_2 = node.get_edges()[1].get_to();
-        if (shape->is_horizontal(i, j_1) && shape->is_horizontal(i, j_2))
-            continue;
-        if (shape->is_vertical(i, j_1) && shape->is_vertical(i, j_2))
-            continue;
-        real_number_of_corners++;
+        number_of_corners++;
     }
-    const NodesPositions* positions = result->positions;
     delete result;
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
         std::unique_ptr<const Shape>(shape),
         std::unique_ptr<const NodesPositions>(positions),
         compute_total_crossings(*positions, *colored_graph),
-        real_number_of_corners,
+        number_of_corners,
         compute_total_area(*positions, *colored_graph),
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles,

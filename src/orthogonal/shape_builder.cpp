@@ -189,7 +189,7 @@ void add_cycles_constraints(
     }
 }
 
-const Shape* result_to_shape(
+Shape* result_to_shape(
     const ColoredNodesGraph& graph,
     const std::vector<int>& numbers,
     const VariablesHandler& handler
@@ -251,16 +251,13 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
     return std::abs(unit_clauses[random_index]);
 }
 
-const Shape* build_shape_or_add_corner(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles);
+Shape* build_shape_or_add_corner(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles);
 
-std::pair<const Shape*,int> build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
-    const Shape* shape = build_shape_or_add_corner(colored_graph, cycles);
-    int added_corners = 0;
-    while (shape == nullptr) {
+Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
+    Shape* shape = build_shape_or_add_corner(colored_graph, cycles);
+    while (shape == nullptr)
         shape = build_shape_or_add_corner(colored_graph, cycles);
-        ++added_corners;
-    }
-    return {shape,added_corners};
+    return shape;
 }
 
 std::unordered_set<size_t> used_indices;
@@ -296,7 +293,7 @@ std::string add_index_to_filename(const std::string& filename, const size_t inde
     return path + filename_part;
 }
 
-const Shape* build_shape_or_add_corner(
+Shape* build_shape_or_add_corner(
     ColoredNodesGraph& colored_graph,
     std::vector<std::vector<size_t>>& cycles
 ) {
@@ -345,6 +342,6 @@ const Shape* build_shape_or_add_corner(
         return nullptr;
     }
     const std::vector<int>& variables = results->numbers;
-    const Shape* shape = result_to_shape(colored_graph, variables, handler);
+    Shape* shape = result_to_shape(colored_graph, variables, handler);
     return shape;
 }

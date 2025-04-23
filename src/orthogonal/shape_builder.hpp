@@ -8,6 +8,6 @@
 #include "../core/graph/graph.hpp"
 #include "shape.hpp"
 
-std::pair<const Shape*,int> build_shape(ColoredNodesGraph& graph, std::vector<std::vector<size_t>>& cycles);
+Shape* build_shape(ColoredNodesGraph& graph, std::vector<std::vector<size_t>>& cycles);
 
 #endif

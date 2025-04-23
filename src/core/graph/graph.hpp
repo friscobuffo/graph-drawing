@@ -24,8 +24,6 @@ concept GraphTrait = requires(T graph, const T constGraph) {
     { constGraph.size() } -> std::convertible_to<size_t>;
     { graph.remove_edge(0, 0) } -> std::same_as<void>;
     { constGraph.get_number_of_edges() } -> std::convertible_to<size_t>;
-    // { constGraph.to_string() } -> std::convertible_to<std::string>;
-    // { constGraph.print() } -> std::same_as<void>;
 };
 
 template <typename T>

@@ -1,6 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import re
+import numpy as np
+from scipy import stats
 
 # Read CSV data
 df = pd.read_csv('test_results.csv')  # Replace with your actual file path
@@ -28,7 +30,13 @@ metrics = [
 
 for metric, title in metrics:
     plt.figure(figsize=(8, 6))
-    sc = plt.scatter(df[f'ogdf_{metric}'], df[f'shape_metrics_{metric}'],
+    
+    # Get x and y values
+    x = df[f'ogdf_{metric}']
+    y = df[f'shape_metrics_{metric}']
+    
+    # Create scatter plot
+    sc = plt.scatter(x, y,
                      c=df['density'], cmap='viridis', vmin=1, vmax=2,
                      edgecolor='k', s=35)
     
@@ -38,12 +46,18 @@ for metric, title in metrics:
     plt.title(title)
     plt.grid(True, linestyle='--', alpha=0.7)
     
-    # Add diagonal line
-    min_val = min(df[f'ogdf_{metric}'].min(), df[f'shape_metrics_{metric}'].min())
-    max_val = max(df[f'ogdf_{metric}'].max(), df[f'shape_metrics_{metric}'].max())
+    # Add diagonal line (bisector)
+    min_val = min(x.min(), y.min())
+    max_val = max(x.max(), y.max())
     plt.plot([min_val, max_val], [min_val, max_val], 'r--', label='y = x')
-    plt.legend()
     
+    # Calculate and plot best-fit line
+    mask = ~np.isnan(x) & ~np.isnan(y)  # Handle NaN values if any
+    slope, intercept, r_value, p_value, std_err = stats.linregress(x[mask], y[mask])
+    fit_label = f'Best fit: y = {slope:.2f}x + {intercept:.2f}\n(R² = {r_value**2:.2f})'
+    plt.plot(x, slope * x + intercept, 'b-', label=fit_label)
+    
+    plt.legend()
     plt.tight_layout()
 
 plt.show()

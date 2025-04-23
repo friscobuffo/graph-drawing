@@ -451,3 +451,102 @@ int compute_total_crossings(const NodesPositions& positions, const ColoredNodesG
     }
     return total_crossings/4;
 }
+
+void refine_result(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& positions,
+    ColoredNodesGraph& refined_graph,
+    Shape& refined_shape
+) {
+    int next_index = 0;
+    std::vector<int> old_to_new_index;
+    for (int i = 0; i < graph.size(); ++i) {
+        auto& node = graph.get_node(i);
+        if (node.get_color() == Color::BLACK) {
+            refined_graph.add_node(Color::BLACK);
+            old_to_new_index.push_back(next_index++);
+            continue;
+        }
+        assert(node.get_color() == Color::RED);
+        int j_1 = node.get_edges()[0].get_to();
+        int j_2 = node.get_edges()[1].get_to();
+        if (shape.is_horizontal(i, j_1) != shape.is_horizontal(i, j_2)) {
+            refined_graph.add_node(Color::RED);
+            old_to_new_index.push_back(next_index++);
+            continue;
+        }
+        old_to_new_index.push_back(-1);
+    }
+    assert(graph.size() == old_to_new_index.size());
+    for (int i = 0; i < graph.size(); ++i) {
+        auto& node = graph.get_node(i);
+        switch (node.get_color()) {
+            case Color::BLACK:
+                for (auto& edge : node.get_edges()) {
+                    int j = edge.get_to();
+                    if (i < j && graph.get_node(j).get_color() == Color::BLACK) {
+                        refined_graph.add_undirected_edge(old_to_new_index[i], old_to_new_index[j]);
+                        refined_shape.set_direction(old_to_new_index[i], old_to_new_index[j], shape.get_direction(i, j));
+                        refined_shape.set_direction(old_to_new_index[j], old_to_new_index[i], shape.get_direction(j, i));
+                    }
+                    else if (graph.get_node(j).get_color() == Color::RED && 
+                             old_to_new_index[j] != -1 &&
+                             old_to_new_index[j] != -2) {
+                        refined_graph.add_undirected_edge(old_to_new_index[i], old_to_new_index[j]);
+                        refined_shape.set_direction(old_to_new_index[i], old_to_new_index[j], shape.get_direction(i, j));
+                        refined_shape.set_direction(old_to_new_index[j], old_to_new_index[i], shape.get_direction(j, i));
+                    }
+                }
+                break;
+            case Color::RED:
+                if (old_to_new_index[i] == -2) continue;
+                int j_1 = node.get_edges()[0].get_to();
+                int j_2 = node.get_edges()[1].get_to();
+                if (old_to_new_index[i] >= 0) {
+                    if (graph.get_node(j_1).get_color() == Color::RED && old_to_new_index[j_1] >= 0 && i < j_1) {
+                        refined_graph.add_undirected_edge(old_to_new_index[i], old_to_new_index[j_1]);
+                        refined_shape.set_direction(old_to_new_index[i], old_to_new_index[j_1], shape.get_direction(i, j_1));
+                        refined_shape.set_direction(old_to_new_index[j_1], old_to_new_index[i], shape.get_direction(j_1, i));
+                    }
+                    if (graph.get_node(j_2).get_color() == Color::RED && old_to_new_index[j_2] >= 0 && i < j_2) {
+                        refined_graph.add_undirected_edge(old_to_new_index[i], old_to_new_index[j_2]);
+                        refined_shape.set_direction(old_to_new_index[i], old_to_new_index[j_2], shape.get_direction(i, j_2));
+                        refined_shape.set_direction(old_to_new_index[j_2], old_to_new_index[i], shape.get_direction(j_2, i));
+                    }
+                } else if (old_to_new_index[i] == -1) {
+                    old_to_new_index[i] = -2;
+                    int prev = i;
+                    while (old_to_new_index[j_1] == -1) {
+                        old_to_new_index[j_1] = -2;
+                        int j_1_ = graph.get_node(j_1).get_edges()[0].get_to();
+                        int j_2_ = graph.get_node(j_1).get_edges()[1].get_to();
+                        if (prev == j_2_) {
+                            prev = j_1;
+                            j_1 = j_1_;
+                        } else {
+                            prev = j_1;
+                            j_1 = j_2_;
+                        }
+                    }
+                    prev = i;
+                    while (old_to_new_index[j_2] == -1) {
+                        old_to_new_index[j_2] = -2;
+                        int j_1_ = graph.get_node(j_2).get_edges()[0].get_to();
+                        int j_2_ = graph.get_node(j_2).get_edges()[1].get_to();
+                        if (prev == j_2_) {
+                            prev = j_2;
+                            j_2 = j_1_;
+                        } else {
+                            prev = j_2;
+                            j_2 = j_2_;
+                        }
+                    }
+                    refined_graph.add_undirected_edge(old_to_new_index[j_1], old_to_new_index[j_2]);
+                    refined_shape.set_direction(old_to_new_index[j_1], old_to_new_index[j_2], shape.get_direction(i, j_2));
+                    refined_shape.set_direction(old_to_new_index[j_2], old_to_new_index[j_1], shape.get_direction(j_2, i));
+                }
+                break;
+        }
+    }
+}
