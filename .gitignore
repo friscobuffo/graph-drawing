@@ -8,5 +8,6 @@ stats
 *.svg
 *.DS_Store
 gen
-/generated-graphs
-/output-svgs
+/generated-graphs*
+/output-svgs*
+test_results*

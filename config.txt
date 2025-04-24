@@ -1,7 +1,7 @@
 #################################
 # MAIN CONFIG
 #################################
-input_graph_file=example-graphs/random_graph.txt
+input_graph_file=generated-graphs-10-40/12/graph_83_n12_m21.txt
 output_svg_shape_metrics=drawing_sm.svg
 output_svg_ogdf=drawing_ogdf.svg
 
@@ -9,17 +9,17 @@ output_svg_ogdf=drawing_ogdf.svg
 #################################
 # GRAPH GENERATION CONFIG
 #################################
-generated_graphs_folder=generated-graphs/
+generated_graphs_folder=generated-graphs-41-50/
 min_graph_density=1.1
 max_graph_density=1.9
-min_number_of_nodes=30
-max_number_of_nodes=60
-graphs_generated_per_same_nodes_number=10
+min_number_of_nodes=41
+max_number_of_nodes=50
+graphs_generated_per_same_nodes_number=100
 
 
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=generated-graphs/
-output_result_filename=test_results.csv
-output_svgs_folder=output-svgs/
+test_graphs_folder=generated-graphs-41-50/
+output_result_filename=test_results_41_50.csv
+output_svgs_folder=output-svgs-41-50/

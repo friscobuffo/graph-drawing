@@ -104,12 +104,17 @@ void compare_approaches_in_folder(
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";
                 const std::string svg_output_filename_ogdf
                     = output_svgs_folder + graph_filename + "_ogdf.svg";
-                auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
-                auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
-
-                {
-                    std::lock_guard<std::mutex> lock(file_mutex);
-                    save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
+                try {
+                    auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
+                    auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
+                    {
+                        std::lock_guard<std::mutex> lock(file_mutex);
+                        save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
+                    }
+                } catch (const std::exception& e) {
+                    std::lock_guard<std::mutex> lock(cout_mutex);
+                    std::cout << "Error processing file " << entry_path << ": " << e.what() << std::endl;
+                    throw e;
                 }
             }
         });

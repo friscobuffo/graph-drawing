@@ -421,14 +421,14 @@ OGDFResult create_drawing(
         bends_per_edge.push_back(bend_count);
     }
     double bends_standard_deviation = compute_standard_deviation(bends_per_edge);
-    std::cout << "Normalized area: " << normalized_area << std::endl;
+    /*std::cout << "Normalized area: " << normalized_area << std::endl;
     std::cout << "Crossings: " << crossings << std::endl;
     std::cout << "Bends: " << bends << std::endl;
     std::cout << "Total edge length: " << total_edge_length << std::endl;
     std::cout << "Max number of bends per edge: " << max_bends_per_edge << std::endl;
     std::cout << "Max edge length: " << max_edge_length << std::endl;
     std::cout << "Bends per edge standard deviation: " << bends_standard_deviation << std::endl;
-    std::cout << "Edge length standard deviation: " << edge_length_standard_deviation << std::endl;
+    std::cout << "Edge length standard deviation: " << edge_length_standard_deviation << std::endl;*/
 
     return {
         crossings,

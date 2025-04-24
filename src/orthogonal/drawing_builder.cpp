@@ -471,6 +471,7 @@ void refine_result(
         assert(node.get_color() == Color::RED);
         int j_1 = node.get_edges()[0].get_to();
         int j_2 = node.get_edges()[1].get_to();
+        assert(node.get_degree() == 2);
         if (shape.is_horizontal(i, j_1) != shape.is_horizontal(i, j_2)) {
             refined_graph.add_node(Color::RED);
             old_to_new_index.push_back(next_index++);
@@ -517,6 +518,7 @@ void refine_result(
                 } else if (old_to_new_index[i] == -1) {
                     old_to_new_index[i] = -2;
                     int prev = i;
+                    int old_j_2 = j_2;
                     while (old_to_new_index[j_1] == -1) {
                         old_to_new_index[j_1] = -2;
                         int j_1_ = graph.get_node(j_1).get_edges()[0].get_to();
@@ -543,8 +545,8 @@ void refine_result(
                         }
                     }
                     refined_graph.add_undirected_edge(old_to_new_index[j_1], old_to_new_index[j_2]);
-                    refined_shape.set_direction(old_to_new_index[j_1], old_to_new_index[j_2], shape.get_direction(i, j_2));
-                    refined_shape.set_direction(old_to_new_index[j_2], old_to_new_index[j_1], shape.get_direction(j_2, i));
+                    refined_shape.set_direction(old_to_new_index[j_1], old_to_new_index[j_2], shape.get_direction(i, old_j_2));
+                    refined_shape.set_direction(old_to_new_index[j_2], old_to_new_index[j_1], shape.get_direction(old_j_2, i));
                 }
                 break;
         }
