@@ -9,17 +9,17 @@ output_svg_ogdf=drawing_ogdf.svg
 #################################
 # GRAPH GENERATION CONFIG
 #################################
-generated_graphs_folder=generated-graphs-41-50/
+generated_graphs_folder=generated-graphs-51-60/
 min_graph_density=1.1
 max_graph_density=1.9
-min_number_of_nodes=41
-max_number_of_nodes=50
+min_number_of_nodes=51
+max_number_of_nodes=60
 graphs_generated_per_same_nodes_number=100
 
 
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=generated-graphs-41-50/
-output_result_filename=test_results_41_50.csv
-output_svgs_folder=output-svgs-41-50/
+test_graphs_folder=generated-graphs-51-60/
+output_result_filename=test_results_51_60.csv
+output_svgs_folder=output-svgs-51-60/

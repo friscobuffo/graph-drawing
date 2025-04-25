@@ -11,6 +11,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <unordered_set>
 
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
@@ -18,6 +19,9 @@
 #include "orthogonal/file_loader.hpp"
 #include "config/config.hpp"
 #include "baseline-ogdf/drawer.hpp"
+#include "core/csv.hpp"
+
+std::unordered_set<std::string> graphs_already_in_csv;
 
 std::tuple<int, int, int, int, double> test_shape_metrics_approach(
     const SimpleGraph &graph, const std::string& svg_output_filename) {
@@ -96,6 +100,10 @@ void compare_approaches_in_folder(
                     std::lock_guard<std::mutex> lock(cout_mutex);
                     std::cout << "Processing comparison #" << current_number 
                               << " - " << graph_filename << std::endl;
+                    if (graphs_already_in_csv.find(graph_filename) != graphs_already_in_csv.end()) {
+                        std::cout << "Graph " << graph_filename << " already processed." << std::endl;
+                        continue;
+                    }
                 }
 
                 // Load and process graph
@@ -128,45 +136,51 @@ void compare_approaches_in_folder(
 void compare_approaches(std::unordered_map<std::string, std::string>& config) {
     std::cout << "Comparing approaches..." << std::endl;
     std::string test_results_filename = config["output_result_filename"];
+    bool append_mode = false;
     if (std::filesystem::exists(test_results_filename)) {
         std::cout << "File " << test_results_filename << " already exists." << std::endl;
-        std::cout << "Do you want to delete it? (y/n): ";
+        std::cout << "Do you want to append to it? (y/n): ";
         char answer;
         std::cin >> answer;
-        if (answer == 'y' || answer == 'Y')
-            std::filesystem::remove(test_results_filename);
-        else {
-            std::cout << "File not deleted." << std::endl;
+        if (answer != 'y' && answer != 'Y') {
+            std::cout << "Aborting." << std::endl;
             return;
         }
+        append_mode = true;
+        auto csv_data = parse_csv(test_results_filename);
+        for (const auto& row : csv_data.rows)
+            if (row.size() > 0)
+                graphs_already_in_csv.insert(row[0]);
+    }
+    std::ofstream result_file;
+    if (append_mode) {
+        result_file.open(test_results_filename, std::ios_base::app);
+    } else {
+        result_file.open(test_results_filename);
+        if (result_file.is_open()) {
+            result_file << "graph_name,"
+                << "shape_metrics_crossings,"
+                << "ogdf_crossings,"
+                << "shape_metrics_bends,"
+                << "ogdf_bends,"
+                << "shape_metrics_area,"
+                << "ogdf_area,"
+                << "shape_metrics_total_edge_length,"
+                << "ogdf_total_edge_length,"
+                << "shape_metrics_time,"
+                << "ogdf_time" << std::endl;
+        }
+    }
+    if (!result_file.is_open()) {
+        std::cerr << "Error: Could not open result file " << test_results_filename << std::endl;
+        return;
     }
     std::string output_svgs_folder = config["output_svgs_folder"];
-    if (std::filesystem::exists(output_svgs_folder)) {
-        std::cout << "Folder " << output_svgs_folder << " already exists." << std::endl;
-        std::cout << "Do you want to delete it? (y/n): ";
-        char answer;
-        std::cin >> answer;
-        if (answer == 'y' || answer == 'Y')
-            std::filesystem::remove_all(output_svgs_folder);
-        else {
-            std::cout << "Folder not deleted." << std::endl;
+    if (!std::filesystem::exists(output_svgs_folder)) {
+        if (!std::filesystem::create_directories(output_svgs_folder)) {
+            std::cerr << "Error: Could not create directory " << output_svgs_folder << std::endl;
             return;
         }
-    }
-    std::filesystem::create_directories(output_svgs_folder);
-    std::ofstream result_file(test_results_filename);
-    if (result_file.is_open()) {
-        result_file << "graph_name,";
-        result_file << "shape_metrics_crossings,";
-        result_file << "ogdf_crossings,";
-        result_file << "shape_metrics_bends,";
-        result_file << "ogdf_bends,";
-        result_file << "shape_metrics_area,";
-        result_file << "ogdf_area,";
-        result_file << "shape_metrics_total_edge_length,";
-        result_file << "ogdf_total_edge_length,";
-        result_file << "shape_metrics_time,";
-        result_file << "ogdf_time" << std::endl;
     }
     std::string test_graphs_folder = config["test_graphs_folder"];
     compare_approaches_in_folder(test_graphs_folder, result_file, output_svgs_folder);

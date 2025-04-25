@@ -17,7 +17,8 @@ COMMON_SRCS := src/sat/glucose.cpp \
     src/drawing/svg_drawer.cpp \
     src/orthogonal/drawing_builder.cpp \
     src/config/config.cpp \
-    src/core/graph/generators.cpp
+    src/core/graph/generators.cpp \
+	src/core/csv.cpp
 
 # Files with main() functions
 STATS_MAIN_SRC := src/stats.cpp
