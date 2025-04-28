@@ -23,32 +23,26 @@
 
 std::unordered_set<std::string> graphs_already_in_csv;
 
-std::tuple<int, int, int, int, double> test_shape_metrics_approach(
-    const SimpleGraph &graph, const std::string& svg_output_filename) {
+std::tuple<int, int, int, int, int, int, double, double, double> test_shape_metrics_approach(
+    const SimpleGraph &graph, const std::string &svg_output_filename) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
-    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, elapsed.count());
+    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, result.max_edge_length, result.max_bends_per_edge, result.edge_length_stddev, result.bends_stddev, elapsed.count());
 }
 
-std::tuple<int, int, int, int, double> test_ogdf_approach(
-    const SimpleGraph &graph, const std::string& svg_output_filename
-) {
+std::tuple<int, int, int, int, int, int, double, double, double> test_ogdf_approach(
+    const SimpleGraph &graph, const std::string &svg_output_filename) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = create_drawing(graph, svg_output_filename, "");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, elapsed.count());
+    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, result.max_edge_length, result.max_bends_per_edge, result.edge_length_stddev, result.bends_stddev, elapsed.count());
 }
 
-void save_stats(
-    std::ofstream &results_file,
-    std::tuple<int, int, int, int, double> &results_shape_metrics,
-    std::tuple<int, int, int, int, double> &results_ogdf,
-    const std::string &graph_name
-) {
+void save_stats(std::ofstream &results_file, std::tuple<int, int, int, int, int, int, double, double, double> &results_shape_metrics, std::tuple<int, int, int, int, int, int, double, double, double> &results_ogdf, const std::string &graph_name) {
     results_file << graph_name << ",";
     results_file << std::get<0>(results_shape_metrics) << ",";
     results_file << std::get<0>(results_ogdf) << ",";
@@ -59,7 +53,15 @@ void save_stats(
     results_file << std::get<3>(results_shape_metrics) << ",";
     results_file << std::get<3>(results_ogdf) << ",";
     results_file << std::get<4>(results_shape_metrics) << ",";
-    results_file << std::get<4>(results_ogdf) << std::endl;
+    results_file << std::get<4>(results_ogdf) << ",";
+    results_file << std::get<5>(results_shape_metrics) << ",";
+    results_file << std::get<5>(results_ogdf) << ",";
+    results_file << std::get<6>(results_shape_metrics) << ",";
+    results_file << std::get<6>(results_ogdf) << ",";
+    results_file << std::get<7>(results_shape_metrics) << ",";
+    results_file << std::get<7>(results_ogdf) << ",";
+    results_file << std::get<8>(results_shape_metrics) << ",";
+    results_file << std::get<8>(results_ogdf) << "," << std::endl;
 }
 
 std::vector<std::string> collect_txt_files(const std::string& folder_path) {
@@ -72,10 +74,7 @@ std::vector<std::string> collect_txt_files(const std::string& folder_path) {
     return txt_files;
 }
 
-void compare_approaches_in_folder(
-    std::string& folder_path, std::ofstream& results_file,
-    std::string& output_svgs_folder
-) {
+void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file, std::string& output_svgs_folder) {
     auto txt_files = collect_txt_files(folder_path);
     std::atomic<int> number_of_comparisons_done{0};
     std::mutex input_output_lock;
@@ -153,16 +152,24 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
         result_file.open(test_results_filename);
         if (result_file.is_open()) {
             result_file << "graph_name,"
-                << "shape_metrics_crossings,"
-                << "ogdf_crossings,"
-                << "shape_metrics_bends,"
-                << "ogdf_bends,"
-                << "shape_metrics_area,"
-                << "ogdf_area,"
-                << "shape_metrics_total_edge_length,"
-                << "ogdf_total_edge_length,"
-                << "shape_metrics_time,"
-                << "ogdf_time" << std::endl;
+                        << "shape_metrics_crossings,"
+                        << "ogdf_crossings,"
+                        << "shape_metrics_bends,"
+                        << "ogdf_bends,"
+                        << "shape_metrics_area,"
+                        << "ogdf_area,"
+                        << "shape_metrics_total_edge_length,"
+                        << "ogdf_total_edge_length,"
+                        << "shape_metrics_max_edge_length,"
+                        << "ogdf_max_edge_length,"
+                        << "shape_metrics_max_bends_per_edge,"
+                        << "ogdf_max_bends_per_edge,"
+                        << "shape_metrics_edge_length_stddev,"
+                        << "ogdf_edge_length_stddev,"
+                        << "shape_metrics_bends_stddev,"
+                        << "ogdf_bends_stddev,"
+                        << "shape_metrics_time,"
+                        << "ogdf_time" << std::endl;
         }
     }
     if (!result_file.is_open()) {

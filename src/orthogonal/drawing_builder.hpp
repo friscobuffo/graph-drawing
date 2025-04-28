@@ -28,9 +28,11 @@ public:
 
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph);
 
-int compute_total_edge_length(const NodesPositions &positions, const ColoredNodesGraph &graph);
-
 int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph);
+
+std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &positions, const ColoredNodesGraph &graph);
+
+std::tuple<int, double> compute_bends_metrics(const ColoredNodesGraph &graph);
 
 enum class BuildingResultType {
     OK,
@@ -70,6 +72,10 @@ struct DrawingResult {
     int initial_number_of_cycles;
     int number_of_added_cycles;
     int total_edge_length;
+    int max_edge_length;
+    double edge_length_stddev;
+    int max_bends_per_edge;
+    double bends_stddev;
 };
 
 NodesPositions* compact_area_x(
@@ -139,6 +145,7 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_corners++;
     }
     delete result;
+
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
         std::unique_ptr<const Shape>(shape),
@@ -148,7 +155,11 @@ DrawingResult make_rectilinear_drawing_incremental(
         compute_total_area(*positions, *colored_graph),
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles,
-        compute_total_edge_length(*positions, *colored_graph),
+        std::get<0>(compute_edge_length_metrics(*positions, *colored_graph)),
+        std::get<1>(compute_edge_length_metrics(*positions, *colored_graph)),
+        std::get<2>(compute_edge_length_metrics(*positions, *colored_graph)),
+        std::get<0>(compute_bends_metrics(*colored_graph)),
+        std::get<1>(compute_bends_metrics(*colored_graph)),
     };
 }
 
