@@ -51,10 +51,11 @@ void node_positions_to_svg(
     const std::string& filename
 );
 
+// removes useless corners from the graph and from the shape
+// (useless corners are red nodes with two horizontal or vertical edges)
 void refine_result(
     const ColoredNodesGraph& graph,
     const Shape& shape,
-    const NodesPositions& positions,
     ColoredNodesGraph& refined_graph,
     Shape& refined_shape
 );
@@ -70,6 +71,18 @@ struct DrawingResult {
     int number_of_added_cycles;
     int total_edge_length;
 };
+
+NodesPositions* compact_area_x(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& old_positions
+);
+
+NodesPositions* compact_area_y(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& old_positions
+);
 
 template <GraphTrait T>
 DrawingResult make_rectilinear_drawing_incremental(
@@ -100,7 +113,7 @@ DrawingResult make_rectilinear_drawing_incremental(
     const NodesPositions* positions = result->positions;
     ColoredNodesGraph* refined_colored_graph = new ColoredNodesGraph{};
     Shape* refined_shape = new Shape{};
-    refine_result(*colored_graph, *shape, *positions, *refined_colored_graph, *refined_shape);
+    refine_result(*colored_graph, *shape, *refined_colored_graph, *refined_shape);
     delete colored_graph;
     delete shape;
     delete positions;
@@ -110,6 +123,15 @@ DrawingResult make_rectilinear_drawing_incremental(
     result = build_nodes_positions(*shape, *colored_graph);
     assert(result->type == BuildingResultType::OK);
     positions = result->positions;
+
+    NodesPositions* new_positions = compact_area_x(*colored_graph, *shape, *positions);
+    delete positions;
+    positions = new_positions;
+
+    new_positions = compact_area_y(*colored_graph, *shape, *positions);
+    delete positions;
+    positions = new_positions;
+
     int number_of_corners = 0;
     for (int i = graph.size(); i < colored_graph->size(); i++) {
         auto& node = colored_graph->get_node(i);

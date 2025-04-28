@@ -1,9 +1,9 @@
 #################################
 # MAIN CONFIG
 #################################
-input_graph_file=generated-graphs-10-40/12/graph_83_n12_m21.txt
-output_svg_shape_metrics=drawing_sm.svg
-output_svg_ogdf=drawing_ogdf.svg
+input_graph_file=example-graphs/random_graph.txt
+output_svg_shape_metrics=drawing_sm_2.svg
+output_svg_ogdf=drawing_ogdf_2.svg
 
 
 #################################

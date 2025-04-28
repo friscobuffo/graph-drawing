@@ -10,6 +10,7 @@ public:
     void set_class(size_t elem, size_t class_id)  {
         while (m_elem_to_class.size() <= elem)
             m_elem_to_class.push_back(-1);
+        assert(m_elem_to_class[elem] == -1);
         m_elem_to_class[elem] = class_id;
         while (m_class_to_elems.size() <= class_id)
             m_class_to_elems.push_back(std::vector<size_t>());
@@ -455,7 +456,6 @@ int compute_total_crossings(const NodesPositions& positions, const ColoredNodesG
 void refine_result(
     const ColoredNodesGraph& graph,
     const Shape& shape,
-    const NodesPositions& positions,
     ColoredNodesGraph& refined_graph,
     Shape& refined_shape
 ) {
@@ -551,4 +551,166 @@ void refine_result(
                 break;
         }
     }
+}
+
+int get_x_coordinate(int node, const NodesPositions& positions) {
+    return positions.get_position_x(node);
+}
+
+int get_y_coordinate(int node, const NodesPositions& positions) {
+    return positions.get_position_y(node);
+}
+
+// this function instead of associating a different coordinate to each class,
+// it associates the same coordinate to close classes that are not in conflict
+// this way the drawing will be more compact
+template <typename Func1, typename Func2>
+std::vector<std::vector<size_t>> make_topological_ordering_smart(
+    const LabeledEdgeGraph<Pair<Int>>& graph,
+    EquivalenceClasses& classes,
+    Func1 are_classes_in_conflict,
+    const NodesPositions& positions,
+    Func2 get_coordinate
+) {
+    std::vector<int> in_degree(graph.size(), 0);
+    for (int u = 0; u < graph.size(); ++u)
+        for (auto& edge : graph.get_node(u).get_edges()) {
+            int v = edge.get_to();
+            in_degree[v]++;
+        }
+    std::unordered_set<int> zero_degree;
+    std::vector<std::vector<size_t>> topological_order;
+    for (int i = 0; i < graph.size(); ++i)
+        if (in_degree[i] == 0)
+            zero_degree.insert(i);
+    while (!zero_degree.empty()) {
+        std::vector<size_t> are_equals;
+        int u = *zero_degree.begin();
+        for (int elem : zero_degree)
+            if (get_coordinate(elem, positions) < get_coordinate(u, positions))
+                u = elem;
+        zero_degree.erase(u);
+        are_equals.push_back(u);
+        for (int elem : zero_degree) {
+            bool can_be_added = true;
+            for (auto& class_id : are_equals) {
+                if (are_classes_in_conflict(classes, elem, class_id, positions)) {
+                    can_be_added = false;
+                    break;
+                }
+            }
+            if (can_be_added)
+                are_equals.push_back(elem);
+        }
+        for (auto& class_id : are_equals)
+            zero_degree.erase(class_id);
+        topological_order.push_back(are_equals);
+        std::queue<int> next_queue;
+        for (int u : are_equals) {
+            for (auto& edge : graph.get_node(u).get_edges()) {
+                int v = edge.get_to();
+                if (--in_degree[v] == 0)
+                    zero_degree.insert(v);
+            }
+        }
+    }
+    return topological_order;
+}
+
+bool are_classes_in_conflict_x(
+    EquivalenceClasses& classes,
+    int class_id_1, int class_id_2,
+    const NodesPositions& positions
+) {
+    int min_y_1 = INT_MAX;
+    int max_y_1 = 0;
+    for (auto& node : classes.get_elems(class_id_1)) {
+        min_y_1 = std::min(min_y_1, positions.get_position_y(node));
+        max_y_1 = std::max(max_y_1, positions.get_position_y(node));
+    }
+    int min_y_2 = INT_MAX;
+    int max_y_2 = 0;
+    for (auto& node : classes.get_elems(class_id_2)) {
+        min_y_2 = std::min(min_y_2, positions.get_position_y(node));
+        max_y_2 = std::max(max_y_2, positions.get_position_y(node));
+    }
+    if (min_y_1 > max_y_2 || min_y_2 > max_y_1) return false;
+    return true;
+}
+
+bool are_classes_in_conflict_y(
+    EquivalenceClasses& classes,
+    int class_id_1, int class_id_2,
+    const NodesPositions& positions
+) {
+    int min_x_1 = INT_MAX;
+    int max_x_1 = 0;
+    for (auto& node : classes.get_elems(class_id_1)) {
+        min_x_1 = std::min(min_x_1, positions.get_position_x(node));
+        max_x_1 = std::max(max_x_1, positions.get_position_x(node));
+    }
+    int min_x_2 = INT_MAX;
+    int max_x_2 = 0;
+    for (auto& node : classes.get_elems(class_id_2)) {
+        min_x_2 = std::min(min_x_2, positions.get_position_x(node));
+        max_x_2 = std::max(max_x_2, positions.get_position_x(node));
+    }
+    if (min_x_1 > max_x_2 || min_x_2 > max_x_1) return false;
+    return true;
+}
+
+NodesPositions* compact_area_x(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& old_positions
+) {
+    auto classes = build_equivalence_classes(shape, graph);
+    auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
+    auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
+    auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
+    auto ordering_x = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<0>(ordering));
+    delete std::get<1>(ordering);
+    free(std::get<2>(ordering));
+    free(std::get<3>(ordering));
+    auto classes_x_ordering = make_topological_ordering_smart(*ordering_x, *classes_x,
+        are_classes_in_conflict_x, old_positions, get_x_coordinate);
+    NodesPositions* new_positions = new NodesPositions();
+    int current_position_x = 0;
+    for (auto& classes_id : classes_x_ordering) {
+        for (auto& class_id : classes_id)
+            for (auto& node : classes_x->get_elems(class_id)) {
+                new_positions->set_position_x(node, current_position_x);
+                new_positions->set_position_y(node, old_positions.get_position_y(node));
+            }
+        ++current_position_x;
+    }
+    return new_positions;
+}
+
+NodesPositions* compact_area_y(
+    const ColoredNodesGraph& graph,
+    const Shape& shape,
+    const NodesPositions& old_positions
+) {
+    auto classes = build_equivalence_classes(shape, graph);
+    auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
+    auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
+    auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
+    delete std::get<0>(ordering);
+    auto ordering_y = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<1>(ordering));
+    free(std::get<2>(ordering));
+    free(std::get<3>(ordering));
+    auto classes_y_ordering = make_topological_ordering_smart(*ordering_y, *classes_y,
+        are_classes_in_conflict_y, old_positions, get_y_coordinate);
+    NodesPositions* new_positions = new NodesPositions();
+    int current_position_y = 0;
+    for (auto& classes_id : classes_y_ordering) {
+        for (auto& class_id : classes_id)
+            for (auto& node : classes_y->get_elems(class_id)) {
+                new_positions->set_position_x(node, old_positions.get_position_x(node));
+                new_positions->set_position_y(node, current_position_y);
+            }
+        ++current_position_y;
+    }
+    return new_positions;
 }
