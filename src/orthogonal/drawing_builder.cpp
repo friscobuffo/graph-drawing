@@ -353,6 +353,7 @@ void node_positions_to_svg(
             drawer.add(line);
         }
     for (size_t i = 0; i < graph.size(); ++i) {
+        if (graph.get_node(i).get_color() == Color::RED) continue;
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
