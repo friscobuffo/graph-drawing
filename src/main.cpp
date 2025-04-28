@@ -23,7 +23,7 @@ int main() {
     std::cout << "Bends: " << result.bends << "\n";
     std::cout << "Total edge length: " << result.total_edge_length << "\n";
     auto result_ogdf = create_drawing(*graph, config["output_svg_ogdf"]);
-    std::cout << "OGDF metrics:\n";
+    std::cout << "OGDF:\n";
     std::cout << "Area: " << result_ogdf.area << "\n";
     std::cout << "Crossings: " << result_ogdf.crossings << "\n";
     std::cout << "Bends: " << result_ogdf.bends << "\n";
