@@ -37,7 +37,7 @@ for metric, title in metrics:
     
     # Create scatter plot
     sc = plt.scatter(x, y,
-                     c=df['density'], cmap='viridis', vmin=1, vmax=2,
+                     c=df['density'], cmap='viridis_r', vmin=1, vmax=2,
                      edgecolor='k', s=35)
     
     plt.colorbar(sc, label='Density (edges/nodes)')
