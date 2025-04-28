@@ -78,7 +78,7 @@ void compare_approaches_in_folder(
 ) {
     auto txt_files = collect_txt_files(folder_path);
     std::atomic<int> number_of_comparisons_done{0};
-    std::mutex cout_mutex, file_mutex;
+    std::mutex input_output_lock;
     std::atomic<size_t> index{0};
 
     unsigned num_threads = std::thread::hardware_concurrency();
@@ -90,14 +90,11 @@ void compare_approaches_in_folder(
                 // Get the next file index atomically
                 size_t current = index.fetch_add(1, std::memory_order_relaxed);
                 if (current >= txt_files.size()) break;
-
                 const auto& entry_path = txt_files[current];
                 const std::string graph_filename = std::filesystem::path(entry_path).stem().string();
-
                 int current_number = ++number_of_comparisons_done;
-
                 {
-                    std::lock_guard<std::mutex> lock(cout_mutex);
+                    std::lock_guard<std::mutex> lock(input_output_lock);
                     std::cout << "Processing comparison #" << current_number 
                               << " - " << graph_filename << std::endl;
                     if (graphs_already_in_csv.find(graph_filename) != graphs_already_in_csv.end()) {
@@ -105,24 +102,21 @@ void compare_approaches_in_folder(
                         continue;
                     }
                 }
-
-                // Load and process graph
-                auto graph = load_simple_undirected_graph_from_txt_file(entry_path);
+                std::unique_ptr<SimpleGraph> graph;
+                {
+                    std::lock_guard<std::mutex> lock(input_output_lock);
+                    std::cout << "Loading graph from file: " << entry_path << std::endl;
+                    graph = load_simple_undirected_graph_from_txt_file(entry_path);
+                }
                 const std::string svg_output_filename_shape_metrics
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";
                 const std::string svg_output_filename_ogdf
                     = output_svgs_folder + graph_filename + "_ogdf.svg";
-                try {
-                    auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
-                    auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
-                    {
-                        std::lock_guard<std::mutex> lock(file_mutex);
-                        save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
-                    }
-                } catch (const std::exception& e) {
-                    std::lock_guard<std::mutex> lock(cout_mutex);
-                    std::cout << "Error processing file " << entry_path << ": " << e.what() << std::endl;
-                    throw e;
+                auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
+                auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
+                {
+                    std::lock_guard<std::mutex> lock(input_output_lock);
+                    save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
                 }
             }
         });
