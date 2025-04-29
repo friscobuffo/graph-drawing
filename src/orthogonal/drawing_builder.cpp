@@ -669,7 +669,7 @@ bool can_move_left(
     EquivalenceClasses& classes_x
 ) {
     if (actual_coordinate == 0) return false;
-    if (!coordinate_to_classes.contains(actual_coordinate - 1)) return true;
+    if (coordinate_to_classes.at(actual_coordinate - 1).empty()) return true;
     for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
         if (are_classes_in_conflict_y(classes_x, class_id, other_class_id, positions))
             return false;
@@ -684,7 +684,7 @@ bool can_move_down(
     EquivalenceClasses& classes_y
 ) {
     if (actual_coordinate == 0) return false;
-    if (!coordinate_to_classes.contains(actual_coordinate - 1)) return true;
+    if (coordinate_to_classes.at(actual_coordinate - 1).empty()) return true;
     for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
         if (are_classes_in_conflict_x(classes_y, class_id, other_class_id, positions))
             return false;
@@ -715,11 +715,9 @@ NodesPositions* compact_area_x(
         int actual_coordinate = i;
         assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
         int class_id = *coordinate_to_classes[i].begin();
-        while (true) {
-            if (!can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_x))
-                break;
+        while (can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_x)) {
             coordinate_to_classes[actual_coordinate - 1].insert(class_id);
-            coordinate_to_classes[actual_coordinate].erase(actual_coordinate);
+            coordinate_to_classes[actual_coordinate].erase(class_id);
             actual_coordinate--;
         }
     }
