@@ -31,16 +31,7 @@ std::tuple<int, int, int, int, int, int, double, double, double> test_shape_metr
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
-
-    auto new_positions_1 = std::unique_ptr<NodesPositions>(compact_area_x(*result.augmented_graph, *result.shape, *result.positions));
-    auto new_positions_2 = std::unique_ptr<NodesPositions>(compact_area_y(*result.augmented_graph, *result.shape, *new_positions_1));
-    
-    std::string svg_output_filename_1 = svg_output_filename + "_compact_x.svg";
-    std::string svg_output_filename_2 = svg_output_filename + "_compact_y.svg";
-    node_positions_to_svg(*new_positions_1, *result.augmented_graph, svg_output_filename_1);
-    node_positions_to_svg(*new_positions_2, *result.augmented_graph, svg_output_filename_2);
-    
-    if (check_if_drawing_has_overlappings(*result.augmented_graph, *new_positions_2))
+    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
         throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
         result.crossings,

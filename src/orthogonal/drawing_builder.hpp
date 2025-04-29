@@ -139,6 +139,13 @@ DrawingResult make_rectilinear_drawing_incremental(
     assert(result->type == BuildingResultType::OK);
     positions = result->positions;
     int number_of_corners = 0;
+
+    auto* new_positions = compact_area_x(*colored_graph, *shape, *positions);
+    delete positions;
+    positions = new_positions;
+    new_positions = compact_area_y(*colored_graph, *shape, *positions);
+    delete positions;
+    positions = new_positions;
     for (int i = graph.size(); i < colored_graph->size(); i++) {
         auto& node = colored_graph->get_node(i);
         assert(node.get_color() == Color::RED);
