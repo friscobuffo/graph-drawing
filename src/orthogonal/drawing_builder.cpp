@@ -358,7 +358,7 @@ void node_positions_to_svg(
             drawer.add(line);
         }
     for (size_t i = 0; i < graph.size(); ++i) {
-        if (graph.get_node(i).get_color() == Color::RED) continue;
+        // if (graph.get_node(i).get_color() == Color::RED) continue;
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
     }
@@ -648,7 +648,7 @@ std::vector<std::vector<size_t>> make_topological_ordering_smart(
         std::vector<size_t> are_equals;
         int u = *zero_degree.begin();
         for (int elem : zero_degree)
-            if (get_coordinate(elem, positions) < get_coordinate(u, positions))
+            if (get_coordinate(classes.get_elems(elem)[0], positions) < get_coordinate(classes.get_elems(u)[0], positions))
                 u = elem;
         zero_degree.erase(u);
         are_equals.push_back(u);
@@ -780,8 +780,10 @@ bool check_if_drawing_has_overlappings(const ColoredNodesGraph& graph, const Nod
     // node - node overlappings
     for (int i = 0; i < graph.size(); ++i)
         for (int j = i + 1; j < graph.size(); ++j)
-            if (positions.get_position(i) == positions.get_position(j))
+            if (positions.get_position(i) == positions.get_position(j)) {
+                std::cout << "Node " << i << " overlaps with node " << j << std::endl;
                 return true;
+            }
     // node - edge overlappings
     for (int i = 0; i < graph.size(); ++i) {
         int i_x = positions.get_position_x(i);
@@ -795,11 +797,15 @@ bool check_if_drawing_has_overlappings(const ColoredNodesGraph& graph, const Nod
                 int k_x = positions.get_position_x(edge.get_to());
                 int k_y = positions.get_position_y(edge.get_to());
                 if (j_y == k_y) { // horizontal edge
-                    if (i_y == j_y && i_x >= std::min(j_x, k_x) && i_x <= std::max(j_x, k_x))
+                    if (i_y == j_y && i_x >= std::min(j_x, k_x) && i_x <= std::max(j_x, k_x)) {
+                        std::cout << "Node " << i << " overlaps with edge " << j << "-" << edge.get_to() << std::endl;
                         return true;
+                    }
                 } else { // vertical edge
-                    if (i_x == j_x && i_y >= std::min(j_y, k_y) && i_y <= std::max(j_y, k_y))
+                    if (i_x == j_x && i_y >= std::min(j_y, k_y) && i_y <= std::max(j_y, k_y)) {
+                        std::cout << "Node " << i << " overlaps with edge " << j << "-" << edge.get_to() << std::endl;
                         return true;
+                    }
                 }
             }
         }

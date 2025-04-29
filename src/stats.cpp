@@ -31,7 +31,16 @@ std::tuple<int, int, int, int, int, int, double, double, double> test_shape_metr
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
-    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
+
+    auto new_positions_1 = std::unique_ptr<NodesPositions>(compact_area_x(*result.augmented_graph, *result.shape, *result.positions));
+    auto new_positions_2 = std::unique_ptr<NodesPositions>(compact_area_y(*result.augmented_graph, *result.shape, *new_positions_1));
+    
+    std::string svg_output_filename_1 = svg_output_filename + "_compact_x.svg";
+    std::string svg_output_filename_2 = svg_output_filename + "_compact_y.svg";
+    node_positions_to_svg(*new_positions_1, *result.augmented_graph, svg_output_filename_1);
+    node_positions_to_svg(*new_positions_2, *result.augmented_graph, svg_output_filename_2);
+    
+    if (check_if_drawing_has_overlappings(*result.augmented_graph, *new_positions_2))
         throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
         result.crossings,
@@ -135,11 +144,18 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";
                 const std::string svg_output_filename_ogdf
                     = output_svgs_folder + graph_filename + "_ogdf.svg";
-                auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
-                auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
-                {
+                try {
+                    auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
+                    auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
+                    {
+                        std::lock_guard<std::mutex> lock(input_output_lock);
+                        save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
+                    }
+                }
+                catch (const std::exception& e) {
                     std::lock_guard<std::mutex> lock(input_output_lock);
-                    save_stats(results_file, result_shape_metrics, result_ogdf, graph_filename);
+                    std::cout << "Error processing graph " << graph_filename << std::endl;
+                    throw;
                 }
             }
         });
