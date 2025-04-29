@@ -622,60 +622,27 @@ int get_y_coordinate(int node, const NodesPositions& positions) {
     return positions.get_position_y(node);
 }
 
-// this function instead of associating a different coordinate to each class,
-// it associates the same coordinate to close classes that are not in conflict
-// this way the drawing will be more compact
-template <typename Func1, typename Func2>
-std::vector<std::vector<size_t>> make_topological_ordering_smart(
-    const LabeledEdgeGraph<Pair<Int>>& graph,
+template <typename Func>
+bool are_classes_in_conflict(
     EquivalenceClasses& classes,
-    Func1 are_classes_in_conflict,
+    int class_id_1, int class_id_2,
     const NodesPositions& positions,
-    Func2 get_coordinate
+    Func get_position
 ) {
-    std::vector<int> in_degree(graph.size(), 0);
-    for (int u = 0; u < graph.size(); ++u)
-        for (auto& edge : graph.get_node(u).get_edges()) {
-            int v = edge.get_to();
-            in_degree[v]++;
-        }
-    std::unordered_set<int> zero_degree;
-    std::vector<std::vector<size_t>> topological_order;
-    for (int i = 0; i < graph.size(); ++i)
-        if (in_degree[i] == 0)
-            zero_degree.insert(i);
-    while (!zero_degree.empty()) {
-        std::vector<size_t> are_equals;
-        int u = *zero_degree.begin();
-        for (int elem : zero_degree)
-            if (get_coordinate(classes.get_elems(elem)[0], positions) < get_coordinate(classes.get_elems(u)[0], positions))
-                u = elem;
-        zero_degree.erase(u);
-        are_equals.push_back(u);
-        for (int elem : zero_degree) {
-            bool can_be_added = true;
-            for (auto& class_id : are_equals) {
-                if (are_classes_in_conflict(classes, elem, class_id, positions)) {
-                    can_be_added = false;
-                    break;
-                }
-            }
-            if (can_be_added)
-                are_equals.push_back(elem);
-        }
-        for (auto& class_id : are_equals)
-            zero_degree.erase(class_id);
-        topological_order.push_back(are_equals);
-        std::queue<int> next_queue;
-        for (int u : are_equals) {
-            for (auto& edge : graph.get_node(u).get_edges()) {
-                int v = edge.get_to();
-                if (--in_degree[v] == 0)
-                    zero_degree.insert(v);
-            }
-        }
+    int min_1 = INT_MAX;
+    int max_1 = 0;
+    for (auto& node : classes.get_elems(class_id_1)) {
+        min_1 = std::min(min_1, get_position(node, positions));
+        max_1 = std::max(max_1, get_position(node, positions));
     }
-    return topological_order;
+    int min_2 = INT_MAX;
+    int max_2 = 0;
+    for (auto& node : classes.get_elems(class_id_2)) {
+        min_2 = std::min(min_2, get_position(node, positions));
+        max_2 = std::max(max_2, get_position(node, positions));
+    }
+    if (min_1 > max_2 || min_2 > max_1) return false;
+    return true;
 }
 
 bool are_classes_in_conflict_x(
@@ -683,20 +650,7 @@ bool are_classes_in_conflict_x(
     int class_id_1, int class_id_2,
     const NodesPositions& positions
 ) {
-    int min_y_1 = INT_MAX;
-    int max_y_1 = 0;
-    for (auto& node : classes.get_elems(class_id_1)) {
-        min_y_1 = std::min(min_y_1, positions.get_position_y(node));
-        max_y_1 = std::max(max_y_1, positions.get_position_y(node));
-    }
-    int min_y_2 = INT_MAX;
-    int max_y_2 = 0;
-    for (auto& node : classes.get_elems(class_id_2)) {
-        min_y_2 = std::min(min_y_2, positions.get_position_y(node));
-        max_y_2 = std::max(max_y_2, positions.get_position_y(node));
-    }
-    if (min_y_1 > max_y_2 || min_y_2 > max_y_1) return false;
-    return true;
+    return are_classes_in_conflict(classes, class_id_1, class_id_2, positions, get_x_coordinate);
 }
 
 bool are_classes_in_conflict_y(
@@ -704,19 +658,36 @@ bool are_classes_in_conflict_y(
     int class_id_1, int class_id_2,
     const NodesPositions& positions
 ) {
-    int min_x_1 = INT_MAX;
-    int max_x_1 = 0;
-    for (auto& node : classes.get_elems(class_id_1)) {
-        min_x_1 = std::min(min_x_1, positions.get_position_x(node));
-        max_x_1 = std::max(max_x_1, positions.get_position_x(node));
-    }
-    int min_x_2 = INT_MAX;
-    int max_x_2 = 0;
-    for (auto& node : classes.get_elems(class_id_2)) {
-        min_x_2 = std::min(min_x_2, positions.get_position_x(node));
-        max_x_2 = std::max(max_x_2, positions.get_position_x(node));
-    }
-    if (min_x_1 > max_x_2 || min_x_2 > max_x_1) return false;
+    return are_classes_in_conflict(classes, class_id_1, class_id_2, positions, get_y_coordinate);
+}
+
+bool can_move_left(
+    int class_id,
+    const std::unordered_map<int, std::unordered_set<int>>& coordinate_to_classes,
+    int actual_coordinate,
+    const NodesPositions& positions,
+    EquivalenceClasses& classes_x
+) {
+    if (actual_coordinate == 0) return false;
+    if (!coordinate_to_classes.contains(actual_coordinate - 1)) return true;
+    for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
+        if (are_classes_in_conflict_y(classes_x, class_id, other_class_id, positions))
+            return false;
+    return true;
+}
+
+bool can_move_down(
+    int class_id,
+    const std::unordered_map<int, std::unordered_set<int>>& coordinate_to_classes,
+    int actual_coordinate,
+    const NodesPositions& positions,
+    EquivalenceClasses& classes_y
+) {
+    if (actual_coordinate == 0) return false;
+    if (!coordinate_to_classes.contains(actual_coordinate - 1)) return true;
+    for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
+        if (are_classes_in_conflict_x(classes_y, class_id, other_class_id, positions))
+            return false;
     return true;
 }
 
@@ -728,22 +699,38 @@ NodesPositions* compact_area_x(
     auto classes = build_equivalence_classes(shape, graph);
     auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
     auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
-    auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
-    auto ordering_x = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<0>(ordering));
-    delete std::get<1>(ordering);
-    free(std::get<2>(ordering));
-    free(std::get<3>(ordering));
-    auto classes_x_ordering = make_topological_ordering_smart(*ordering_x, *classes_x,
-        are_classes_in_conflict_x, old_positions, get_x_coordinate);
+    std::unordered_map<int, std::unordered_set<int>> coordinate_to_classes;
+    int max_coordinate = 0;
+    std::unordered_set<int> visited_classes;
+    for (int i = 0; i < graph.size(); ++i) {
+        int class_id = classes_x->get_class(i);
+        if (visited_classes.contains(class_id)) continue;
+        visited_classes.insert(class_id);
+        int x = old_positions.get_position_x(i);
+        assert(!coordinate_to_classes.contains(x));
+        coordinate_to_classes[x] = {class_id};
+        max_coordinate = std::max(max_coordinate, x);
+    }
+    for (int i = 1; i <= max_coordinate; i++) {
+        int actual_coordinate = i;
+        assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
+        int class_id = *coordinate_to_classes[i].begin();
+        while (true) {
+            if (!can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_x))
+                break;
+            coordinate_to_classes[actual_coordinate - 1].insert(class_id);
+            coordinate_to_classes[actual_coordinate].erase(actual_coordinate);
+            actual_coordinate--;
+        }
+    }
     NodesPositions* new_positions = new NodesPositions();
-    int current_position_x = 0;
-    for (auto& classes_id : classes_x_ordering) {
-        for (auto& class_id : classes_id)
+    for (auto& [coordinate, classes] : coordinate_to_classes) {
+        for (auto& class_id : classes) {
             for (auto& node : classes_x->get_elems(class_id)) {
-                new_positions->set_position_x(node, current_position_x);
+                new_positions->set_position_x(node, coordinate);
                 new_positions->set_position_y(node, old_positions.get_position_y(node));
             }
-        ++current_position_x;
+        }
     }
     return new_positions;
 }
@@ -756,22 +743,36 @@ NodesPositions* compact_area_y(
     auto classes = build_equivalence_classes(shape, graph);
     auto classes_x = std::unique_ptr<EquivalenceClasses>(std::get<0>(classes));
     auto classes_y = std::unique_ptr<EquivalenceClasses>(std::get<1>(classes));
-    auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
-    delete std::get<0>(ordering);
-    auto ordering_y = std::unique_ptr<LabeledEdgeGraph<Pair<Int>>>(std::get<1>(ordering));
-    free(std::get<2>(ordering));
-    free(std::get<3>(ordering));
-    auto classes_y_ordering = make_topological_ordering_smart(*ordering_y, *classes_y,
-        are_classes_in_conflict_y, old_positions, get_y_coordinate);
+    std::unordered_map<int, std::unordered_set<int>> coordinate_to_classes;
+    int max_coordinate = 0;
+    std::unordered_set<int> visited_classes;
+    for (int i = 0; i < graph.size(); ++i) {
+        int class_id = classes_y->get_class(i);
+        if (visited_classes.contains(class_id)) continue;
+        visited_classes.insert(class_id);
+        int y = old_positions.get_position_y(i);
+        assert(!coordinate_to_classes.contains(y));
+        coordinate_to_classes[y] = {class_id};
+        max_coordinate = std::max(max_coordinate, y);
+    }
+    for (int i = 1; i <= max_coordinate; i++) {
+        int actual_coordinate = i;
+        assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
+        int class_id = *coordinate_to_classes[i].begin();
+        while (can_move_down(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_y)) {
+            coordinate_to_classes[actual_coordinate - 1].insert(class_id);
+            coordinate_to_classes[actual_coordinate].erase(class_id);
+            actual_coordinate--;
+        }
+    }
     NodesPositions* new_positions = new NodesPositions();
-    int current_position_y = 0;
-    for (auto& classes_id : classes_y_ordering) {
-        for (auto& class_id : classes_id)
+    for (auto& [coordinate, classes] : coordinate_to_classes) {
+        for (auto& class_id : classes) {
             for (auto& node : classes_y->get_elems(class_id)) {
                 new_positions->set_position_x(node, old_positions.get_position_x(node));
-                new_positions->set_position_y(node, current_position_y);
+                new_positions->set_position_y(node, coordinate);
             }
-        ++current_position_y;
+        }
     }
     return new_positions;
 }
