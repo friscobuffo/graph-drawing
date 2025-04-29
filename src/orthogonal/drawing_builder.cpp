@@ -385,10 +385,11 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
     int total_edge_length = 0;
     int max_edge_length = 0;
     size_t n = graph.get_nodes().size();
+    std::vector<bool> visited(n, false);
     for (size_t start = 0; start < n; ++start) {
         if (graph.get_node(start).get_color() != Color::BLACK)
             continue;
-        std::function<void(size_t, size_t, int, std::vector<bool> &)> dfs = [&](size_t current_id, size_t black_id, int current_length, std::vector<bool> &visited) {
+        std::function<void(size_t, size_t, int)> dfs = [&](size_t current_id, size_t black_id, int current_length) {
             visited[current_id] = true;
             for (const auto &edge : graph.get_node(current_id).get_edges()) {
                 size_t neighbor = edge.get_to();
@@ -401,9 +402,7 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
                 int length = std::abs(x1 - x2) + std::abs(y1 - y2);
                 Color neighbor_color = graph.get_node(neighbor).get_color();
                 if (neighbor_color == Color::RED) {
-                    visited[neighbor] = true;
-                    dfs(neighbor, black_id, current_length + length, visited);
-                    visited[neighbor] = false;
+                    dfs(neighbor, black_id, current_length + length);
                 }
                 else if (neighbor_color == Color::BLACK) {
                     if (black_id < neighbor) {
@@ -416,8 +415,7 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
             }
             visited[current_id] = false;
         };
-        std::vector<bool> visited(n, false);
-        dfs(start, start, 0, visited);
+        dfs(start, start, 0);
     }
     if (edge_lengths.empty())
         return std::make_tuple(total_edge_length, max_edge_length, 0.0);
