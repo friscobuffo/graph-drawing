@@ -29,10 +29,10 @@ std::tuple<int, int, int, int, int, int, double, double, double> test_shape_metr
     auto start = std::chrono::high_resolution_clock::now();
     auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
-    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
-        throw std::runtime_error("Drawing has overlappings");
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
+    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
+        throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
         result.crossings,
         result.bends,
