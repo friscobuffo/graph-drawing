@@ -1,6 +1,7 @@
 #include "drawing_builder.hpp"
 
 #include <list>
+#include <math.h>
 
 class EquivalenceClasses {
 private:
@@ -214,22 +215,26 @@ auto equivalence_classes_to_ordering(
 
 void NodesPositions::set_position_x(size_t node, size_t position) {
     while (m_positions.size() <= node)
-        m_positions.push_back(std::make_pair(-1, -1));
-    m_positions[node].first = position;
+        m_positions.push_back(NodePosition{-1, -1});
+    m_positions[node].m_x = position;
 }
 
 void NodesPositions::set_position_y(size_t node, size_t position) {
     while (m_positions.size() <= node)
-        m_positions.push_back(std::make_pair(-1, -1));
-    m_positions[node].second = position;
+        m_positions.push_back(NodePosition{-1, -1});
+    m_positions[node].m_y = position;
 }
 
 int NodesPositions::get_position_x(size_t node) const {
-    return m_positions[node].first;
+    return m_positions[node].m_x;
 }
 
 int NodesPositions::get_position_y(size_t node) const {
-    return m_positions[node].second;
+    return m_positions[node].m_y;
+}
+
+const NodePosition& NodesPositions::get_position(size_t node) const {
+    return m_positions[node];
 }
 
 std::vector<size_t> path_in_class(size_t from, size_t to, const std::vector<size_t>& class_elems) {
@@ -769,4 +774,35 @@ NodesPositions* compact_area_y(
         ++current_position_y;
     }
     return new_positions;
+}
+
+bool check_if_drawing_has_overlappings(const ColoredNodesGraph& graph, const NodesPositions& positions) {
+    // node - node overlappings
+    for (int i = 0; i < graph.size(); ++i)
+        for (int j = i + 1; j < graph.size(); ++j)
+            if (positions.get_position(i) == positions.get_position(j))
+                return true;
+    // node - edge overlappings
+    for (int i = 0; i < graph.size(); ++i) {
+        int i_x = positions.get_position_x(i);
+        int i_y = positions.get_position_y(i);
+        for (int j = 0; j < graph.size(); j++) {
+            if (i == j) continue;
+            int j_x = positions.get_position_x(j);
+            int j_y = positions.get_position_y(j);
+            for (const auto& edge : graph.get_node(j).get_edges()) {
+                if (edge.get_to() == i) continue;
+                int k_x = positions.get_position_x(edge.get_to());
+                int k_y = positions.get_position_y(edge.get_to());
+                if (j_y == k_y) { // horizontal edge
+                    if (i_y == j_y && i_x >= std::min(j_x, k_x) && i_x <= std::max(j_x, k_x))
+                        return true;
+                } else { // vertical edge
+                    if (i_x == j_x && i_y >= std::min(j_y, k_y) && i_y <= std::max(j_y, k_y))
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
 }

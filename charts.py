@@ -5,7 +5,7 @@ import numpy as np
 from scipy import stats
 
 # Read CSV data
-df = pd.read_csv('test_results_2.csv')  # Replace with your actual file path
+df = pd.read_csv('test_results.csv')  # Replace with your actual file path
 
 # Extract nodes and edges from graph names
 def parse_graph_name(name):
@@ -37,7 +37,8 @@ for metric, title in metrics:
     
     # Create scatter plot
     sc = plt.scatter(x, y,
-                     c=df['density'], cmap='viridis_r', vmin=1, vmax=2,
+                     c=df['density'], cmap='viridis_r', 
+                     vmin=df['density'].min(), vmax=df['density'].max(),
                      edgecolor='k', s=35)
     
     plt.colorbar(sc, label='Density (edges/nodes)')

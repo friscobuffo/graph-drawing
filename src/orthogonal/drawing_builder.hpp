@@ -16,14 +16,23 @@
 #include "../drawing/linear_scale.hpp"
 #include "shape_builder.hpp"
 
+struct NodePosition {
+    int m_x{-1};
+    int m_y{-1};
+    bool operator==(const NodePosition& other) const {
+        return m_x == other.m_x && m_y == other.m_y;
+    }
+};
+
 class NodesPositions {
 private:
-    std::vector<std::pair<int, int>> m_positions;
+    std::vector<NodePosition> m_positions;
 public:
     void set_position_x(size_t node, size_t position);
     void set_position_y(size_t node, size_t position);
     int get_position_x(size_t node) const;
     int get_position_y(size_t node) const;
+    const NodePosition& get_position(size_t node) const;
 };
 
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph);
@@ -242,5 +251,7 @@ auto make_rectilinear_drawing_incremental_disjoint_paths(const T& graph) {
 //     delete result->positions;
 //     delete result;
 // }
+
+bool check_if_drawing_has_overlappings(const ColoredNodesGraph& graph, const NodesPositions& positions);
 
 #endif

@@ -24,22 +24,46 @@
 std::unordered_set<std::string> graphs_already_in_csv;
 
 std::tuple<int, int, int, int, int, int, double, double, double> test_shape_metrics_approach(
-    const SimpleGraph &graph, const std::string &svg_output_filename) {
+    const SimpleGraph &graph, const std::string &svg_output_filename
+) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
+    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
+        throw std::runtime_error("Drawing has overlappings");
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
-    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, result.max_edge_length, result.max_bends_per_edge, result.edge_length_stddev, result.bends_stddev, elapsed.count());
+    return std::make_tuple(
+        result.crossings,
+        result.bends,
+        result.area,
+        result.total_edge_length,
+        result.max_edge_length,
+        result.max_bends_per_edge,
+        result.edge_length_stddev,
+        result.bends_stddev,
+        elapsed.count()
+    );
 }
 
 std::tuple<int, int, int, int, int, int, double, double, double> test_ogdf_approach(
-    const SimpleGraph &graph, const std::string &svg_output_filename) {
+    const SimpleGraph &graph, const std::string &svg_output_filename
+) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = create_drawing(graph, svg_output_filename, "");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    return std::make_tuple(result.crossings, result.bends, result.area, result.total_edge_length, result.max_edge_length, result.max_bends_per_edge, result.edge_length_stddev, result.bends_stddev, elapsed.count());
+    return std::make_tuple(
+        result.crossings,
+        result.bends,
+        result.area,
+        result.total_edge_length,
+        result.max_edge_length,
+        result.max_bends_per_edge,
+        result.edge_length_stddev,
+        result.bends_stddev,
+        elapsed.count()
+    );
 }
 
 void save_stats(std::ofstream &results_file, std::tuple<int, int, int, int, int, int, double, double, double> &results_shape_metrics, std::tuple<int, int, int, int, int, int, double, double, double> &results_ogdf, const std::string &graph_name) {
