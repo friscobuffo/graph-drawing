@@ -85,7 +85,7 @@ void save_stats(std::ofstream &results_file, std::tuple<int, int, int, int, int,
     results_file << std::get<7>(results_shape_metrics) << ",";
     results_file << std::get<7>(results_ogdf) << ",";
     results_file << std::get<8>(results_shape_metrics) << ",";
-    results_file << std::get<8>(results_ogdf) << "," << std::endl;
+    results_file << std::get<8>(results_ogdf) << std::endl;
 }
 
 std::vector<std::string> collect_txt_files(const std::string& folder_path) {
