@@ -152,7 +152,8 @@ DrawingResult make_rectilinear_drawing_incremental(
         number_of_corners++;
     }
     delete result;
-
+    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(*positions, *colored_graph);
+    std::tuple<int, double> bends_metrics = compute_bends_metrics(*colored_graph);
     return {
         std::unique_ptr<const ColoredNodesGraph>(colored_graph),
         std::unique_ptr<const Shape>(shape),
@@ -162,11 +163,11 @@ DrawingResult make_rectilinear_drawing_incremental(
         compute_total_area(*positions, *colored_graph),
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles,
-        std::get<0>(compute_edge_length_metrics(*positions, *colored_graph)),
-        std::get<1>(compute_edge_length_metrics(*positions, *colored_graph)),
-        std::get<2>(compute_edge_length_metrics(*positions, *colored_graph)),
-        std::get<0>(compute_bends_metrics(*colored_graph)),
-        std::get<1>(compute_bends_metrics(*colored_graph)),
+        std::get<0>(edge_length_metrics),
+        std::get<1>(edge_length_metrics),
+        std::get<2>(edge_length_metrics),
+        std::get<0>(bends_metrics),
+        std::get<1>(bends_metrics),
     };
 }
 

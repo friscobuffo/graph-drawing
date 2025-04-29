@@ -365,6 +365,18 @@ void node_positions_to_svg(
     drawer.saveToFile(filename);
 }
 
+double compute_stddev(const std::vector<int> &values) {
+    double mean = 0;
+    for (const auto &value : values)
+        mean += value;
+    mean /= values.size();
+    double variance = 0;
+    for (const auto &value : values)
+        variance += (value - mean) * (value - mean);
+    variance /= values.size();
+    return std::sqrt(variance);
+}
+
 // total edge length
 // max edge length
 // edge length stddev
@@ -372,32 +384,45 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
     std::vector<int> edge_lengths;
     int total_edge_length = 0;
     int max_edge_length = 0;
-    for (size_t i = 0; i < graph.size(); ++i) {
-        for (auto &edge : graph.get_node(i).get_edges()) {
-            size_t j = edge.get_to();
-            if (i < j) {
-                int x1 = positions.get_position_x(i);
-                int y1 = positions.get_position_y(i);
-                int x2 = positions.get_position_x(j);
-                int y2 = positions.get_position_y(j);
+    size_t n = graph.get_nodes().size();
+    for (size_t start = 0; start < n; ++start) {
+        if (graph.get_node(start).get_color() != Color::BLACK)
+            continue;
+        std::function<void(size_t, size_t, int, std::vector<bool> &)> dfs = [&](size_t current_id, size_t black_id, int current_length, std::vector<bool> &visited) {
+            visited[current_id] = true;
+            for (const auto &edge : graph.get_node(current_id).get_edges()) {
+                size_t neighbor = edge.get_to();
+                if (visited[neighbor])
+                    continue;
+                int x1 = positions.get_position_x(current_id);
+                int y1 = positions.get_position_y(current_id);
+                int x2 = positions.get_position_x(neighbor);
+                int y2 = positions.get_position_y(neighbor);
                 int length = std::abs(x1 - x2) + std::abs(y1 - y2);
-                total_edge_length += length;
-                edge_lengths.push_back(length);
-                max_edge_length = std::max(max_edge_length, length);
+                Color neighbor_color = graph.get_node(neighbor).get_color();
+                if (neighbor_color == Color::RED) {
+                    visited[neighbor] = true;
+                    dfs(neighbor, black_id, current_length + length, visited);
+                    visited[neighbor] = false;
+                }
+                else if (neighbor_color == Color::BLACK) {
+                    if (black_id < neighbor) {
+                        int total_length = current_length + length;
+                        total_edge_length += total_length;
+                        edge_lengths.push_back(total_length);
+                        max_edge_length = std::max(max_edge_length, total_length);
+                    }
+                }
             }
-        }
+            visited[current_id] = false;
+        };
+        std::vector<bool> visited(n, false);
+        dfs(start, start, 0, visited);
     }
     if (edge_lengths.empty())
         return std::make_tuple(total_edge_length, max_edge_length, 0.0);
-    double sum = 0.0;
-    for (int length : edge_lengths)
-        sum += length;
-    double mean = sum / edge_lengths.size();
-    double variance = 0.0;
-    for (int length : edge_lengths)
-        variance += (length - mean) * (length - mean);
-    variance /= edge_lengths.size();
-    return std::make_tuple(total_edge_length, max_edge_length, std::sqrt(variance));
+    double stddev = compute_stddev(edge_lengths);
+    return std::make_tuple(total_edge_length, max_edge_length, stddev);
 }
 
 // max bends per edge
@@ -410,37 +435,36 @@ std::tuple<int, double> compute_bends_metrics(const ColoredNodesGraph &graph) {
         if (graph.get_node(start).get_color() != Color::BLACK)
             continue;
         std::vector<bool> visited(n, false);
-        std::function<void(size_t, int)> dfs = [&](size_t current, int red_count) {
+        std::function<void(size_t, size_t, int)> dfs = [&](size_t current, size_t black, int red_count)
+        {
             visited[current] = true;
-            for (const auto &edge : graph.get_node(current).get_edges()) {
+            for (const auto &edge : graph.get_node(current).get_edges())
+            {
                 size_t neighbor = edge.get_to();
                 if (visited[neighbor])
                     continue;
                 Color neighbor_color = graph.get_node(neighbor).get_color();
-                if (neighbor_color == Color::RED) {
-                    dfs(neighbor, red_count + 1);
+                if (neighbor_color == Color::RED)
+                {
+                    dfs(neighbor, black, red_count + 1);
                 }
-                else if (neighbor_color == Color::BLACK) {
-                    max_reds = std::max(max_reds, red_count);
-                    if (red_count > 0)
+                else if (neighbor_color == Color::BLACK)
+                {
+                    if (black < neighbor)
+                    {
+                        max_reds = std::max(max_reds, red_count);
                         red_counts.push_back(red_count);
+                    }
                 }
             }
             visited[current] = false;
         };
-        dfs(start, 0);
+        dfs(start, start, 0);
     }
     if (red_counts.empty())
         return std::make_tuple(max_reds, 0.0);
-    double sum = 0.0;
-    for (int count : red_counts)
-        sum += count;
-    double mean = sum / red_counts.size();
-    double variance = 0.0;
-    for (int count : red_counts)
-        variance += (count - mean) * (count - mean);
-    variance /= red_counts.size();
-    return std::make_tuple(max_reds, std::sqrt(variance));
+    double stddev = compute_stddev(red_counts);
+    return std::make_tuple(max_reds, stddev);
 }
 
 int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph) {
