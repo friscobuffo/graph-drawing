@@ -25,7 +25,11 @@ metrics = [
     ('bends', 'Bends Comparison'),
     ('area', 'Area Comparison'),
     ('total_edge_length', 'Total Edge Length Comparison'),
-    ('time', 'Time Comparison')
+    ('time', 'Time Comparison'),
+    ('max_edge_length', 'Max Edge Length Comparison'),
+    ('max_bends_per_edge', 'Max Bends per Edge Comparison'),
+    ('edge_length_stddev', 'Edge Length Std Dev Comparison'),
+    ('bends_stddev', 'Bends Std Dev Comparison')
 ]
 
 for metric, title in metrics:
