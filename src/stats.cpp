@@ -27,14 +27,14 @@ std::tuple<DrawingResult, double> test_shape_metrics_approach(
     const SimpleGraph &graph, const std::string &svg_output_filename
 ) {
     auto start = std::chrono::high_resolution_clock::now();
-    auto result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
+    DrawingResult result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
     if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
         throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
-        result,
+        std::move(result),
         elapsed.count()
     );
 }
