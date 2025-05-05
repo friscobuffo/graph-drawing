@@ -85,6 +85,7 @@ struct DrawingResult {
     double edge_length_stddev;
     int max_bends_per_edge;
     double bends_stddev;
+    int number_of_useless_bends;
 };
 
 NodesPositions* compact_area_x(
@@ -129,6 +130,7 @@ DrawingResult make_rectilinear_drawing_incremental(
     ColoredNodesGraph* refined_colored_graph = new ColoredNodesGraph{};
     Shape* refined_shape = new Shape{};
     refine_result(*colored_graph, *shape, *refined_colored_graph, *refined_shape);
+    int number_of_useless_bends = colored_graph->size() - refined_colored_graph->size();
     delete colored_graph;
     delete shape;
     delete positions;
@@ -168,6 +170,7 @@ DrawingResult make_rectilinear_drawing_incremental(
         std::get<2>(edge_length_metrics),
         std::get<0>(bends_metrics),
         std::get<1>(bends_metrics),
+        number_of_useless_bends,
     };
 }
 

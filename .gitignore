@@ -11,4 +11,4 @@ gen
 /generated-graphs*
 /output-svgs*
 test_results*
-/plot_results
+/plot_results*
