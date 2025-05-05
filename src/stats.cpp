@@ -199,7 +199,8 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
                         << "shape_metrics_time,"
                         << "ogdf_time,"
                         << "shape_metrics_initial_number_cycles,"
-                        << "shape_metrics_number_added_cycles"
+                        << "shape_metrics_number_added_cycles,"
+                        << "shape_metrics_number_useless_bends"
                         << std::endl;
         }
     }
