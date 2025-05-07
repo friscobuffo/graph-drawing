@@ -164,19 +164,19 @@ public:
         m_vector.push_back(std::move(elem));
     }
 
-    void remove_element(size_t index) {
+    void remove_element(int index) {
         m_vector.erase(m_vector.begin() + index);
     }
 
-    T& operator[](size_t index) {
+    T& operator[](int index) {
         return *(m_vector[index]);
     }
 
-    const T& operator[](size_t index) const {
+    const T& operator[](int index) const {
         return *(m_vector[index]);
     }
 
-    size_t size() const {
+    int size() const {
         return m_vector.size();
     }
 };
@@ -206,12 +206,12 @@ concept ColorTrait = requires(T colored) {
 
 template <typename T>
 concept WeightTrait = requires(T weighted) {
-    { weighted.get_weight() } -> std::convertible_to<double>;
+    { weighted.get_weight() } -> std::same_as<double>;
 };
 
 template <typename T>
 concept PrintTrait = requires(T printable) {
-    { printable.to_string() } -> std::convertible_to<std::string>;
+    { printable.to_string() } -> std::same_as<std::string>;
     { printable.print() } -> std::same_as<void>;
 };
 

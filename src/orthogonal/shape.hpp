@@ -35,31 +35,31 @@ inline Direction string_to_direction(const std::string& direction) {
 
 struct pair_hash {
     template <typename T1, typename T2>
-    std::size_t operator()(const std::pair<T1, T2>& p) const {
-        std::size_t h1 = std::hash<T1>{}(p.first);
-        std::size_t h2 = std::hash<T2>{}(p.second);
+    int operator()(const std::pair<T1, T2>& p) const {
+        int h1 = std::hash<T1>{}(p.first);
+        int h2 = std::hash<T2>{}(p.second);
         return h1 ^ (h2 * 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
     }
 };
 
 class Shape {
 private:
-    std::unordered_map<std::pair<size_t, size_t>, Direction, pair_hash> m_shape;
-    std::unordered_map<size_t, std::tuple<int, int, int, int>> m_node_neighbors_direction; 
+    std::unordered_map<std::pair<int, int>, Direction, pair_hash> m_shape;
+    std::unordered_map<int, std::tuple<int, int, int, int>> m_node_neighbors_direction; 
 public:
-    void set_direction(const size_t i, const size_t j, const Direction direction);
-    Direction get_direction(const size_t i, const size_t j) const;
-    bool contains(const size_t i, const size_t j) const;
-    bool is_up(const size_t i, const size_t j) const;
-    bool is_down(const size_t i, const size_t j) const;
-    bool is_right(const size_t i, const size_t j) const;
-    bool is_left(const size_t i, const size_t j) const;
-    bool is_horizontal(const size_t i, const size_t j) const;
-    bool is_vertical(const size_t i, const size_t j) const;
-    int has_node_a_right_neighbor(const size_t node) const;
-    int has_node_a_left_neighbor(const size_t node) const;
-    int has_node_a_up_neighbor(const size_t node) const;
-    int has_node_a_down_neighbor(const size_t node) const;
+    void set_direction(const int i, const int j, const Direction direction);
+    Direction get_direction(const int i, const int j) const;
+    bool contains(const int i, const int j) const;
+    bool is_up(const int i, const int j) const;
+    bool is_down(const int i, const int j) const;
+    bool is_right(const int i, const int j) const;
+    bool is_left(const int i, const int j) const;
+    bool is_horizontal(const int i, const int j) const;
+    bool is_vertical(const int i, const int j) const;
+    int has_node_a_right_neighbor(const int node) const;
+    int has_node_a_left_neighbor(const int node) const;
+    int has_node_a_up_neighbor(const int node) const;
+    int has_node_a_down_neighbor(const int node) const;
     std::string to_string() const;
     void print() const;
 };

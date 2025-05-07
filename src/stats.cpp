@@ -99,7 +99,7 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
     auto txt_files = collect_txt_files(folder_path);
     std::atomic<int> number_of_comparisons_done{0};
     std::mutex input_output_lock;
-    std::atomic<size_t> index{0};
+    std::atomic<int> index{0};
 
     unsigned num_threads = std::thread::hardware_concurrency();
     std::vector<std::thread> threads;
@@ -108,7 +108,7 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
         threads.emplace_back([&]() {
             while (true) {
                 // Get the next file index atomically
-                size_t current = index.fetch_add(1, std::memory_order_relaxed);
+                int current = index.fetch_add(1, std::memory_order_relaxed);
                 if (current >= txt_files.size()) break;
                 const auto& entry_path = txt_files[current];
                 const std::string graph_filename = std::filesystem::path(entry_path).stem().string();

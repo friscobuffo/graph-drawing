@@ -19,7 +19,7 @@ concept TreeTrait = requires(T tree, const T constTree) {
     { constTree.get_nodes() } -> std::same_as<const Container<typename T::TreeNodeType>&>;
     { tree.add_node(std::declval<typename T::TreeNodeType*>()) } -> std::same_as<void>;
     { tree.add_child(0, 0) } -> std::same_as<void>;
-    { constTree.size() } -> std::convertible_to<size_t>;
+    { constTree.size() } -> std::same_as<int>;
 };
 
 template <typename T>
@@ -34,11 +34,11 @@ public:
         node->set_index(size());
         m_nodes.add_element(std::unique_ptr<T>(node));
     }
-    void add_child(size_t parent, size_t child) {
+    void add_child(int parent, int child) {
         m_nodes[parent].add_child(child);
         m_nodes[child].set_parent(parent);
     }
-    size_t size() const { return m_nodes.size(); }
+    int size() const { return m_nodes.size(); }
     std::string to_string() const {
         std::string result = "Tree: {";
         for (auto& node : m_nodes)
@@ -59,8 +59,8 @@ public:
     const Container<TreeNode>& get_nodes() const { return m_tree.get_nodes(); }
     void add_node(TreeNode* node) { m_tree.add_node(node); }
     void add_node() { m_tree.add_node(new TreeNode()); }
-    void add_child(size_t parent, size_t child) { m_tree.add_child(parent, child); }
-    size_t size() const { return m_tree.size(); }
+    void add_child(int parent, int child) { m_tree.add_child(parent, child); }
+    int size() const { return m_tree.size(); }
     std::string to_string() const { return m_tree.to_string(); }
     void print() const { std::cout << to_string() << std::endl; }
 };

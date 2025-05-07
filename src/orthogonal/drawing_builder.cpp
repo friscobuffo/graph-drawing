@@ -6,31 +6,31 @@
 class EquivalenceClasses {
 private:
     std::vector<int> m_elem_to_class;
-    std::vector<std::vector<size_t>> m_class_to_elems;
+    std::vector<std::vector<int>> m_class_to_elems;
 public:
-    void set_class(size_t elem, size_t class_id)  {
+    void set_class(int elem, int class_id)  {
         while (m_elem_to_class.size() <= elem)
             m_elem_to_class.push_back(-1);
         assert(m_elem_to_class[elem] == -1);
         m_elem_to_class[elem] = class_id;
         while (m_class_to_elems.size() <= class_id)
-            m_class_to_elems.push_back(std::vector<size_t>());
+            m_class_to_elems.push_back(std::vector<int>());
         m_class_to_elems[class_id].push_back(elem);
     }
-    int get_class(size_t elem) const  {
+    int get_class(int elem) const  {
         if (elem >= m_elem_to_class.size()) return -1;
         return m_elem_to_class[elem];
     }
-    const std::vector<size_t>& get_elems(size_t class_id) const {
+    const std::vector<int>& get_elems(int class_id) const {
         return m_class_to_elems[class_id];
     }
     std::string to_string() const {
         std::string result = "EquivalenceClasses:\n";
-        for (size_t i = 0; i < m_elem_to_class.size(); ++i)
+        for (int i = 0; i < m_elem_to_class.size(); ++i)
             result += std::to_string(i) + " -> " + std::to_string(m_elem_to_class[i]) + "\n";
         return result;
     }
-    size_t number_of_classes() const {
+    int number_of_classes() const {
         return m_class_to_elems.size();
     }
     void print() const { std::cout << to_string() << std::endl; }
@@ -44,10 +44,10 @@ void horizontal_edge_expander(
     std::vector<std::vector<bool>>& is_edge_visited,
     EquivalenceClasses& equivalence_classes_y
 ) {
-    std::unordered_set<size_t> visited;
+    std::unordered_set<int> visited;
     visited.insert(left);
     visited.insert(right);
-    std::list<size_t> nodes_in_class;
+    std::list<int> nodes_in_class;
     nodes_in_class.push_back(left);
     nodes_in_class.push_back(right);
     while (shape.has_node_a_left_neighbor(left) != -1) {
@@ -80,10 +80,10 @@ void vertical_edge_expander(
     std::vector<std::vector<bool>>& is_edge_visited,
     EquivalenceClasses& equivalence_classes_x
 ) {
-    std::unordered_set<size_t> visited;
+    std::unordered_set<int> visited;
     visited.insert(down);
     visited.insert(up);
-    std::list<size_t> nodes_in_class;
+    std::list<int> nodes_in_class;
     nodes_in_class.push_back(down);
     nodes_in_class.push_back(up);
     while (shape.has_node_a_down_neighbor(down) != -1) {
@@ -213,32 +213,32 @@ auto equivalence_classes_to_ordering(
     );
 }
 
-void NodesPositions::set_position_x(size_t node, size_t position) {
+void NodesPositions::set_position_x(int node, int position) {
     while (m_positions.size() <= node)
         m_positions.push_back(NodePosition{-1, -1});
     m_positions[node].m_x = position;
 }
 
-void NodesPositions::set_position_y(size_t node, size_t position) {
+void NodesPositions::set_position_y(int node, int position) {
     while (m_positions.size() <= node)
         m_positions.push_back(NodePosition{-1, -1});
     m_positions[node].m_y = position;
 }
 
-int NodesPositions::get_position_x(size_t node) const {
+int NodesPositions::get_position_x(int node) const {
     return m_positions[node].m_x;
 }
 
-int NodesPositions::get_position_y(size_t node) const {
+int NodesPositions::get_position_y(int node) const {
     return m_positions[node].m_y;
 }
 
-const NodePosition& NodesPositions::get_position(size_t node) const {
+const NodePosition& NodesPositions::get_position(int node) const {
     return m_positions[node];
 }
 
-std::vector<size_t> path_in_class(size_t from, size_t to, const std::vector<size_t>& class_elems) {
-    std::vector<size_t> path;
+std::vector<int> path_in_class(int from, int to, const std::vector<int>& class_elems) {
+    std::vector<int> path;
     int from_pos = -1;
     int to_pos = -1;
     for (int i = 0; i < class_elems.size(); ++i) {
@@ -256,21 +256,21 @@ std::vector<size_t> path_in_class(size_t from, size_t to, const std::vector<size
     return path;
 }
 
-std::vector<size_t> build_cycle_in_graph_from_cycle_in_ordering(
-    const std::vector<size_t>& cycle_in_ordering,
+std::vector<int> build_cycle_in_graph_from_cycle_in_ordering(
+    const std::vector<int>& cycle_in_ordering,
     const LabeledEdgeGraph<Pair<Int>>& ordering,
     const EquivalenceClasses& equivalence_classes,
     const Pair<Int>** ordering_edge_to_graph_edge
 ) {
-    std::vector<size_t> cycle;
+    std::vector<int> cycle;
     for (int i = 0; i < cycle_in_ordering.size(); ++i) {
-        size_t class_id = cycle_in_ordering[i];
-        size_t next_class_id = cycle_in_ordering[(i+1)%cycle_in_ordering.size()];
+        int class_id = cycle_in_ordering[i];
+        int next_class_id = cycle_in_ordering[(i+1)%cycle_in_ordering.size()];
         int from = (ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id])->first.value;
         int to = (ordering_edge_to_graph_edge[class_id * ordering.size() + next_class_id])->second.value;
         cycle.push_back(from);
-        size_t next_next_class_id = cycle_in_ordering[(i+2)%cycle_in_ordering.size()];
-        size_t next_from = (ordering_edge_to_graph_edge[next_class_id * ordering.size() + next_next_class_id])->first.value;
+        int next_next_class_id = cycle_in_ordering[(i+2)%cycle_in_ordering.size()];
+        int next_from = (ordering_edge_to_graph_edge[next_class_id * ordering.size() + next_next_class_id])->first.value;
         if (to != next_from) {
             auto path = path_in_class(to, next_from, equivalence_classes.get_elems(next_class_id));
             for (int i = 0; i < path.size()-1; ++i)
@@ -291,10 +291,10 @@ BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGrap
     auto ordering_y_edge_to_graph_edge = std::get<3>(ordering);
     auto cycle_x = find_a_cycle_directed_graph(*ordering_x);
     auto cycle_y = find_a_cycle_directed_graph(*ordering_y);
-    // std::vector<size_t> cycle_y_in_original_graph;
+    // std::vector<int> cycle_y_in_original_graph;
 
     if (cycle_x.has_value() || cycle_y.has_value()) {
-        std::vector<std::vector<size_t>> cycles_to_be_added;
+        std::vector<std::vector<int>> cycles_to_be_added;
         if (cycle_x.has_value()) {
             auto cycle_x_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
                 cycle_x.value(), *ordering_x, *classes_x, ordering_x_edge_to_graph_edge
@@ -338,7 +338,7 @@ void node_positions_to_svg(
 ) {
     int max_x = 0;
     int max_y = 0;
-    for (size_t i = 0; i < graph.size(); ++i) {
+    for (int i = 0; i < graph.size(); ++i) {
         max_x = std::max(max_x, positions.get_position_x(i));
         max_y = std::max(max_y, positions.get_position_y(i));
     }
@@ -346,18 +346,18 @@ void node_positions_to_svg(
     ScaleLinear scale_x = ScaleLinear(0, max_x+2, 0, 800);
     ScaleLinear scale_y = ScaleLinear(0, max_y+2, 0, 600);
     std::vector<Point2D> points;
-    for (size_t i = 0; i < graph.size(); ++i) {
+    for (int i = 0; i < graph.size(); ++i) {
         double x = scale_x.map(positions.get_position_x(i)+1);
         double y = scale_y.map(positions.get_position_y(i)+1);
         points.push_back(Point2D{x, y});
     }
-    for (size_t i = 0; i < graph.size(); ++i)
+    for (int i = 0; i < graph.size(); ++i)
         for (auto& edge : graph.get_node(i).get_edges()) {
-            size_t j = edge.get_to();
+            int j = edge.get_to();
             Line2D line{points[i], points[j]};
             drawer.add(line);
         }
-    for (size_t i = 0; i < graph.size(); ++i) {
+    for (int i = 0; i < graph.size(); ++i) {
         // if (graph.get_node(i).get_color() == Color::RED) continue;
         Color color = graph.get_node(i).get_color();
         drawer.add(points[i], color_to_string(color), std::to_string(i));
@@ -384,15 +384,15 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
     std::vector<int> edge_lengths;
     int total_edge_length = 0;
     int max_edge_length = 0;
-    size_t n = graph.get_nodes().size();
+    int n = graph.get_nodes().size();
     std::vector<bool> visited(n, false);
-    for (size_t start = 0; start < n; ++start) {
+    for (int start = 0; start < n; ++start) {
         if (graph.get_node(start).get_color() != Color::BLACK)
             continue;
-        std::function<void(size_t, size_t, int)> dfs = [&](size_t current_id, size_t black_id, int current_length) {
+        std::function<void(int, int, int)> dfs = [&](int current_id, int black_id, int current_length) {
             visited[current_id] = true;
             for (const auto &edge : graph.get_node(current_id).get_edges()) {
-                size_t neighbor = edge.get_to();
+                int neighbor = edge.get_to();
                 if (visited[neighbor])
                     continue;
                 int x1 = positions.get_position_x(current_id);
@@ -428,17 +428,17 @@ std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &p
 std::tuple<int, double> compute_bends_metrics(const ColoredNodesGraph &graph) {
     std::vector<int> red_counts;
     int max_reds = 0;
-    size_t n = graph.get_nodes().size();
-    for (size_t start = 0; start < n; ++start) {
+    int n = graph.get_nodes().size();
+    for (int start = 0; start < n; ++start) {
         if (graph.get_node(start).get_color() != Color::BLACK)
             continue;
         std::vector<bool> visited(n, false);
-        std::function<void(size_t, size_t, int)> dfs = [&](size_t current, size_t black, int red_count)
+        std::function<void(int, int, int)> dfs = [&](int current, int black, int red_count)
         {
             visited[current] = true;
             for (const auto &edge : graph.get_node(current).get_edges())
             {
-                size_t neighbor = edge.get_to();
+                int neighbor = edge.get_to();
                 if (visited[neighbor])
                     continue;
                 Color neighbor_color = graph.get_node(neighbor).get_color();
@@ -470,7 +470,7 @@ int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph&
     int min_y = graph.size();
     int max_x = 0;
     int max_y = 0;
-    for (size_t i = 0; i < graph.size(); ++i) {
+    for (int i = 0; i < graph.size(); ++i) {
         min_x = std::min(min_x, positions.get_position_x(i));
         min_y = std::min(min_y, positions.get_position_y(i));
         max_x = std::max(max_x, positions.get_position_x(i));
@@ -481,8 +481,8 @@ int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph&
 
 bool do_edges_cross(
     const NodesPositions& positions,
-    size_t i, size_t j,
-    size_t k, size_t l
+    int i, int j,
+    int k, int l
 ) {
     int i_pos_x = positions.get_position_x(i);
     int i_pos_y = positions.get_position_y(i);
@@ -520,12 +520,12 @@ bool do_edges_cross(
 int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph) {
     int total_crossings = 0;
     // for each pair of edges, check if they cross
-    for (size_t i = 0; i < graph.size(); ++i) {
+    for (int i = 0; i < graph.size(); ++i) {
         for (auto& edge1 : graph.get_node(i).get_edges()) {
-            size_t j = edge1.get_to();
-            for (size_t k = i+1; k < graph.size(); ++k) {
+            int j = edge1.get_to();
+            for (int k = i+1; k < graph.size(); ++k) {
                 for (auto& edge2 : graph.get_node(k).get_edges()) {
-                    size_t l = edge2.get_to();
+                    int l = edge2.get_to();
                     if (j == l || i == l || j == k) continue;
                     if (do_edges_cross(positions, i, j, k, l))
                         total_crossings++;

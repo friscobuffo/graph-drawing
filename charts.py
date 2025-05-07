@@ -5,8 +5,17 @@ import numpy as np
 import os
 import math
 
-# Read CSV data
-df = pd.read_csv('test_results.csv')  # Replace with your actual file path
+df = pd.read_csv('test_results.csv')
+
+max_columns_to_check = ['shape_metrics_time',
+                        'shape_metrics_number_useless_bends',
+                        'shape_metrics_number_added_cycles',
+                        'ogdf_max_bends_per_edge',
+                        'shape_metrics_max_bends_per_edge']
+
+for col in max_columns_to_check:
+    max_time_graph = df.loc[df[col].idxmax(), 'graph_name']
+    print(f"graph with highest {col}: [{max_time_graph}] value [{df[col].max()}]")
 
 # Extract nodes and edges from graph names
 def parse_graph_name(name):
@@ -22,6 +31,7 @@ df['density'] = df['edges'] / df['nodes']
 
 def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, title, filename, output_dir, add_diagonal=True):
     plt.figure(figsize=(8, 6))
+
     # Get x and y values
     x = df[x_row_name]
     y = df[y_row_name]
@@ -31,7 +41,6 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, title,
                     c=df['density'], cmap='viridis_r', 
                     vmin=df['density'].min(), vmax=df['density'].max(),
                     edgecolor='k', s=35)
-    
     plt.colorbar(sc, label='Density (edges/nodes)')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -145,8 +154,8 @@ make_scatter_comparisons(df_density_more_1_5, 'plot_results_more_1_5')
 
 make_scatter_comparison(df, 'nodes', 'shape_metrics_time',
              'Number of Nodes', 'Shape Metrics Time',
-             'Time function per Number of Nodes', 
-             'shape_metrics_time_function_nodes.png', output_dir, 
+             'Time function per Number of Nodes',
+             'shape_metrics_time_function_nodes.png', output_dir,
              add_diagonal=False)
 
 make_histogram_comparison('ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge',
@@ -157,7 +166,43 @@ make_histogram_comparison('ogdf_max_bends_per_edge', 'shape_metrics_max_bends_pe
 make_scatter_comparison(df, 'density', 'shape_metrics_time',
              'Density (edges/nodes)', 'Shape Metrics Time',
              'Time function per Density', 
-             'shape_metrics_time_function_density.png', output_dir, 
+             'shape_metrics_time_function_density.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'nodes', 'shape_metrics_number_added_cycles',
+             'Number of Nodes', 'Shape Metrics Number Added Cycles',
+             'Number of Added Cycles function per Number of Nodes',
+             'shape_metrics_number_added_cycles_function_nodes.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'density', 'shape_metrics_number_added_cycles',
+             'Density (edges/nodes)', 'Shape Metrics Number Added Cycles',
+             'Number of Added Cycles function per Density',
+             'shape_metrics_number_added_cycles_function_density.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'nodes', 'shape_metrics_number_useless_bends',
+             'Number of Nodes', 'Shape Metrics Number Useless Bends',
+             'Number of Useless Bends function per Number of Nodes',
+             'shape_metrics_number_useless_bends_function_nodes.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'density', 'shape_metrics_number_useless_bends',
+             'Density (edges/nodes)', 'Shape Metrics Number Useless Bends',
+             'Number of Useless Bends function per Density',
+             'shape_metrics_number_useless_bends_function_density.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'nodes', 'shape_metrics_bends',
+             'Number of Nodes', 'Shape Metrics Bends',
+             'Bends function per Number of Nodes',
+             'shape_metrics_bends_function_nodes.png', output_dir,
+             add_diagonal=False)
+
+make_scatter_comparison(df, 'density', 'shape_metrics_bends',
+             'Density (edges/nodes)', 'Shape Metrics Bends',
+             'Bends function per Density',
+             'shape_metrics_bends_function_density.png', output_dir,
              add_diagonal=False)
 
 # Extract times

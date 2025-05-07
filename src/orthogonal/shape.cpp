@@ -2,7 +2,7 @@
 
 #include <cassert>
 
-void Shape::set_direction(const size_t i, const size_t j, const Direction direction) {
+void Shape::set_direction(const int i, const int j, const Direction direction) {
     if (m_shape.contains(std::make_pair(i, j))) {
         std::string error = "Direction already set for this pair: (" +
             std::to_string(i) + ", " + std::to_string(j) + ") -> " +
@@ -37,51 +37,51 @@ void Shape::set_direction(const size_t i, const size_t j, const Direction direct
     }
 }
 
-Direction Shape::get_direction(const size_t i, const size_t j) const {
+Direction Shape::get_direction(const int i, const int j) const {
     return m_shape.at(std::make_pair(i, j));
 }
 
-bool Shape::contains(const size_t i, const size_t j) const {
+bool Shape::contains(const int i, const int j) const {
     return m_shape.contains(std::make_pair(i, j));
 }
 
-bool Shape::is_up(const size_t i, const size_t j) const {
+bool Shape::is_up(const int i, const int j) const {
     return get_direction(i, j) == Direction::UP;
 }
 
-bool Shape::is_down(const size_t i, const size_t j) const {
+bool Shape::is_down(const int i, const int j) const {
     return get_direction(i, j) == Direction::DOWN;
 }
 
-bool Shape::is_right(const size_t i, const size_t j) const {
+bool Shape::is_right(const int i, const int j) const {
     return get_direction(i, j) == Direction::RIGHT;
 }
 
-bool Shape::is_left(const size_t i, const size_t j) const {
+bool Shape::is_left(const int i, const int j) const {
     return get_direction(i, j) == Direction::LEFT;
 }
 
-bool Shape::is_horizontal(const size_t i, const size_t j) const {
+bool Shape::is_horizontal(const int i, const int j) const {
     return is_right(i, j) || is_left(i, j);
 }
 
-bool Shape::is_vertical(const size_t i, const size_t j) const {
+bool Shape::is_vertical(const int i, const int j) const {
     return is_up(i, j) || is_down(i, j);
 }
 
-int Shape::has_node_a_left_neighbor(const size_t node) const {
+int Shape::has_node_a_left_neighbor(const int node) const {
     return std::get<0>(m_node_neighbors_direction.at(node));
 }
 
-int Shape::has_node_a_right_neighbor(const size_t node) const {
+int Shape::has_node_a_right_neighbor(const int node) const {
     return std::get<1>(m_node_neighbors_direction.at(node));
 }
 
-int Shape::has_node_a_down_neighbor(const size_t node) const {
+int Shape::has_node_a_down_neighbor(const int node) const {
     return std::get<2>(m_node_neighbors_direction.at(node));
 }
 
-int Shape::has_node_a_up_neighbor(const size_t node) const {
+int Shape::has_node_a_up_neighbor(const int node) const {
     return std::get<3>(m_node_neighbors_direction.at(node));
 }
 

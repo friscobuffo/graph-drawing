@@ -165,7 +165,7 @@ std::vector<Point2D> Polygon2D::computeConvexHull() {
         hull.push_back(p);
     }
     // Costruzione della metà superiore del contorno
-    size_t lowerSize = hull.size();
+    int lowerSize = hull.size();
     for (int i = n - 1; i >= 0; --i) {
         while (hull.size() > lowerSize && cross(hull[hull.size()-2], hull[hull.size()-1], points[i]) <= 0)
             hull.pop_back();

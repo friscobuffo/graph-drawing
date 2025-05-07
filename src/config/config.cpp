@@ -9,7 +9,7 @@ std::unordered_map<std::string, std::string> parse_config(const std::string& fil
     std::string line;
     while (std::getline(file, line)) {
         if (line.empty() || line[0] == '#') continue; // Skip comments/empty lines
-        size_t delimiter_pos = line.find('=');
+        int delimiter_pos = line.find('=');
         if (delimiter_pos != std::string::npos) {
             std::string key = line.substr(0, delimiter_pos);
             std::string value = line.substr(delimiter_pos + 1);

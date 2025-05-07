@@ -111,12 +111,12 @@ void save_directed_graph_to_file(const T& graph, std::string filename) {
 }
 
 inline void save_cycles_to_file(
-    const std::vector<std::vector<size_t>>& cycles, const std::string filename
+    const std::vector<std::vector<int>>& cycles, const std::string filename
 ) {
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         for (const auto& cycle: cycles) {
-            for (size_t i = 0; i < cycle.size(); ++i) {
+            for (int i = 0; i < cycle.size(); ++i) {
                 outfile << cycle[i];
                 if (i != cycle.size() - 1)
                     outfile << " ";
@@ -128,15 +128,15 @@ inline void save_cycles_to_file(
         throw std::runtime_error("Unable to save cycles: " + filename);
 }
 
-inline std::vector<std::vector<size_t>> load_cycles_from_file(std::string filename) {
+inline std::vector<std::vector<int>> load_cycles_from_file(std::string filename) {
     std::ifstream infile(filename);
     if (infile.is_open()) {
-        std::vector<std::vector<size_t>> cycles;
+        std::vector<std::vector<int>> cycles;
         std::string line;
         while (std::getline(infile, line)) {
             std::istringstream iss(line);
-            std::vector<size_t> cycle;
-            size_t node;
+            std::vector<int> cycle;
+            int node;
             while (iss >> node) {
                 cycle.push_back(node);
             }

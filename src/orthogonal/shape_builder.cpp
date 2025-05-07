@@ -169,7 +169,7 @@ void add_nodes_constraints(
 void add_cycles_constraints(
     const ColoredNodesGraph& graph,
     CnfBuilder& cnf_builder,
-    const std::vector<std::vector<size_t>>& cycles,
+    const std::vector<std::vector<int>>& cycles,
     const VariablesHandler& handler
 ) {
     for (auto& cycle : cycles) {
@@ -177,7 +177,7 @@ void add_cycles_constraints(
         auto at_least_one_up = std::vector<int>();
         auto at_least_one_right = std::vector<int>();
         auto at_least_one_left = std::vector<int>();
-        for (size_t i = 0; i < cycle.size(); i++) {
+        for (int i = 0; i < cycle.size(); i++) {
             at_least_one_down.push_back(handler.get_down_variable(cycle[i], cycle[(i + 1) % cycle.size()]));
             at_least_one_up.push_back(handler.get_up_variable(cycle[i], cycle[(i + 1) % cycle.size()]));
             at_least_one_right.push_back(handler.get_right_variable(cycle[i], cycle[(i + 1) % cycle.size()]));
@@ -196,7 +196,7 @@ Shape* result_to_shape(
     const VariablesHandler& handler
 ) {
     auto variable_values = std::unordered_map<int, bool>();
-    for (size_t i = 0; i < numbers.size(); i++) {
+    for (int i = 0; i < numbers.size(); i++) {
         int var = numbers[i];
         if (var > 0) variable_values[var] = true;
         else variable_values[-var] = false;
@@ -225,7 +225,7 @@ Shape* result_to_shape(
     return shape;
 }
 
-size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
+int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
     std::vector<int> unit_clauses;
     for (int i = proof_lines.size() - 1; i >= 0; i--) {
         const std::string& line = proof_lines[i];
@@ -251,41 +251,41 @@ size_t find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lin
     return std::abs(unit_clauses[random_index]);
 }
 
-Shape* build_shape_or_add_corner(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles);
+Shape* build_shape_or_add_corner(ColoredNodesGraph& colored_graph, std::vector<std::vector<int>>& cycles);
 
-Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<size_t>>& cycles) {
+Shape* build_shape(ColoredNodesGraph& colored_graph, std::vector<std::vector<int>>& cycles) {
     Shape* shape = build_shape_or_add_corner(colored_graph, cycles);
     while (shape == nullptr)
         shape = build_shape_or_add_corner(colored_graph, cycles);
     return shape;
 }
 
-std::unordered_set<size_t> used_indices;
+std::unordered_set<int> used_indices;
 std::mutex mutex;
 
-size_t get_index_to_use() {
+int get_index_to_use() {
     std::lock_guard<std::mutex> lock(mutex);
-    size_t index = 0;
+    int index = 0;
     while (used_indices.find(index) != used_indices.end())
         index++;
     used_indices.insert(index);
     return index;
 }
 
-void free_index(size_t index) {
+void free_index(int index) {
     std::lock_guard<std::mutex> lock(mutex);
     used_indices.erase(index);
 }
 
-std::string add_index_to_filename(const std::string& filename, const size_t index) {
-    size_t last_slash = filename.find_last_of('/');
+std::string add_index_to_filename(const std::string& filename, const int index) {
+    int last_slash = filename.find_last_of('/');
     std::string path = "";
     std::string filename_part = filename;
     if (last_slash != std::string::npos) {
         path = filename.substr(0, last_slash + 1);
         filename_part = filename.substr(last_slash + 1);
     }
-    size_t dot_pos = filename_part.rfind('.');
+    int dot_pos = filename_part.rfind('.');
     if (dot_pos == std::string::npos || dot_pos == 0) // No extension or hidden file without a real extension
         filename_part += "_" + std::to_string(index);
     else
@@ -295,7 +295,7 @@ std::string add_index_to_filename(const std::string& filename, const size_t inde
 
 Shape* build_shape_or_add_corner(
     ColoredNodesGraph& colored_graph,
-    std::vector<std::vector<size_t>>& cycles
+    std::vector<std::vector<int>>& cycles
 ) {
     const VariablesHandler handler(colored_graph);
     CnfBuilder cnf_builder;
@@ -305,7 +305,7 @@ Shape* build_shape_or_add_corner(
     add_nodes_constraints(colored_graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(colored_graph, cnf_builder, cycles, handler);
-    const size_t index = get_index_to_use();
+    const int index = get_index_to_use();
     const std::string cnf = add_index_to_filename(CONJUNCTIVE_NORMAL_FORM_FILE, index);
     const std::string output = add_index_to_filename(OUTPUT_FILE, index);
     const std::string proof = add_index_to_filename(PROOF_FILE, index);
@@ -317,16 +317,16 @@ Shape* build_shape_or_add_corner(
     ));
     free_index(index);
     if (results->result == GlucoseResultType::UNSAT) {
-        const size_t variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
+        const int variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
         const int i = handler.get_edge_of_variable(variable_edge).first;
         const int j = handler.get_edge_of_variable(variable_edge).second;
-        const size_t new_node_index = colored_graph.size();
+        const int new_node_index = colored_graph.size();
         colored_graph.remove_undirected_edge(i, j);
         colored_graph.add_node(Color::RED);
         colored_graph.add_undirected_edge(i, new_node_index);
         colored_graph.add_undirected_edge(j, new_node_index);
         for (auto& cycle : cycles) {
-            for (size_t k = 0; k < cycle.size(); k++) {
+            for (int k = 0; k < cycle.size(); k++) {
                 if (cycle[k] == i && cycle[(k + 1) % cycle.size()] == j) {
                     cycle.insert(cycle.begin() + k + 1, new_node_index);
                     break;

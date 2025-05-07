@@ -5,14 +5,14 @@
 
 #include "graph.hpp"
 
-std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t number_of_nodes, size_t number_of_edges);
+std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(int number_of_nodes, int number_of_edges);
 
-std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_uniform(size_t number_of_nodes, size_t number_of_edges);
+std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_uniform(int number_of_nodes, int number_of_edges);
 
 // n*m grid, n, m > 1
-std::unique_ptr<SimpleGraph> generate_grid_graph(size_t n, size_t m);
+std::unique_ptr<SimpleGraph> generate_grid_graph(int n, int m);
 
 // num_nodes > 1
-std::unique_ptr<SimpleGraph> generate_triangle_graph(size_t num_nodes);
+std::unique_ptr<SimpleGraph> generate_triangle_graph(int num_nodes);
 
 #endif

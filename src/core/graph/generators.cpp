@@ -7,7 +7,7 @@
 
 #include "graphs_algorithms.hpp"
 
-std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t number_of_nodes, size_t number_of_edges) {
+std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(int number_of_nodes, int number_of_edges) {
     if (number_of_edges > 2*number_of_nodes)
         throw std::runtime_error("Number of edges is too large");
     SimpleGraph* graph = new SimpleGraph();
@@ -17,9 +17,9 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t
     graph->add_undirected_edge(0, 1);
     added_edge[0][1] = true;
     added_edge[1][0] = true;
-    size_t added_edges = 1;
-    for (size_t i = 2; i < number_of_nodes; ++i) {
-        size_t j = rand() % i;
+    int added_edges = 1;
+    for (int i = 2; i < number_of_nodes; ++i) {
+        int j = rand() % i;
         while (graph->get_nodes()[j].get_edges().size() >= 4)
             j = rand() % i;
         graph->add_undirected_edge(i, j);
@@ -28,8 +28,8 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t
         added_edge[j][i] = true;
     }
     while (added_edges < number_of_edges) {
-        size_t i = rand() % number_of_nodes;
-        size_t j = rand() % number_of_nodes;
+        int i = rand() % number_of_nodes;
+        int j = rand() % number_of_nodes;
         if (i == j || added_edge[i][j])
             continue;
         if (graph->get_nodes()[i].get_edges().size() >= 4)
@@ -45,7 +45,7 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4(size_t
 }
 
 std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_uniform(
-    size_t number_of_nodes, size_t number_of_edges
+    int number_of_nodes, int number_of_edges
 ) {
     if (number_of_edges > 2*number_of_nodes)
         throw std::runtime_error("Number of edges is too large");
@@ -53,10 +53,10 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_unifor
     for (int i = 0; i < number_of_nodes; ++i)
         graph->add_node();
     std::vector<std::vector<bool>> added_edge(number_of_nodes, std::vector<bool>(number_of_nodes, false));
-    size_t added_edges = 0;
+    int added_edges = 0;
     while (added_edges < number_of_edges) {
-        size_t i = rand() % number_of_nodes;
-        size_t j = rand() % number_of_nodes;
+        int i = rand() % number_of_nodes;
+        int j = rand() % number_of_nodes;
         if (i == j || added_edge[i][j])
             continue;
         if (graph->get_nodes()[i].get_edges().size() >= 4)
@@ -76,7 +76,7 @@ std::unique_ptr<SimpleGraph> generate_connected_random_graph_degree_max_4_unifor
 }
 
 // n*m grid, n, m > 1
-std::unique_ptr<SimpleGraph> generate_grid_graph(size_t n, size_t m) {
+std::unique_ptr<SimpleGraph> generate_grid_graph(int n, int m) {
     int num_nodes = 2 * n + 2 * m - 4;
     SimpleGraph *graph = new SimpleGraph();
     for (int i = 0; i < num_nodes; ++i)
@@ -93,7 +93,7 @@ std::unique_ptr<SimpleGraph> generate_grid_graph(size_t n, size_t m) {
 }
 
 // num_nodes > 1
-std::unique_ptr<SimpleGraph> generate_triangle_graph(size_t num_nodes) {
+std::unique_ptr<SimpleGraph> generate_triangle_graph(int num_nodes) {
     num_nodes = 3 * num_nodes;
     SimpleGraph *graph = new SimpleGraph();
     for (int i = 0; i < num_nodes; ++i)

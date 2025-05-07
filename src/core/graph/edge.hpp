@@ -10,7 +10,7 @@
 template <typename T>
 concept GraphEdgeTrait = requires(T edge) {
     requires PrintTrait<T>;
-    { edge.get_to() } -> std::convertible_to<int>;
+    { edge.get_to() } -> std::same_as<int>;
 };
 
 struct GraphEdge {

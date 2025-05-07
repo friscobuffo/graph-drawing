@@ -21,9 +21,9 @@ concept GraphTrait = requires(T graph, const T constGraph) {
     { graph.get_node(0) } -> std::same_as<typename T::GraphNodeType&>;
     { graph.add_node(std::declval<typename T::GraphNodeType*>()) } -> std::same_as<void>;
     { graph.add_edge(0, std::declval<typename T::GraphNodeType::GraphEdgeType*>()) } -> std::same_as<void>;
-    { constGraph.size() } -> std::convertible_to<size_t>;
+    { constGraph.size() } -> std::same_as<int>;
     { graph.remove_edge(0, 0) } -> std::same_as<void>;
-    { constGraph.get_number_of_edges() } -> std::convertible_to<size_t>;
+    { constGraph.get_number_of_edges() } -> std::same_as<int>;
 };
 
 template <typename T>
@@ -40,13 +40,13 @@ public:
         node->set_index(size());
         m_nodes.add_element(std::unique_ptr<T>(node));
     }
-    void add_edge(size_t from, T::GraphEdgeType* edge) { m_nodes[from].add_edge(edge); }
-    size_t size() const { return m_nodes.size(); }
-    void remove_edge(size_t from, size_t to) {
+    void add_edge(int from, T::GraphEdgeType* edge) { m_nodes[from].add_edge(edge); }
+    int size() const { return m_nodes.size(); }
+    void remove_edge(int from, int to) {
         m_nodes[from].remove_edge(to);
     }
-    size_t get_number_of_edges() const {
-        size_t count = 0;
+    int get_number_of_edges() const {
+        int count = 0;
         for (const auto& node : m_nodes)
             count += node.get_edges().size();
         return count;
@@ -71,20 +71,20 @@ public:
     const GraphNode<GraphEdge>& get_node(int index) const { return m_graph.get_node(index); }
     GraphNode<GraphEdge>& get_node(int index) { return m_graph.get_node(index); }
     void add_node(GraphNode<GraphEdge>* node) { m_graph.add_node(node); }
-    void add_edge(size_t from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
-    size_t size() const { return m_graph.size(); }
+    void add_edge(int from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
+    int size() const { return m_graph.size(); }
     void add_node() { m_graph.add_node(new GraphNode<GraphEdge>()); }
-    void add_edge(size_t from, size_t to) { m_graph.add_edge(from, new GraphEdge(to)); }
-    void remove_edge(size_t from, size_t to) { m_graph.remove_edge(from, to); }
-    void add_undirected_edge(size_t from, size_t to) {
+    void add_edge(int from, int to) { m_graph.add_edge(from, new GraphEdge(to)); }
+    void remove_edge(int from, int to) { m_graph.remove_edge(from, to); }
+    void add_undirected_edge(int from, int to) {
         add_edge(from, to);
         add_edge(to, from);
     }
-    void remove_undirected_edge(size_t from, size_t to) {
+    void remove_undirected_edge(int from, int to) {
         m_graph.remove_edge(from, to);
         m_graph.remove_edge(to, from);
     }
-    size_t get_number_of_edges() const { return m_graph.get_number_of_edges(); }
+    int get_number_of_edges() const { return m_graph.get_number_of_edges(); }
     std::string to_string() const { return m_graph.to_string(); }
     void print() const { m_graph.print(); }
 };
@@ -100,20 +100,20 @@ public:
     const ColoredNode<GraphEdge>& get_node(int index) const { return m_graph.get_node(index); }
     ColoredNode<GraphEdge>& get_node(int index) { return m_graph.get_node(index); }
     void add_node(ColoredNode<GraphEdge>* node) { m_graph.add_node(node); }
-    void add_edge(size_t from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
-    size_t size() const { return m_graph.size(); }
+    void add_edge(int from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
+    int size() const { return m_graph.size(); }
     void add_node(Color color) { m_graph.add_node(new ColoredNode<GraphEdge>(color)); }
-    void add_edge(size_t from, size_t to) { m_graph.add_edge(from, new GraphEdge(to)); }
-    void remove_edge(size_t from, size_t to) { m_graph.remove_edge(from, to); }
-    void add_undirected_edge(size_t from, size_t to) {
+    void add_edge(int from, int to) { m_graph.add_edge(from, new GraphEdge(to)); }
+    void remove_edge(int from, int to) { m_graph.remove_edge(from, to); }
+    void add_undirected_edge(int from, int to) {
         add_edge(from, to);
         add_edge(to, from);
     }
-    void remove_undirected_edge(size_t from, size_t to) {
+    void remove_undirected_edge(int from, int to) {
         m_graph.remove_edge(from, to);
         m_graph.remove_edge(to, from);
     }
-    size_t get_number_of_edges() const { return m_graph.get_number_of_edges(); }
+    int get_number_of_edges() const { return m_graph.get_number_of_edges(); }
     std::string to_string() const { return m_graph.to_string(); }
     void print() const { m_graph.print(); }
 };
@@ -130,14 +130,14 @@ public:
     const GraphNode<LabeledGraphEdge<T>>& get_node(int index) const { return m_graph.get_node(index); }
     GraphNode<LabeledGraphEdge<T>>& get_node(int index) { return m_graph.get_node(index); }
     void add_node(GraphNode<LabeledGraphEdge<T>>* node) { m_graph.add_node(node); }
-    void add_edge(size_t from, LabeledGraphEdge<T>* edge) { m_graph.add_edge(from, edge); }
-    size_t size() const { return m_graph.size(); }
+    void add_edge(int from, LabeledGraphEdge<T>* edge) { m_graph.add_edge(from, edge); }
+    int size() const { return m_graph.size(); }
     void add_node() { m_graph.add_node(new GraphNode<LabeledGraphEdge<T>>()); }
-    void add_edge(size_t from, size_t to, T label) {
+    void add_edge(int from, int to, T label) {
         m_graph.add_edge(from, new LabeledGraphEdge<T>(to, label));
     }
-    void remove_edge(size_t from, size_t to) { m_graph.remove_edge(from, to); }
-    size_t get_number_of_edges() const { return m_graph.get_number_of_edges(); }
+    void remove_edge(int from, int to) { m_graph.remove_edge(from, to); }
+    int get_number_of_edges() const { return m_graph.get_number_of_edges(); }
     std::string to_string() const { return m_graph.to_string(); }
     void print() const { m_graph.print(); }
 };

@@ -95,7 +95,7 @@ int compute_area_from_shape(const ogdf::GraphAttributes &GA, ogdf::Graph &G)
             std::vector<ogdf::DPoint> bendVec;
             for (auto &elem : GA.bends(e))
                 bendVec.push_back(elem);
-            for (size_t j = 1; j < bendVec.size(); ++j)
+            for (int j = 1; j < bendVec.size(); ++j)
             {
                 int source_id = bend_id - 1;
                 int target_id = bend_id;
@@ -209,7 +209,7 @@ int compute_normalized_area(const ogdf::GraphAttributes &GA, const ogdf::Graph &
         std::vector<ogdf::DPoint> bend_vec;
         for (auto &elem : GA.bends(e))
             bend_vec.push_back(elem);
-        for (size_t j = 1; j < bend_vec.size() - 1; ++j)
+        for (int j = 1; j < bend_vec.size() - 1; ++j)
         {
             double x_source = bend_vec[j - 1].m_x;
             double y_source = bend_vec[j - 1].m_y;
