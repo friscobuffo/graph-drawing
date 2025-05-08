@@ -26,7 +26,7 @@ concept GraphNodeTrait = requires(T node, const T constNode) {
     { node.get_edges() } -> std::same_as<Container<typename T::GraphEdgeType>&>;
 };
 
-template <typename T>
+template <GraphEdgeTrait T>
 struct GraphNode {
     using GraphEdgeType = T;
 private:
@@ -61,7 +61,7 @@ public:
 
 static_assert(GraphNodeTrait<GraphNode<GraphEdge>>);
 
-template <typename T>
+template <GraphEdgeTrait T>
 struct ColoredNode {
     using GraphEdgeType = T;
 private:
@@ -110,5 +110,32 @@ public:
 };
 
 static_assert(GraphNodeTrait<SimpleGraphNode>);
+
+template <typename EdgeType, typename L>
+requires (GraphEdgeTrait<EdgeType> && PrintTrait<L>)
+struct LabeledGraphNode {
+    using GraphEdgeType = GraphEdge;
+private:
+    GraphNode<GraphEdge> m_node;
+    L m_label;
+public:
+    LabeledGraphNode(L label) : m_label(label) {}
+    int get_index() const { return m_node.get_index(); }
+    void set_index(int index) { m_node.set_index(index); }
+    Container<GraphEdge>& get_edges() { return m_node.get_edges(); }
+    const Container<GraphEdge>& get_edges() const { return m_node.get_edges(); }
+    const GraphEdge& get_edge(int index) const { return m_node.get_edge(index); }
+    GraphEdge& get_edge(int index) { return m_node.get_edge(index); }
+    int get_degree() const { return m_node.get_degree(); }
+    void add_edge(GraphEdge* edge) { m_node.add_edge(edge); }
+    void remove_edge(int neighbor_index) { m_node.remove_edge(neighbor_index); }
+    L& get_label() const { return m_label; }
+    std::string to_string() const {
+        return "LabeledNode " + m_label.to_string() + " " + std::to_string(m_node.get_index());
+    }
+    void print() const { std::cout << to_string() << std::endl; }
+};
+
+static_assert(GraphNodeTrait<LabeledGraphNode<GraphEdge, Int>>);
 
 #endif

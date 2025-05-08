@@ -10,6 +10,9 @@ template <GraphTrait T>
 bool is_connected(const T& graph);
 
 template <GraphTrait T>
+bool is_graph_undirected(const T& graph);
+
+template <GraphTrait T>
 std::vector<std::vector<int>> compute_all_cycles_with_node_in_undirected_graph(
     const T& graph,
     int node_index,
@@ -42,6 +45,9 @@ inline bool are_cycles_equivalent(
     const std::vector<int>& cycle1,
     const std::vector<int>& cycle2
 );
+
+template <GraphTrait T>
+std::vector<LabeledNodeGraph<Int>> compute_biconnected_components(const T& graph);
 
 #include "graphs_algorithms.ipp"
 

@@ -144,4 +144,28 @@ public:
 
 static_assert(GraphTrait<LabeledEdgeGraph<Int>>);
 
+static_assert(GraphTrait<Graph<LabeledGraphNode<GraphEdge, Int>>>);
+
+template <typename T>
+struct LabeledNodeGraph {
+    using GraphNodeType = LabeledGraphNode<GraphEdge, T>;
+private:
+    Graph<LabeledGraphNode<GraphEdge, T>> m_graph{};
+public:
+    const Container<LabeledGraphNode<GraphEdge, T>>& get_nodes() const { return m_graph.get_nodes(); }
+    const LabeledGraphNode<GraphEdge, T>& get_node(int index) const { return m_graph.get_node(index); }
+    LabeledGraphNode<GraphEdge, T>& get_node(int index) { return m_graph.get_node(index); }
+    void add_node(LabeledGraphNode<GraphEdge, T>* node) { m_graph.add_node(node); }
+    void add_edge(int from, GraphEdge* edge) { m_graph.add_edge(from, edge); }
+    int size() const { return m_graph.size(); }
+    void add_node(T label) { m_graph.add_node(new LabeledGraphNode<GraphEdge, T>(label)); }
+    void add_edge(int from, int to) { m_graph.add_edge(from, new GraphEdge(to)); }
+    void remove_edge(int from, int to) { m_graph.remove_edge(from, to); }
+    int get_number_of_edges() const { return m_graph.get_number_of_edges(); }
+    std::string to_string() const { return m_graph.to_string(); }
+    void print() const { m_graph.print(); }
+};
+
+static_assert(GraphTrait<LabeledNodeGraph<Int>>);
+
 #endif

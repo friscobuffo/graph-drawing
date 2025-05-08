@@ -27,6 +27,18 @@ bool is_connected(const T& graph) {
 }
 
 template <GraphTrait T>
+bool is_graph_undirected(const T& graph) {
+    for (int i = 0; i < graph.size(); ++i) {
+        for (auto& edge : graph.get_node(i).get_edges()) {
+            int j = edge.get_to();
+            if (!is_edge_in_graph(graph, j, i))
+                return false;
+        }
+    }
+    return true;
+}
+
+template <GraphTrait T>
 std::vector<std::vector<int>> compute_all_cycles_in_undirected_graph(const T& graph) {
     std::vector<std::vector<int>> all_cycles;
     std::vector<bool> taboo_nodes(graph.size(), false);
@@ -40,7 +52,9 @@ std::vector<std::vector<int>> compute_all_cycles_in_undirected_graph(const T& gr
 }
 
 template <GraphTrait T>
-std::vector<std::vector<int>> compute_all_cycles_with_node_in_undirected_graph(const T& graph, int node_index, std::vector<bool>& taboo_nodes) {
+std::vector<std::vector<int>> compute_all_cycles_with_node_in_undirected_graph(
+    const T& graph, int node_index, std::vector<bool>& taboo_nodes
+) {
     std::vector<std::vector<int>> cycles;
     std::vector<int> path;
     std::vector<bool> visited(graph.size(), false);
