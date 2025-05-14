@@ -101,10 +101,8 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
     std::atomic<int> number_of_comparisons_done{0};
     std::mutex input_output_lock;
     std::atomic<int> index{0};
-
     unsigned num_threads = std::thread::hardware_concurrency();
     std::vector<std::thread> threads;
-
     for (unsigned i = 0; i < num_threads; ++i) {
         threads.emplace_back([&]() {
             while (true) {
@@ -116,18 +114,15 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                 int current_number = ++number_of_comparisons_done;
                 {
                     std::lock_guard<std::mutex> lock(input_output_lock);
-                    std::cout << "Processing comparison #" << current_number 
-                              << " - " << graph_filename << std::endl;
-                    if (graphs_already_in_csv.find(graph_filename) != graphs_already_in_csv.end()) {
-                        std::cout << "Graph " << graph_filename << " already processed." << std::endl;
+                    if (graphs_already_in_csv.contains(graph_filename))
                         continue;
-                    }
                 }
                 std::unique_ptr<Graph> graph;
                 {
                     std::lock_guard<std::mutex> lock(input_output_lock);
-                    std::cout << "Loading graph from file: " << entry_path << std::endl;
                     graph = load_graph_from_txt_file(entry_path);
+                    std::cout << "Processing comparison #" << current_number 
+                              << " - " << graph_filename << std::endl;
                 }
                 const std::string svg_output_filename_shape_metrics
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";
@@ -144,13 +139,13 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                 catch (const std::exception& e) {
                     std::lock_guard<std::mutex> lock(input_output_lock);
                     std::cout << "Error processing graph " << graph_filename << std::endl;
+                    std::cout << "Exception: " << e.what() << std::endl;
                     throw;
                 }
             }
         });
     }
-    for (auto& t : threads)
-        if (t.joinable()) t.join();
+    for (auto& t : threads) if (t.joinable()) t.join();
     std::cout << "All comparisons done." << std::endl;
     std::cout << "Threads used: " << num_threads << std::endl;
 }
