@@ -6,6 +6,8 @@
 #include <unordered_set>
 #include <mutex>
 #include <optional>
+#include <cassert>
+#include <utility>
 
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
@@ -87,7 +89,7 @@ public:
             return get_left_variable(i, j);
         if (direction == Direction::RIGHT)
             return get_right_variable(i, j);
-        assert(false);
+        throw std::invalid_argument("Invalid direction");
     }
     const std::pair<int, int>& get_edge_of_variable(int variable) const {
         return variable_to_edge.at(variable);
@@ -193,7 +195,7 @@ void add_cycles_constraints(
     }
 }
 
-Shape* result_to_shape(
+Shape result_to_shape(
     const Graph& graph,
     const std::vector<int>& numbers,
     const VariablesHandler& handler
@@ -204,7 +206,7 @@ Shape* result_to_shape(
         if (var > 0) variable_values[var] = true;
         else variable_values[-var] = false;
     }
-    auto shape = new Shape();
+    Shape shape;
     for (const auto& node : graph.get_nodes()) {
         int i = node.get_id();
         for (auto& edge : node.get_edges()) {
@@ -214,13 +216,13 @@ Shape* result_to_shape(
             int right = handler.get_right_variable(i, j);
             int left = handler.get_left_variable(i, j);
             if (variable_values[up]) {
-                shape->set_direction(i, j, Direction::UP);
+                shape.set_direction(i, j, Direction::UP);
             } else if (variable_values[down]) {
-                shape->set_direction(i, j, Direction::DOWN);
+                shape.set_direction(i, j, Direction::DOWN);
             } else if (variable_values[right]) {
-                shape->set_direction(i, j, Direction::RIGHT);
+                shape.set_direction(i, j, Direction::RIGHT);
             } else if (variable_values[left]) {
-                shape->set_direction(i, j, Direction::LEFT);
+                shape.set_direction(i, j, Direction::LEFT);
             } else {
                 throw std::runtime_error(
                     "No direction found for edge " + std::to_string(i) + " " + std::to_string(j)
@@ -228,7 +230,7 @@ Shape* result_to_shape(
             }
         }
     }
-    return shape;
+    return std::move(shape);
 }
 
 int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
@@ -257,13 +259,13 @@ int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines)
     return std::abs(unit_clauses[random_index]);
 }
 
-std::optional<std::unique_ptr<Shape>> build_shape_or_add_corner(
+std::optional<Shape> build_shape_or_add_corner(
     Graph& graph,
     GraphAttributes& attributes,
     std::vector<std::vector<int>>& cycles
 );
 
-std::unique_ptr<Shape> build_shape(
+Shape build_shape(
     Graph& graph, 
     GraphAttributes& attributes,
     std::vector<std::vector<int>>& cycles
@@ -271,7 +273,7 @@ std::unique_ptr<Shape> build_shape(
     auto shape = build_shape_or_add_corner(graph, attributes, cycles);
     while (!shape.has_value())
         shape = build_shape_or_add_corner(graph, attributes, cycles);
-    return std::unique_ptr<Shape>(std::move(shape.value()));
+    return std::move(shape.value());
 }
 
 std::unordered_set<int> used_indices;
@@ -307,7 +309,7 @@ std::string add_index_to_filename(const std::string& filename, const int index) 
     return path + filename_part;
 }
 
-std::optional<std::unique_ptr<Shape>> build_shape_or_add_corner(
+std::optional<Shape> build_shape_or_add_corner(
     Graph& graph,
     GraphAttributes& attributes,
     std::vector<std::vector<int>>& cycles
@@ -325,14 +327,10 @@ std::optional<std::unique_ptr<Shape>> build_shape_or_add_corner(
     const std::string output = add_index_to_filename(OUTPUT_FILE, index);
     const std::string proof = add_index_to_filename(PROOF_FILE, index);
     cnf_builder.convert_to_cnf(cnf);
-    auto results = std::unique_ptr<const GlucoseResult>(launch_glucose(
-        cnf,
-        output,
-        proof
-    ));
+    auto results = launch_glucose(cnf, output, proof);
     free_index(index);
-    if (results->result == GlucoseResultType::UNSAT) {
-        const int variable_edge = find_variable_of_edge_to_remove(results->proof_lines);
+    if (results.result == GlucoseResultType::UNSAT) {
+        const int variable_edge = find_variable_of_edge_to_remove(results.proof_lines);
         const int i = handler.get_edge_of_variable(variable_edge).first;
         const int j = handler.get_edge_of_variable(variable_edge).second;
         const auto& new_node = graph.add_node();
@@ -354,7 +352,6 @@ std::optional<std::unique_ptr<Shape>> build_shape_or_add_corner(
         }
         return std::nullopt;
     }
-    const std::vector<int>& variables = results->numbers;
-    Shape* shape = result_to_shape(graph, variables, handler);
-    return std::unique_ptr<Shape>(shape);
+    const std::vector<int>& variables = results.numbers;
+    return result_to_shape(graph, variables, handler);
 }

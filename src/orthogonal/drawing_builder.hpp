@@ -64,7 +64,7 @@ enum class BuildingResultType {
 };
 
 struct BuildingResult {
-    std::optional<std::unique_ptr<NodesPositions>> positions;
+    std::optional<NodesPositions> positions;
     std::vector<std::vector<int>> cycles_to_be_added;
     BuildingResultType type;
 };
@@ -81,20 +81,11 @@ void node_positions_to_svg(
     const std::string& filename
 );
 
-// removes useless corners from the graph and from the shape
-// (useless corners are red nodes with two horizontal or vertical edges)
-void refine_result(
-    Graph& graph,
-    GraphAttributes& attributes,
-    NodesPositions& positions,
-    Shape& shape
-);
-
 struct DrawingResult {
     std::unique_ptr<Graph> augmented_graph;
-    std::unique_ptr<GraphAttributes> attributes;
-    std::unique_ptr<Shape> shape;
-    std::unique_ptr<NodesPositions> positions;
+    GraphAttributes attributes;
+    Shape shape;
+    NodesPositions positions;
     int crossings;
     int bends;
     int area;
@@ -107,22 +98,6 @@ struct DrawingResult {
     double bends_stddev;
     int number_of_useless_bends;
 };
-
-std::unique_ptr<NodesPositions> compact_area_x(
-    const Graph& graph,
-    const Shape& shape,
-    const NodesPositions& old_positions
-);
-
-std::unique_ptr<NodesPositions> compact_area_y(
-    const Graph& graph,
-    const Shape& shape,
-    const NodesPositions& old_positions
-);
-
-DrawingResult make_rectilinear_drawing_incremental(
-    const Graph& graph, std::vector<std::vector<int>>& cycles
-);
 
 DrawingResult make_rectilinear_drawing_incremental_basis(const Graph& graph);
 

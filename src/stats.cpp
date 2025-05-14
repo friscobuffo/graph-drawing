@@ -31,10 +31,10 @@ std::tuple<DrawingResult, double> test_shape_metrics_approach(
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(
-        *result.positions, *result.augmented_graph, 
-        *result.attributes, svg_output_filename
+        result.positions, *result.augmented_graph, 
+        result.attributes, svg_output_filename
     );
-    if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
+    if (check_if_drawing_has_overlappings(*result.augmented_graph, result.positions))
         throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
         std::move(result),

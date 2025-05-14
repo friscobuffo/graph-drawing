@@ -35,7 +35,7 @@ inline void save_string_to_file(std::string filename, std::string& content) {
         std::cerr << "Unable to open file" << std::endl;
 }
 
-enum Color {
+enum class Color {
     RED,
     BLUE,
     BLACK,

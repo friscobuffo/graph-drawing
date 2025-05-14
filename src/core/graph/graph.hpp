@@ -15,7 +15,7 @@ class Graph;
 
 class GraphEdge {
 private:
-    int m_id;
+    const int m_id;
     const GraphNode& m_from;
     const GraphNode& m_to;
     const Graph& m_graph_owner;
@@ -79,6 +79,12 @@ public:
     void remove_undirected_edge(int from_id, int to_id);
     const std::string to_string() const;
     void print() const { std::cout << to_string() << std::endl; }
+    // delete move constructor and move assignment operator
+    Graph(const Graph&) = delete;
+    Graph& operator=(const Graph&) = delete;
+    // delete copy constructor and copy assignment operator
+    Graph(Graph&&) = delete;
+    Graph& operator=(Graph&&) = delete;
 };
 
 class GraphNode {

@@ -10,6 +10,8 @@
 #include <fcntl.h>
 #include <stdexcept>
 
+#include "../core/utils.hpp"
+
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
     std::string numbers_str = "Numbers: ";
@@ -25,7 +27,7 @@ void GlucoseResult::print() const {
     std::cout << to_string() << std::endl;
 }
 
-const GlucoseResult* get_results(const std::string& output_file, const std::string& proof_file);
+GlucoseResult get_results(const std::string& output_file, const std::string& proof_file);
 
 void delete_glucose_temp_files(
     const std::string& conjunctive_normal_form_file,
@@ -37,7 +39,7 @@ void delete_glucose_temp_files(
     remove(proof_file.c_str());
 }
 
-const GlucoseResult* launch_glucose(
+GlucoseResult launch_glucose(
     const std::string& conjunctive_normal_form_file,
     const std::string& output_file,
     const std::string& proof_file
@@ -48,9 +50,8 @@ const GlucoseResult* launch_glucose(
     if (pid == 0) {
         // child process
         int devNull = open("/dev/null", O_WRONLY);
-        if (devNull == -1) {
+        if (devNull == -1)
             _exit(1);
-        }
         dup2(devNull, STDOUT_FILENO);
         dup2(devNull, STDERR_FILENO);
         close(devNull);
@@ -67,13 +68,13 @@ const GlucoseResult* launch_glucose(
     int status;
     if (waitpid(pid, &status, 0) == -1)
         throw std::runtime_error("Failed to wait for process");
-    const GlucoseResult* result = get_results(output_file, proof_file);
+    GlucoseResult result = get_results(output_file, proof_file);
     delete_glucose_temp_files(
         conjunctive_normal_form_file,
         output_file,
         proof_file
     );
-    return result;
+    return std::move(result);
 }
 
 std::vector<std::string> get_proof(const std::string& proof_file) {
@@ -87,20 +88,20 @@ std::vector<std::string> get_proof(const std::string& proof_file) {
     return proof_lines;
 }
 
-const GlucoseResult* get_results(const std::string& output_file, const std::string& proof_file) {
+GlucoseResult get_results(const std::string& output_file, const std::string& proof_file) {
     std::ifstream file(output_file.c_str());
     if (!file)
         throw std::runtime_error("Error: Could not open the file.");
     std::string line;
     if (std::getline(file, line)) {
         if (line == "UNSAT")
-            return new GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof(proof_file)};
+            return GlucoseResult{GlucoseResultType::UNSAT, {}, get_proof(proof_file)};
         std::istringstream iss(line);
         std::vector<int> numbers;
         int num;
         while (iss >> num)
             numbers.push_back(num);
-        return new GlucoseResult{GlucoseResultType::SAT, numbers, get_proof(proof_file)};
+        return GlucoseResult{GlucoseResultType::SAT, numbers, get_proof(proof_file)};
     }
     throw std::runtime_error("Error: the file is empty.");
 }

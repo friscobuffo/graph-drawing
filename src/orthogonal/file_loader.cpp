@@ -5,8 +5,8 @@
 #include <iostream>
 #include <stdexcept>
 
-std::unique_ptr<Shape> load_shape_from_file(const std::string& filename) {
-    auto shape = std::make_unique<Shape>();
+Shape load_shape_from_file(const std::string& filename) {
+    Shape shape;
     std::ifstream infile(filename);
     if (infile.is_open()) {
         std::string line;
@@ -17,15 +17,15 @@ std::unique_ptr<Shape> load_shape_from_file(const std::string& filename) {
                 continue;
             std::istringstream iss(line);
             if (iss >> from_index >> to_index >> direction)
-                shape->set_direction(from_index, to_index, string_to_direction(direction));
+                shape.set_direction(from_index, to_index, string_to_direction(direction));
         }
         infile.close();
-        return shape;
+        return std::move(shape);
     }
     throw std::runtime_error("Unable to open shape file: " + filename);
 }
 
-void save_shape_to_file(const Graph& graph, const Shape& shape, std::string filename) {
+void save_shape_to_file(const Graph& graph, const Shape& shape, const std::string& filename) {
     std::ofstream outfile(filename);
     if (outfile.is_open()) {
         for (const auto& node : graph.get_nodes()) {

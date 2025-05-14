@@ -5,11 +5,10 @@
 #include <unordered_map>
 #include <tuple>
 #include <utility>
-#include <stdexcept>
 
 #include "../core/utils.hpp"
 
-enum Direction {
+enum class Direction {
     LEFT,
     RIGHT,
     UP,

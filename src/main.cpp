@@ -13,9 +13,9 @@ int main() {
     auto graph = load_graph_from_txt_file(config["input_graph_file"]);
     auto result = make_rectilinear_drawing_incremental_basis(*graph);
     node_positions_to_svg(
-        *result.positions,
+        result.positions,
         *result.augmented_graph,
-        *result.attributes,
+        result.attributes,
         filename
     );
     std::cout << "Shape metrics:\n";

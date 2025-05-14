@@ -1,6 +1,6 @@
 #include "shape.hpp"
 
-#include <cassert>
+#include <stdexcept>
 
 const std::string direction_to_string(const Direction direction) {
     switch (direction) {

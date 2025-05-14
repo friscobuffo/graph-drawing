@@ -135,8 +135,8 @@ const auto build_equivalence_classes(
     const Shape& shape,
     const Graph& graph
 ) {
-    auto equivalence_classes_x = std::make_unique<EquivalenceClasses>();
-    auto equivalence_classes_y = std::make_unique<EquivalenceClasses>();
+    EquivalenceClasses equivalence_classes_x;
+    EquivalenceClasses equivalence_classes_y;
     int next_class_x = 0;
     int next_class_y = 0;
     IsEdgeVisited is_edge_visited;
@@ -154,7 +154,7 @@ const auto build_equivalence_classes(
                 }
                 horizontal_edge_expander(
                     shape, graph, left, right, next_class_y++,
-                    is_edge_visited, *equivalence_classes_y
+                    is_edge_visited, equivalence_classes_y
                 );
             } else {
                 int down = i;
@@ -165,16 +165,16 @@ const auto build_equivalence_classes(
                 }
                 vertical_edge_expander(
                     shape, graph, down, up, next_class_x++,
-                    is_edge_visited, *equivalence_classes_x
+                    is_edge_visited, equivalence_classes_x
                 );
             }
         }
     }
     for (const auto& node : graph.get_nodes()) {
-        if (!equivalence_classes_x->has_elem_a_class(node.get_id()))
-            equivalence_classes_x->set_class(node.get_id(), next_class_x++);
-        if (!equivalence_classes_y->has_elem_a_class(node.get_id()))
-            equivalence_classes_y->set_class(node.get_id(), next_class_y++);
+        if (!equivalence_classes_x.has_elem_a_class(node.get_id()))
+            equivalence_classes_x.set_class(node.get_id(), next_class_x++);
+        if (!equivalence_classes_y.has_elem_a_class(node.get_id()))
+            equivalence_classes_y.set_class(node.get_id(), next_class_y++);
     }
     return std::make_pair(
         std::move(equivalence_classes_x), std::move(equivalence_classes_y)
@@ -193,10 +193,10 @@ auto equivalence_classes_to_ordering(
         ordering_x->add_node(class_id);
     for (int class_id : equivalence_classes_y.get_all_classes())
         ordering_y->add_node(class_id);
-    auto ordering_x_edge_to_graph_edge = std::make_unique<GraphAttributes>(*ordering_x);
-    auto ordering_y_edge_to_graph_edge = std::make_unique<GraphAttributes>(*ordering_y);
-    ordering_x_edge_to_graph_edge->add_attribute(Attribute::EDGES_ANY_LABEL);
-    ordering_y_edge_to_graph_edge->add_attribute(Attribute::EDGES_ANY_LABEL);
+    GraphAttributes ordering_x_edge_to_graph_edge(*ordering_x);
+    GraphAttributes ordering_y_edge_to_graph_edge(*ordering_y);
+    ordering_x_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
+    ordering_y_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
     for (auto& node : graph.get_nodes()) {
         int i = node.get_id();
         for (auto& edge : node.get_edges()) {
@@ -209,7 +209,7 @@ auto equivalence_classes_to_ordering(
                 if (node_class_x == neighbor_class_x)
                     continue;
                 auto& e = ordering_x->add_edge(node_class_x, neighbor_class_x);
-                ordering_x_edge_to_graph_edge->set_edge_any_label(e.get_id(), std::make_pair(i, j));
+                ordering_x_edge_to_graph_edge.set_edge_any_label(e.get_id(), std::make_pair(i, j));
             } else if (shape.is_up(i, j)) {
                 int node_class_y = equivalence_classes_y.get_class_of_elem(i);
                 int neighbor_class_y = equivalence_classes_y.get_class_of_elem(j);
@@ -218,7 +218,7 @@ auto equivalence_classes_to_ordering(
                 if (node_class_y == neighbor_class_y)
                     continue;
                 auto& e = ordering_y->add_edge(node_class_y, neighbor_class_y);
-                ordering_y_edge_to_graph_edge->set_edge_any_label(e.get_id(), std::make_pair(i, j));
+                ordering_y_edge_to_graph_edge.set_edge_any_label(e.get_id(), std::make_pair(i, j));
             }
         }
     }
@@ -318,7 +318,7 @@ BuildingResult build_nodes_positions(
     auto classes = build_equivalence_classes(shape, graph);
     auto& classes_x = classes.first;
     auto& classes_y = classes.second;
-    auto ordering = equivalence_classes_to_ordering(*classes_x, *classes_y, graph, shape);
+    auto ordering = equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
     auto& ordering_x = std::get<0>(ordering);
     auto& ordering_y = std::get<1>(ordering);
     auto& ordering_x_edge_to_graph_edge = std::get<2>(ordering);
@@ -329,39 +329,39 @@ BuildingResult build_nodes_positions(
         std::vector<std::vector<int>> cycles_to_be_added;
         if (cycle_x.has_value()) {
             auto cycle_x_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
-                cycle_x.value(), *ordering_x, *classes_x, *ordering_x_edge_to_graph_edge
+                cycle_x.value(), *ordering_x, classes_x, ordering_x_edge_to_graph_edge
             );
             cycles_to_be_added.push_back(cycle_x_in_original_graph);
         }
         if (cycle_y.has_value()) {
             auto cycle_y_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
-                cycle_y.value(), *ordering_y, *classes_y, *ordering_y_edge_to_graph_edge
+                cycle_y.value(), *ordering_y, classes_y, ordering_y_edge_to_graph_edge
             );
             cycles_to_be_added.push_back(cycle_y_in_original_graph);
         }
-        return BuildingResult{nullptr, cycles_to_be_added, BuildingResultType::CYCLES_TO_BE_ADDED};
+        return BuildingResult{std::nullopt, cycles_to_be_added, BuildingResultType::CYCLES_TO_BE_ADDED};
     }
     auto classes_x_ordering = make_topological_ordering(*ordering_x);
     auto classes_y_ordering = make_topological_ordering(*ordering_y);
     int current_position_x = 0;
     std::unordered_map<int, int> node_id_to_position_x;
     for (auto& class_id : classes_x_ordering) {
-        for (auto& node : classes_x->get_elems_of_class(class_id))
+        for (auto& node : classes_x.get_elems_of_class(class_id))
             node_id_to_position_x[node] = current_position_x;
         ++current_position_x;
     }
     int current_position_y = 0;
     std::unordered_map<int, int> node_id_to_position_y;
     for (auto& class_id : classes_y_ordering) {
-        for (auto& node : classes_y->get_elems_of_class(class_id))
+        for (auto& node : classes_y.get_elems_of_class(class_id))
             node_id_to_position_y[node] = current_position_y;
         ++current_position_y;
     }
-    auto positions = std::make_unique<NodesPositions>();
+    NodesPositions positions;
     for (int node_id : graph.get_nodes_ids()) {
         int x = node_id_to_position_x[node_id];
         int y = node_id_to_position_y[node_id];
-        positions->set_position(node_id, x, y);
+        positions.set_position(node_id, x, y);
     }
     return BuildingResult{std::move(positions), {}, BuildingResultType::OK};
 }
@@ -576,6 +576,8 @@ int compute_total_crossings(const NodesPositions& positions, const Graph& graph)
     return total_crossings/4;
 }
 
+// removes useless corners from the graph and from the shape
+// (useless corners are red nodes with two horizontal or vertical edges)
 void refine_result(
     Graph& graph,
     GraphAttributes& attributes,
@@ -687,7 +689,7 @@ bool can_move_down(
     return true;
 }
 
-std::unique_ptr<NodesPositions> compact_area_x(
+NodesPositions compact_area_x(
     const Graph& graph,
     const Shape& shape,
     const NodesPositions& old_positions
@@ -700,7 +702,7 @@ std::unique_ptr<NodesPositions> compact_area_x(
     std::unordered_set<int> visited_classes;
     for (const auto& node : graph.get_nodes()) {
         int i = node.get_id();
-        int class_id = classes_x->get_class_of_elem(i);
+        int class_id = classes_x.get_class_of_elem(i);
         if (visited_classes.contains(class_id)) continue;
         visited_classes.insert(class_id);
         int x = old_positions.get_position_x(i);
@@ -712,23 +714,23 @@ std::unique_ptr<NodesPositions> compact_area_x(
         int actual_coordinate = i;
         assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
         int class_id = *coordinate_to_classes[i].begin();
-        while (can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_x)) {
+        while (can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, classes_x)) {
             coordinate_to_classes[actual_coordinate - 1].insert(class_id);
             coordinate_to_classes[actual_coordinate].erase(class_id);
             actual_coordinate--;
         }
     }
-    auto new_positions = std::make_unique<NodesPositions>();
+    NodesPositions new_positions;
     for (auto& [coordinate, classes] : coordinate_to_classes)
         for (auto& class_id : classes)
-            for (auto& node_id : classes_x->get_elems_of_class(class_id))
-                new_positions->set_position(
+            for (auto& node_id : classes_x.get_elems_of_class(class_id))
+                new_positions.set_position(
                     node_id, coordinate, old_positions.get_position_y(node_id)
                 );
-    return new_positions;
+    return std::move(new_positions);
 }
 
-std::unique_ptr<NodesPositions> compact_area_y(
+NodesPositions compact_area_y(
     const Graph& graph,
     const Shape& shape,
     const NodesPositions& old_positions
@@ -741,7 +743,7 @@ std::unique_ptr<NodesPositions> compact_area_y(
     std::unordered_set<int> visited_classes;
     for (const auto& node : graph.get_nodes()) {
         int i = node.get_id();
-        int class_id = classes_y->get_class_of_elem(i);
+        int class_id = classes_y.get_class_of_elem(i);
         if (visited_classes.contains(class_id)) continue;
         visited_classes.insert(class_id);
         int y = old_positions.get_position_y(i);
@@ -753,20 +755,20 @@ std::unique_ptr<NodesPositions> compact_area_y(
         int actual_coordinate = i;
         assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
         int class_id = *coordinate_to_classes[i].begin();
-        while (can_move_down(class_id, coordinate_to_classes, actual_coordinate, old_positions, *classes_y)) {
+        while (can_move_down(class_id, coordinate_to_classes, actual_coordinate, old_positions, classes_y)) {
             coordinate_to_classes[actual_coordinate - 1].insert(class_id);
             coordinate_to_classes[actual_coordinate].erase(class_id);
             actual_coordinate--;
         }
     }
-    auto new_positions = std::make_unique<NodesPositions>();
+    NodesPositions new_positions;
     for (auto& [coordinate, classes] : coordinate_to_classes)
         for (auto& class_id : classes)
-            for (auto& node_id : classes_y->get_elems_of_class(class_id))
-                new_positions->set_position(
+            for (auto& node_id : classes_y.get_elems_of_class(class_id))
+                new_positions.set_position(
                     node_id, old_positions.get_position_x(node_id), coordinate
                 );
-    return new_positions;
+    return std::move(new_positions);
 }
 
 bool check_if_drawing_has_overlappings(const Graph& graph, const NodesPositions& positions) {
@@ -816,11 +818,11 @@ DrawingResult make_rectilinear_drawing_incremental(
     if (!is_graph_connected(graph))
         throw std::runtime_error("make_rectilinear_drawing_incremental: graph is not connected");
     auto augmented_graph = std::make_unique<Graph>();
-    auto attributes = std::make_unique<GraphAttributes>(*augmented_graph);
-    attributes->add_attribute(Attribute::NODES_COLOR);
+    GraphAttributes attributes(*augmented_graph);
+    attributes.add_attribute(Attribute::NODES_COLOR);
     for (const auto& node : graph.get_nodes()) {
         augmented_graph->add_node(node.get_id());
-        attributes->set_node_color(node.get_id(), Color::BLACK);
+        attributes.set_node_color(node.get_id(), Color::BLACK);
     }
     for (const auto& node : graph.get_nodes()) {
         if (node.get_degree() > 4)
@@ -828,34 +830,34 @@ DrawingResult make_rectilinear_drawing_incremental(
         for (auto& edge : node.get_edges())
             augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
     }
-    auto shape = build_shape(*augmented_graph, *attributes, cycles);
-    BuildingResult result = build_nodes_positions(*shape, *augmented_graph);
+    Shape shape = build_shape(*augmented_graph, attributes, cycles);
+    BuildingResult result = build_nodes_positions(shape, *augmented_graph);
     int number_of_added_cycles = 0;
     while (result.type == BuildingResultType::CYCLES_TO_BE_ADDED) {
         for (auto& cycle_to_add : result.cycles_to_be_added)
             cycles.push_back(cycle_to_add);
         number_of_added_cycles += result.cycles_to_be_added.size();
-        shape = build_shape(*augmented_graph, *attributes, cycles);
-        result = build_nodes_positions(*shape, *augmented_graph);
+        shape = build_shape(*augmented_graph, attributes, cycles);
+        result = build_nodes_positions(shape, *augmented_graph);
     }
-    auto positions = std::move(result.positions.value());
+    NodesPositions positions(std::move(result.positions.value()));
     int old_size = augmented_graph->size();
-    refine_result(*augmented_graph, *attributes, *positions, *shape);
+    refine_result(*augmented_graph, attributes, positions, shape);
     int number_of_useless_bends = old_size - augmented_graph->size();
-    result = build_nodes_positions(*shape, *augmented_graph);
+    result = build_nodes_positions(shape, *augmented_graph);
     assert(result.type == BuildingResultType::OK);
     positions = std::move(result.positions.value());
-    auto new_positions = compact_area_x(*augmented_graph, *shape, *positions);
+    auto new_positions = compact_area_x(*augmented_graph, shape, positions);
     positions = std::move(new_positions);
-    new_positions = compact_area_y(*augmented_graph, *shape, *positions);
+    new_positions = compact_area_y(*augmented_graph, shape, positions);
     positions = std::move(new_positions);
     int number_of_corners = augmented_graph->size() - graph.size();
     std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
-        *positions, *augmented_graph, *attributes
+        positions, *augmented_graph, attributes
     );
-    std::tuple<int, double> bends_metrics = compute_bends_metrics(*augmented_graph, *attributes);
-    int number_of_crossings = compute_total_crossings(*positions, *augmented_graph);
-    int total_area = compute_total_area(*positions, *augmented_graph);
+    std::tuple<int, double> bends_metrics = compute_bends_metrics(*augmented_graph, attributes);
+    int number_of_crossings = compute_total_crossings(positions, *augmented_graph);
+    int total_area = compute_total_area(positions, *augmented_graph);
     return {
         std::move(augmented_graph),
         std::move(attributes),

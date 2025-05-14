@@ -3,9 +3,8 @@
 
 #include <string>
 #include <vector>
-#include "../core/utils.hpp"
 
-enum GlucoseResultType {
+enum class GlucoseResultType {
     SAT,
     UNSAT
 };
@@ -18,7 +17,7 @@ struct GlucoseResult {
     void print() const;
 };
 
-const GlucoseResult* launch_glucose(
+GlucoseResult launch_glucose(
     const std::string& conjunctive_normal_form_file,
     const std::string& output_file,
     const std::string& proof_file
