@@ -6,6 +6,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <memory>
+#include <optional>
 #include <tuple>
 
 #include "shape.hpp"
@@ -26,22 +27,36 @@ struct NodePosition {
 
 class NodesPositions {
 private:
-    std::vector<NodePosition> m_positions;
+    std::unordered_map<int, NodePosition> m_nodeid_to_position_map;
 public:
-    void set_position_x(int node, int position);
-    void set_position_y(int node, int position);
+    void set_position(int node, int position_x, int position_y);
     int get_position_x(int node) const;
     int get_position_y(int node) const;
+    bool has_position(int node) const;
+    void remove_position(int node);
     const NodePosition& get_position(int node) const;
 };
 
-int compute_total_area(const NodesPositions& positions, const ColoredNodesGraph& graph);
+int compute_total_area(
+    const NodesPositions& positions,
+    const Graph& graph
+);
 
-int compute_total_crossings(const NodesPositions& positions, const ColoredNodesGraph& graph);
+int compute_total_crossings(
+    const NodesPositions& positions,
+    const Graph& graph
+);
 
-std::tuple<int, int, double> compute_edge_length_metrics(const NodesPositions &positions, const ColoredNodesGraph &graph);
+std::tuple<int, int, double> compute_edge_length_metrics(
+    const NodesPositions& positions,
+    const Graph& graph,
+    const GraphAttributes& attributes
+);
 
-std::tuple<int, double> compute_bends_metrics(const ColoredNodesGraph &graph);
+std::tuple<int, double> compute_bends_metrics(
+    const Graph& graph,
+    const GraphAttributes& attributes
+);
 
 enum class BuildingResultType {
     OK,
@@ -49,32 +64,37 @@ enum class BuildingResultType {
 };
 
 struct BuildingResult {
-    const NodesPositions* positions{nullptr};
+    std::optional<std::unique_ptr<NodesPositions>> positions;
     std::vector<std::vector<int>> cycles_to_be_added;
     BuildingResultType type;
 };
 
-BuildingResult* build_nodes_positions(const Shape& shape, const ColoredNodesGraph& graph);
+BuildingResult build_nodes_positions(
+    const Shape& shape,
+    const Graph& graph
+);
 
 void node_positions_to_svg(
     const NodesPositions& positions,
-    const ColoredNodesGraph& graph,
+    const Graph& graph,
+    const GraphAttributes& attributes,
     const std::string& filename
 );
 
 // removes useless corners from the graph and from the shape
 // (useless corners are red nodes with two horizontal or vertical edges)
 void refine_result(
-    const ColoredNodesGraph& graph,
-    const Shape& shape,
-    ColoredNodesGraph& refined_graph,
-    Shape& refined_shape
+    Graph& graph,
+    GraphAttributes& attributes,
+    NodesPositions& positions,
+    Shape& shape
 );
 
 struct DrawingResult {
-    std::unique_ptr<const ColoredNodesGraph> augmented_graph;
-    std::unique_ptr<const Shape> shape;
-    std::unique_ptr<const NodesPositions> positions;
+    std::unique_ptr<Graph> augmented_graph;
+    std::unique_ptr<GraphAttributes> attributes;
+    std::unique_ptr<Shape> shape;
+    std::unique_ptr<NodesPositions> positions;
     int crossings;
     int bends;
     int area;
@@ -88,37 +108,29 @@ struct DrawingResult {
     int number_of_useless_bends;
 };
 
-NodesPositions* compact_area_x(
-    const ColoredNodesGraph& graph,
+std::unique_ptr<NodesPositions> compact_area_x(
+    const Graph& graph,
     const Shape& shape,
     const NodesPositions& old_positions
 );
 
-NodesPositions* compact_area_y(
-    const ColoredNodesGraph& graph,
+std::unique_ptr<NodesPositions> compact_area_y(
+    const Graph& graph,
     const Shape& shape,
     const NodesPositions& old_positions
 );
 
-template <GraphTrait T>
 DrawingResult make_rectilinear_drawing_incremental(
-    const T& graph, std::vector<std::vector<int>>& cycles
+    const Graph& graph, std::vector<std::vector<int>>& cycles
 );
 
-template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_basis(const T& graph) {
-    auto cycles = compute_cycle_basis(graph);
-    return make_rectilinear_drawing_incremental(graph, cycles);
-}
+DrawingResult make_rectilinear_drawing_incremental_basis(const Graph& graph);
 
-template <GraphTrait T>
-auto make_rectilinear_drawing_incremental_no_cycles(const T& graph) {
-    std::vector<std::vector<int>> cycles;
-    return make_rectilinear_drawing_incremental(graph, cycles);
-}
+DrawingResult make_rectilinear_drawing_incremental_no_cycles(const Graph& graph);
 
-bool check_if_drawing_has_overlappings(const ColoredNodesGraph& graph, const NodesPositions& positions);
-
-#include "drawing_builder.ipp"
+bool check_if_drawing_has_overlappings(
+    const Graph& graph,
+    const NodesPositions& positions
+);
 
 #endif

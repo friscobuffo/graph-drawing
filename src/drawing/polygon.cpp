@@ -108,7 +108,7 @@ Path2D Polygon2D::computePathInside(Point2D& p1, Point2D& p2) {
         path.addPoint(p2);
         return path;
     }
-    SimpleGraph graph;
+    Graph graph;
     graph.add_node();
     graph.add_node();
     std::vector<Point2D> points;

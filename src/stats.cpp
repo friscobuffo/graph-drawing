@@ -24,13 +24,16 @@
 std::unordered_set<std::string> graphs_already_in_csv;
 
 std::tuple<DrawingResult, double> test_shape_metrics_approach(
-    const SimpleGraph &graph, const std::string &svg_output_filename
+    const Graph &graph, const std::string &svg_output_filename
 ) {
     auto start = std::chrono::high_resolution_clock::now();
-    DrawingResult result = make_rectilinear_drawing_incremental_basis<SimpleGraph>(graph);
+    DrawingResult result = make_rectilinear_drawing_incremental_basis(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    node_positions_to_svg(*result.positions, *result.augmented_graph, svg_output_filename);
+    node_positions_to_svg(
+        *result.positions, *result.augmented_graph, 
+        *result.attributes, svg_output_filename
+    );
     if (check_if_drawing_has_overlappings(*result.augmented_graph, *result.positions))
         throw std::runtime_error("Drawing has overlappings");
     return std::make_tuple(
@@ -40,7 +43,7 @@ std::tuple<DrawingResult, double> test_shape_metrics_approach(
 }
 
 std::tuple<int, int, int, int, int, int, double, double, double> test_ogdf_approach(
-    const SimpleGraph &graph, const std::string &svg_output_filename
+    const Graph &graph, const std::string &svg_output_filename
 ) {
     auto start = std::chrono::high_resolution_clock::now();
     auto result = create_drawing(graph, svg_output_filename, "");
@@ -122,11 +125,11 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
                         continue;
                     }
                 }
-                std::unique_ptr<SimpleGraph> graph;
+                std::unique_ptr<Graph> graph;
                 {
                     std::lock_guard<std::mutex> lock(input_output_lock);
                     std::cout << "Loading graph from file: " << entry_path << std::endl;
-                    graph = load_simple_undirected_graph_from_txt_file(entry_path);
+                    graph = load_graph_from_txt_file(entry_path);
                 }
                 const std::string svg_output_filename_shape_metrics
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";

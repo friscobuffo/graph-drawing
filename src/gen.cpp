@@ -34,12 +34,12 @@ int main() {
         for (int i = 1; i <= graphs_generated_per_same_nodes_number; ++i) {
             double density = min_density + (max_density - min_density) * i / graphs_generated_per_same_nodes_number;
             int number_of_edges = static_cast<int>(density * number_of_nodes);
-            auto graph = generate_connected_random_graph_degree_max_4_uniform(number_of_nodes, number_of_edges);
+            auto graph = generate_connected_random_graph_degree_max_4(number_of_nodes, number_of_edges);
             std::string filename =
                 sub_folder + "graph_" + std::to_string(i) + "_n" +
                 std::to_string(number_of_nodes) + "_m" + 
                 std::to_string(number_of_edges) + ".txt";
-            save_undirected_graph_to_file(*graph, filename);
+            save_graph_to_file(*graph, filename);
             ++number_of_generated_graphs;
         }
     }

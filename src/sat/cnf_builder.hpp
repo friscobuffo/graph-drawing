@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-enum class CnfRowType {
+enum CnfRowType {
     CLAUSE,
     COMMENT,
 };

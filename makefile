@@ -14,10 +14,16 @@ COMMON_SRCS := src/sat/glucose.cpp \
     src/orthogonal/shape.cpp \
     src/orthogonal/shape_builder.cpp \
     src/drawing/polygon.cpp \
+	src/core/graph/graphs_algorithms.cpp \
+	src/core/graph/graph.cpp \
+	src/core/graph/file_loader.cpp \
+	src/core/tree/tree.cpp \
+	src/core/tree/tree_algorithms.cpp \
     src/drawing/svg_drawer.cpp \
     src/orthogonal/drawing_builder.cpp \
     src/config/config.cpp \
     src/core/graph/generators.cpp \
+	src/orthogonal/file_loader.cpp \
 	src/core/csv.cpp
 
 # Files with main() functions

@@ -5,7 +5,7 @@
 #include <vector>
 #include "../core/utils.hpp"
 
-enum class GlucoseResultType {
+enum GlucoseResultType {
     SAT,
     UNSAT
 };
@@ -17,8 +17,6 @@ struct GlucoseResult {
     std::string to_string() const;
     void print() const;
 };
-
-static_assert(PrintTrait<GlucoseResult>);
 
 const GlucoseResult* launch_glucose(
     const std::string& conjunctive_normal_form_file,

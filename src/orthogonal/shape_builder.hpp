@@ -8,6 +8,10 @@
 #include "../core/graph/graph.hpp"
 #include "shape.hpp"
 
-Shape* build_shape(ColoredNodesGraph& graph, std::vector<std::vector<int>>& cycles);
+std::unique_ptr<Shape> build_shape(
+    Graph& graph, 
+    GraphAttributes& attributes,
+    std::vector<std::vector<int>>& cycles
+);
 
 #endif

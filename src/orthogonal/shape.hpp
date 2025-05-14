@@ -5,33 +5,22 @@
 #include <unordered_map>
 #include <tuple>
 #include <utility>
+#include <stdexcept>
 
 #include "../core/utils.hpp"
 
-enum class Direction {
+enum Direction {
     LEFT,
     RIGHT,
     UP,
     DOWN
 };
 
-inline const std::string direction_to_string(const Direction direction) {
-    switch (direction) {
-        case Direction::LEFT: return "left";
-        case Direction::RIGHT: return "right";
-        case Direction::UP: return "up";
-        case Direction::DOWN: return "down";
-        default: return "unknown";
-    }
-}
+const std::string direction_to_string(const Direction direction);
 
-inline Direction string_to_direction(const std::string& direction) {
-    if (direction == "left") return Direction::LEFT;
-    if (direction == "right") return Direction::RIGHT;
-    if (direction == "up") return Direction::UP;
-    if (direction == "down") return Direction::DOWN;
-    throw std::invalid_argument("Invalid direction string: " + direction);
-}
+Direction string_to_direction(const std::string& direction);
+
+Direction opposite_direction(const Direction direction);
 
 struct pair_hash {
     template <typename T1, typename T2>
@@ -56,14 +45,17 @@ public:
     bool is_left(const int i, const int j) const;
     bool is_horizontal(const int i, const int j) const;
     bool is_vertical(const int i, const int j) const;
-    int has_node_a_right_neighbor(const int node) const;
-    int has_node_a_left_neighbor(const int node) const;
-    int has_node_a_up_neighbor(const int node) const;
-    int has_node_a_down_neighbor(const int node) const;
+    bool has_node_a_right_neighbor(const int node) const;
+    bool has_node_a_left_neighbor(const int node) const;
+    bool has_node_a_up_neighbor(const int node) const;
+    bool has_node_a_down_neighbor(const int node) const;
+    int get_right_neighbor(const int node) const;
+    int get_left_neighbor(const int node) const;
+    int get_up_neighbor(const int node) const;
+    int get_down_neighbor(const int node) const;
+    void remove_direction(const int i, const int j);
     std::string to_string() const;
     void print() const;
 };
-
-static_assert(PrintTrait<Shape>);
 
 #endif

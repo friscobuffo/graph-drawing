@@ -13,7 +13,7 @@ struct OGDFResult {
 };
 
 OGDFResult create_drawing(
-    const SimpleGraph& graph,
+    const Graph& graph,
     const std::string svg_output_filename = "",
     const std::string gml_output_filename = ""
 );
