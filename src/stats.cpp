@@ -90,11 +90,9 @@ void save_stats(std::ofstream &results_file, DrawingResult& results_shape_metric
 
 std::vector<std::string> collect_txt_files(const std::string& folder_path) {
     std::vector<std::string> txt_files;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path)) {
-        if (entry.is_regular_file() && entry.path().extension() == ".txt") {
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
+        if (entry.is_regular_file() && entry.path().extension() == ".txt")
             txt_files.push_back(entry.path().string());
-        }
-    }
     return txt_files;
 }
 
@@ -157,67 +155,68 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
     std::cout << "Threads used: " << num_threads << std::endl;
 }
 
+void initialize_csv_file(std::ofstream& result_file) {
+    if (!result_file.is_open())
+        throw std::runtime_error("Error: Could not open result file");
+    result_file << "graph_name,"
+                << "shape_metrics_crossings,"
+                << "ogdf_crossings,"
+                << "shape_metrics_bends,"
+                << "ogdf_bends,"
+                << "shape_metrics_area,"
+                << "ogdf_area,"
+                << "shape_metrics_total_edge_length,"
+                << "ogdf_total_edge_length,"
+                << "shape_metrics_max_edge_length,"
+                << "ogdf_max_edge_length,"
+                << "shape_metrics_max_bends_per_edge,"
+                << "ogdf_max_bends_per_edge,"
+                << "shape_metrics_edge_length_stddev,"
+                << "ogdf_edge_length_stddev,"
+                << "shape_metrics_bends_stddev,"
+                << "ogdf_bends_stddev,"
+                << "shape_metrics_time,"
+                << "ogdf_time,"
+                << "shape_metrics_initial_number_cycles,"
+                << "shape_metrics_number_added_cycles,"
+                << "shape_metrics_number_useless_bends"
+                << std::endl;
+}
+
 void compare_approaches(std::unordered_map<std::string, std::string>& config) {
     std::cout << "Comparing approaches..." << std::endl;
     std::string test_results_filename = config["output_result_filename"];
-    bool append_mode = false;
+    std::ofstream result_file;
     if (std::filesystem::exists(test_results_filename)) {
         std::cout << "File " << test_results_filename << " already exists." << std::endl;
-        std::cout << "Do you want to append to it? (y/n): ";
-        char answer;
-        std::cin >> answer;
-        if (answer != 'y' && answer != 'Y') {
+        std::cout << "What do you want to do?" << std::endl;
+        std::cout << "1. Overwrite the file" << std::endl;
+        std::cout << "2. Append to the file" << std::endl;
+        std::cout << "3. Abort" << std::endl;
+        std::cout << "Please enter your choice (1/2/3): ";
+        int choice;
+        std::cin >> choice;
+        if (choice == 1) {
+            std::filesystem::remove(test_results_filename);
+            result_file.open(test_results_filename);
+            initialize_csv_file(result_file);
+        } else if (choice == 2) {
+            auto csv_data = parse_csv(test_results_filename);
+            for (const auto& row : csv_data.rows)
+                if (row.size() > 0)
+                    graphs_already_in_csv.insert(row[0]);
+            result_file.open(test_results_filename, std::ios_base::app);
+        } else {
             std::cout << "Aborting." << std::endl;
             return;
         }
-        append_mode = true;
-        auto csv_data = parse_csv(test_results_filename);
-        for (const auto& row : csv_data.rows)
-            if (row.size() > 0)
-                graphs_already_in_csv.insert(row[0]);
-    }
-    std::ofstream result_file;
-    if (append_mode) {
-        result_file.open(test_results_filename, std::ios_base::app);
-    } else {
-        result_file.open(test_results_filename);
-        if (result_file.is_open()) {
-            result_file << "graph_name,"
-                        << "shape_metrics_crossings,"
-                        << "ogdf_crossings,"
-                        << "shape_metrics_bends,"
-                        << "ogdf_bends,"
-                        << "shape_metrics_area,"
-                        << "ogdf_area,"
-                        << "shape_metrics_total_edge_length,"
-                        << "ogdf_total_edge_length,"
-                        << "shape_metrics_max_edge_length,"
-                        << "ogdf_max_edge_length,"
-                        << "shape_metrics_max_bends_per_edge,"
-                        << "ogdf_max_bends_per_edge,"
-                        << "shape_metrics_edge_length_stddev,"
-                        << "ogdf_edge_length_stddev,"
-                        << "shape_metrics_bends_stddev,"
-                        << "ogdf_bends_stddev,"
-                        << "shape_metrics_time,"
-                        << "ogdf_time,"
-                        << "shape_metrics_initial_number_cycles,"
-                        << "shape_metrics_number_added_cycles,"
-                        << "shape_metrics_number_useless_bends"
-                        << std::endl;
-        }
-    }
-    if (!result_file.is_open()) {
-        std::cerr << "Error: Could not open result file " << test_results_filename << std::endl;
-        return;
     }
     std::string output_svgs_folder = config["output_svgs_folder"];
-    if (!std::filesystem::exists(output_svgs_folder)) {
+    if (!std::filesystem::exists(output_svgs_folder))
         if (!std::filesystem::create_directories(output_svgs_folder)) {
             std::cerr << "Error: Could not create directory " << output_svgs_folder << std::endl;
             return;
         }
-    }
     std::string test_graphs_folder = config["test_graphs_folder"];
     compare_approaches_in_folder(test_graphs_folder, result_file, output_svgs_folder);
     std::cout << std::endl;
@@ -227,6 +226,5 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
 int main() {
     auto config = parse_config("config.txt");
     compare_approaches(config);
-
     return 0;
 }
