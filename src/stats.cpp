@@ -62,7 +62,12 @@ std::tuple<int, int, int, int, int, int, double, double, double> test_ogdf_appro
     );
 }
 
-void save_stats(std::ofstream &results_file, DrawingResult& results_shape_metrics, double shape_metrics_time, std::tuple<int, int, int, int, int, int, double, double, double> &results_ogdf, const std::string &graph_name) {
+void save_stats(
+    std::ofstream& results_file, DrawingResult& results_shape_metrics,
+    double shape_metrics_time,
+    std::tuple<int, int, int, int, int, int, double, double, double> &results_ogdf,
+    const std::string& graph_name
+) {
     results_file << graph_name << ",";
     results_file << results_shape_metrics.crossings << ",";
     results_file << std::get<0>(results_ogdf) << ",";
@@ -102,6 +107,7 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
     std::mutex input_output_lock;
     std::atomic<int> index{0};
     unsigned num_threads = std::thread::hardware_concurrency();
+    num_threads = 1;
     std::vector<std::thread> threads;
     for (unsigned i = 0; i < num_threads; ++i) {
         threads.emplace_back([&]() {
@@ -205,6 +211,10 @@ void compare_approaches(std::unordered_map<std::string, std::string>& config) {
             std::cout << "Aborting." << std::endl;
             return;
         }
+    }
+    else {
+        result_file.open(test_results_filename);
+        initialize_csv_file(result_file);
     }
     std::string output_svgs_folder = config["output_svgs_folder"];
     if (!std::filesystem::exists(output_svgs_folder))
