@@ -72,7 +72,6 @@ public:
     bool isOnBoundary(Point2D& p);
     bool isInside(Point2D& p);
     bool isInside(Line2D& l);
-    Path2D computePathInside(Point2D& p1, Point2D& p2);
     std::vector<Point2D> computeConvexHull();
 };
 

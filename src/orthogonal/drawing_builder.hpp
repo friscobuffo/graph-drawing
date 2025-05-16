@@ -1,9 +1,7 @@
 #ifndef MY_DRAWING_BUILDER_H
 #define MY_DRAWING_BUILDER_H
 
-#include <cassert>
 #include <vector>
-#include <unordered_set>
 #include <unordered_map>
 #include <memory>
 #include <optional>

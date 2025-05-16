@@ -9,7 +9,8 @@
 Shape build_shape(
     Graph& graph, 
     GraphAttributes& attributes,
-    std::vector<std::vector<int>>& cycles
+    std::vector<std::vector<int>>& cycles,
+    bool randomize = false
 );
 
 #endif

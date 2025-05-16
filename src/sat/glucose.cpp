@@ -1,21 +1,12 @@
 #include "glucose.hpp"
 
-#include <cstdio>
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/wait.h>
-#include <fcntl.h>
 #include <stdexcept>
-
-#include <cstdlib>
-#include <ctime>
+#include <random>
 
 #include "../core/utils.hpp"
-
-int glucose_id = 0;
 
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
@@ -35,25 +26,23 @@ void GlucoseResult::print() const {
 GlucoseResult get_results(const std::string& output_file, const std::string& proof_file);
 
 void delete_glucose_temp_files(
-    const std::string& conjunctive_normal_form_file,
     const std::string& output_file,
     const std::string& proof_file
 ) {
-    remove(conjunctive_normal_form_file.c_str());
     remove(output_file.c_str());
     remove(proof_file.c_str());
 }
 
 GlucoseResult launch_glucose(
     const std::string& conjunctive_normal_form_file,
-    const std::string& output_file,
-    const std::string& proof_file,
     bool randomize
 ) {
+    const std::string proof_file = get_unique_filename("proof");
+    const std::string output_file = get_unique_filename("output");
     std::string command;
     const std::string proof_path = "-certified-output=" + proof_file;
     if (randomize) {
-        const std::string rnd_seed = "-rnd-seed=" + std::to_string(std::time(nullptr));
+        const std::string rnd_seed = "-rnd-seed=" + std::to_string(std::random_device{}());
         const std::string rnd_freq = "-rnd-freq=0.2";
         const std::string phase_restart = "-phase-restart=2";
         command = "./glucose" + conjunctive_normal_form_file + " " +
@@ -68,7 +57,6 @@ GlucoseResult launch_glucose(
     std::system(command.c_str());
     GlucoseResult result = get_results(output_file, proof_file);
     delete_glucose_temp_files(
-        conjunctive_normal_form_file,
         output_file,
         proof_file
     );

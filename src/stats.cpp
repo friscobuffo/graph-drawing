@@ -1,18 +1,20 @@
 #include <chrono>
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
-#include <thread>
+#include <memory>
+#include <format>
 #include <filesystem>
+#include <thread>
+#include <mutex>
+#include <atomic>
 #include <unordered_set>
-#include <utility>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <cstdlib>
 
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
 #include "orthogonal/drawing_builder.hpp"
+#include "orthogonal/file_loader.hpp"
 #include "config/config.hpp"
 #include "baseline-ogdf/drawer.hpp"
 #include "core/csv.hpp"
@@ -45,41 +47,38 @@ auto test_ogdf_approach(
     auto result = create_drawing(graph, svg_output_filename, "");
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    return std::make_pair(
-        std::move(result),
-        elapsed.count()
-    );
+    return std::make_pair(result, elapsed.count());
 }
 
 void save_stats(
-    int file_descriptor,
-    DrawingResult& results_shape_metrics, double shape_metrics_time,
-    OGDFResult& results_ogdf, double ogdf_time,
-    const std::string& graph_name
+    std::ofstream &results_file,
+    const DrawingResult& results_shape_metrics, double shape_metrics_time,
+    const OGDFResult& results_ogdf, double ogdf_time,
+    const std::string &graph_name
 ) {
-    std::string result_line = graph_name + "," +
-        std::to_string(results_shape_metrics.crossings) + "," +
-        std::to_string(results_ogdf.crossings) + "," +
-        std::to_string(results_shape_metrics.bends) + "," +
-        std::to_string(results_ogdf.bends) + "," +
-        std::to_string(results_shape_metrics.area) + "," +
-        std::to_string(results_ogdf.area) + "," +
-        std::to_string(results_shape_metrics.total_edge_length) + "," +
-        std::to_string(results_ogdf.total_edge_length) + "," +
-        std::to_string(results_shape_metrics.max_edge_length) + "," +
-        std::to_string(results_ogdf.max_edge_length) + "," +
-        std::to_string(results_shape_metrics.max_bends_per_edge) + "," +
-        std::to_string(results_ogdf.max_bends_per_edge) + "," +
-        std::to_string(results_shape_metrics.edge_length_stddev) + "," +
-        std::to_string(results_ogdf.edge_length_stddev) + "," +
-        std::to_string(results_shape_metrics.bends_stddev) + "," +
-        std::to_string(results_ogdf.bends_stddev) + "," +
-        std::to_string(shape_metrics_time) + "," +
-        std::to_string(ogdf_time) + "," +
-        std::to_string(results_shape_metrics.initial_number_of_cycles) + "," +
-        std::to_string(results_shape_metrics.number_of_added_cycles) + "," +
-        std::to_string(results_shape_metrics.number_of_useless_bends) + "\n";
-    write(file_descriptor, result_line.c_str(), result_line.size());
+    results_file << graph_name << ",";
+    results_file << results_shape_metrics.crossings << ",";
+    results_file << results_ogdf.crossings << ",";
+    results_file << results_shape_metrics.bends << ",";
+    results_file << results_ogdf.bends << ",";
+    results_file << results_shape_metrics.area << ",";
+    results_file << results_ogdf.area << ",";
+    results_file << results_shape_metrics.total_edge_length << ",";
+    results_file << results_ogdf.total_edge_length << ",";
+    results_file << results_shape_metrics.max_edge_length << ",";
+    results_file << results_ogdf.max_edge_length << ",";
+    results_file << results_shape_metrics.max_bends_per_edge << ",";
+    results_file << results_ogdf.max_bends_per_edge << ",";
+    results_file << results_shape_metrics.edge_length_stddev << ",";
+    results_file << results_ogdf.edge_length_stddev << ",";
+    results_file << results_shape_metrics.bends_stddev << ",";
+    results_file << results_ogdf.bends_stddev << ",";
+    results_file << shape_metrics_time << ",";
+    results_file << ogdf_time << ",";
+    results_file << results_shape_metrics.initial_number_of_cycles << ",";
+    results_file << results_shape_metrics.number_of_added_cycles << ",";
+    results_file << results_shape_metrics.number_of_useless_bends;
+    results_file << std::endl;
 }
 
 std::vector<std::string> collect_txt_files(const std::string& folder_path) {
@@ -90,70 +89,61 @@ std::vector<std::string> collect_txt_files(const std::string& folder_path) {
     return txt_files;
 }
 
-void compare_approaches_in_folder(
-    const std::string& folder_path,
-    int file_descriptor, 
-    const std::string& output_svgs_folder
-) {
+void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file, std::string& output_svgs_folder) {
     auto txt_files = collect_txt_files(folder_path);
+    std::atomic<int> number_of_comparisons_done{0};
+    std::mutex input_output_lock;
+    std::atomic<int> index{0};
     unsigned num_threads = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
     for (unsigned i = 0; i < num_threads; ++i) {
-        pid_t pid = fork();
-        if (pid < 0) {
-            std::cerr << "Fork failed" << std::endl;
-            return;
-        }
-        if (pid == 0) { // Child process
-            for (int index = 0; index < txt_files.size(); ++index) {
-                if (index % num_threads != i) continue;
-                const auto& entry_path = txt_files[index];
+        threads.emplace_back([&]() {
+            while (true) {
+                int current = index.fetch_add(1, std::memory_order_relaxed);
+                if (current >= txt_files.size()) break;
+                const auto& entry_path = txt_files[current];
                 const std::string graph_filename = std::filesystem::path(entry_path).stem().string();
+                int current_number = number_of_comparisons_done.fetch_add(1, std::memory_order_relaxed);
                 if (graphs_already_in_csv.contains(graph_filename))
                     continue;
-                Graph graph;
-                load_graph_from_txt_file(entry_path, graph);
-                std::cout << "Processing comparison #" << index 
-                    << " - " << graph_filename << std::endl;
+                std::unique_ptr<Graph> graph = load_graph_from_txt_file(entry_path);
+                {
+                    std::lock_guard<std::mutex> lock(input_output_lock);
+                    std::cout << "Processing comparison #" << current_number 
+                              << " - " << graph_filename << std::endl;
+                }
                 const std::string svg_output_filename_shape_metrics
                     = output_svgs_folder + graph_filename + "_shape_metrics.svg";
                 const std::string svg_output_filename_ogdf
                     = output_svgs_folder + graph_filename + "_ogdf.svg";
                 try {
-                    srand(0);
-                    auto result_shape_metrics = test_shape_metrics_approach(
-                        graph, svg_output_filename_shape_metrics
-                    );
-                    auto result_ogdf = test_ogdf_approach(
-                        graph, svg_output_filename_ogdf
-                    );
-                    save_stats(
-                        file_descriptor,
-                        result_shape_metrics.first,
-                        result_shape_metrics.second,
-                        result_ogdf.first,
-                        result_ogdf.second,
-                        graph_filename
-                    );
+                    auto result_shape_metrics = test_shape_metrics_approach(*graph, svg_output_filename_shape_metrics);
+                    auto result_ogdf = test_ogdf_approach(*graph, svg_output_filename_ogdf);
+                    {
+                        std::lock_guard<std::mutex> lock(input_output_lock);
+                        save_stats(
+                            results_file,
+                            result_shape_metrics.first, result_shape_metrics.second,
+                            result_ogdf.first, result_ogdf.second,
+                            graph_filename
+                        );
+                    }
                 }
                 catch (const std::exception& e) {
+                    std::lock_guard<std::mutex> lock(input_output_lock);
                     std::cout << "Error processing graph " << graph_filename << std::endl;
                     std::cout << "Exception: " << e.what() << std::endl;
-                    kill(getppid(), SIGTERM); // Signal parent
-                    kill(0, SIGTERM);         // Signal all processes in the same group
-                    _exit(1);                 // Exit this child
+                    throw;
                 }
             }
-            _exit(0); // Exit child process
-        }
+        });
     }
-    for (int i = 0; i < num_threads; i++) wait(nullptr);
+    for (auto& t : threads) if (t.joinable()) t.join();
     std::cout << "All comparisons done." << std::endl;
     std::cout << "Threads used: " << num_threads << std::endl;
 }
 
-void initialize_csv_file(const std::string& test_results_filename) {
-    std::ofstream result_file;
-    result_file.open(test_results_filename);
+void initialize_csv_file(std::ofstream& result_file) {
     if (!result_file.is_open())
         throw std::runtime_error("Error: Could not open result file");
     result_file << "graph_name,"
@@ -179,12 +169,11 @@ void initialize_csv_file(const std::string& test_results_filename) {
                 << "shape_metrics_number_added_cycles,"
                 << "shape_metrics_number_useless_bends"
                 << std::endl;
-    result_file.close();
 }
 
 void compare_approaches(const Config& config) {
     std::cout << "Comparing approaches..." << std::endl;
-    const std::string& test_results_filename = config.get("output_result_filename");
+    std::string test_results_filename = config.get("output_result_filename");
     std::ofstream result_file;
     if (std::filesystem::exists(test_results_filename)) {
         std::cout << "File " << test_results_filename << " already exists." << std::endl;
@@ -197,30 +186,33 @@ void compare_approaches(const Config& config) {
         std::cin >> choice;
         if (choice == 1) {
             std::filesystem::remove(test_results_filename);
-            initialize_csv_file(test_results_filename);
+            result_file.open(test_results_filename);
+            initialize_csv_file(result_file);
         } else if (choice == 2) {
             auto csv_data = parse_csv(test_results_filename);
             for (const auto& row : csv_data.rows)
                 if (row.size() > 0)
                     graphs_already_in_csv.insert(row[0]);
+            result_file.open(test_results_filename, std::ios_base::app);
         } else {
             std::cout << "Aborting." << std::endl;
             return;
         }
     }
-    else
-        initialize_csv_file(test_results_filename);
-    int file_desc = open(test_results_filename.c_str(), O_WRONLY | O_APPEND | O_CREAT, 0644);
-    const std::string& output_svgs_folder = config.get("output_svgs_folder");
+    else {
+        result_file.open(test_results_filename);
+        initialize_csv_file(result_file);
+    }
+    std::string output_svgs_folder = config.get("output_svgs_folder");
     if (!std::filesystem::exists(output_svgs_folder))
         if (!std::filesystem::create_directories(output_svgs_folder)) {
             std::cerr << "Error: Could not create directory " << output_svgs_folder << std::endl;
             return;
         }
-    const std::string& test_graphs_folder = config.get("test_graphs_folder");
-    compare_approaches_in_folder(test_graphs_folder, file_desc, output_svgs_folder);
+    std::string test_graphs_folder = config.get("test_graphs_folder");
+    compare_approaches_in_folder(test_graphs_folder, result_file, output_svgs_folder);
     std::cout << std::endl;
-    close(file_desc);
+    result_file.close();
 }
 
 int main() {

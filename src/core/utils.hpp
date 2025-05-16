@@ -3,11 +3,8 @@
 
 #include <vector>
 #include <iostream>
-#include <tuple>
 #include <string>
 #include <cassert>
-#include <fstream>
-#include <sstream>
 #include <memory>
 
 template <typename Iterable>
@@ -26,14 +23,7 @@ void print_array(T array[], int size, const std::string& end = "\n") {
     std::cout << "]" << end;
 }
 
-inline void save_string_to_file(std::string filename, std::string& content) {
-    std::ofstream outfile(filename);
-    if (outfile.is_open()) {
-        outfile << content;
-        outfile.close();
-    } else
-        std::cerr << "Unable to open file" << std::endl;
-}
+void save_string_to_file(const std::string& filename, const std::string& content);
 
 enum class Color {
     RED,
@@ -52,5 +42,8 @@ inline const std::string color_to_string(const Color color) {
         default: assert(false);
     }
 }
+
+
+std::string get_unique_filename(const std::string& base_filename);
 
 #endif

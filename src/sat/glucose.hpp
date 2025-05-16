@@ -19,8 +19,6 @@ struct GlucoseResult {
 
 GlucoseResult launch_glucose(
     const std::string& conjunctive_normal_form_file,
-    const std::string& output_file,
-    const std::string& proof_file,
     bool randomize = true
 );
 

@@ -24,6 +24,7 @@ COMMON_SRCS := src/sat/glucose.cpp \
     src/config/config.cpp \
     src/core/graph/generators.cpp \
 	src/orthogonal/file_loader.cpp \
+	src/core/utils.cpp \
 	src/core/csv.cpp
 
 # Files with main() functions

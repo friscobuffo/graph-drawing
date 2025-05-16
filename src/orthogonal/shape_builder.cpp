@@ -6,21 +6,10 @@
 #include <utility>
 #include <unordered_map>
 #include <stdexcept>
-#include <cstdlib>
-#include <unistd.h>
+#include <random>
 
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
-
-#ifdef __linux__
-const std::string CONJUNCTIVE_NORMAL_FORM_FILE = "/dev/shm/.conjunctive_normal_form.cnf";
-const std::string OUTPUT_FILE = "/dev/shm/.output.txt";
-const std::string PROOF_FILE = "/dev/shm/.proof.txt";
-#elif __APPLE__
-const std::string CONJUNCTIVE_NORMAL_FORM_FILE = ".conjunctive_normal_form.cnf";
-const std::string OUTPUT_FILE = ".output.txt";
-const std::string PROOF_FILE = ".proof.txt";
-#endif
 
 class VariablesHandler {
 private:
@@ -233,7 +222,10 @@ Shape result_to_shape(
     return std::move(shape);
 }
 
-int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines) {
+int find_variable_of_edge_to_remove(
+    const std::vector<std::string>& proof_lines,
+    std::mt19937& random_engine
+) {
     std::vector<int> unit_clauses;
     for (int i = proof_lines.size() - 1; i >= 0; i--) {
         const std::string& line = proof_lines[i];
@@ -255,47 +247,36 @@ int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines)
     if (unit_clauses.size() == 0)
         throw std::runtime_error("Could not find the edge to remove");
     // pick one of the first two unit clauses
-    int random_index = rand() % std::min((int)unit_clauses.size(), 2);
+    int random_index = random_engine() % std::min((int)unit_clauses.size(), 2);
     return std::abs(unit_clauses[random_index]);
 }
 
 std::optional<Shape> build_shape_or_add_corner(
     Graph& graph,
     GraphAttributes& attributes,
-    std::vector<std::vector<int>>& cycles
+    std::vector<std::vector<int>>& cycles,
+    std::mt19937& random_engine
 );
 
 Shape build_shape(
     Graph& graph, 
     GraphAttributes& attributes,
-    std::vector<std::vector<int>>& cycles
+    std::vector<std::vector<int>>& cycles,
+    bool randomize
 ) {
-    auto shape = build_shape_or_add_corner(graph, attributes, cycles);
+    int seed = (randomize) ? std::random_device{}() : 42;
+    std::mt19937 random_engine(seed);
+    auto shape = build_shape_or_add_corner(graph, attributes, cycles, random_engine);
     while (!shape.has_value())
-        shape = build_shape_or_add_corner(graph, attributes, cycles);
+        shape = build_shape_or_add_corner(graph, attributes, cycles, random_engine);
     return std::move(shape.value());
-}
-
-std::string add_index_to_filename(const std::string& filename, const int index) {
-    int last_slash = filename.find_last_of('/');
-    std::string path = "";
-    std::string filename_part = filename;
-    if (last_slash != std::string::npos) {
-        path = filename.substr(0, last_slash + 1);
-        filename_part = filename.substr(last_slash + 1);
-    }
-    int dot_pos = filename_part.rfind('.');
-    if (dot_pos == std::string::npos || dot_pos == 0) // No extension or hidden file without a real extension
-        filename_part += "_" + std::to_string(index);
-    else
-        filename_part = filename_part.substr(0, dot_pos) + "_" + std::to_string(index) + filename_part.substr(dot_pos);
-    return path + filename_part;
 }
 
 std::optional<Shape> build_shape_or_add_corner(
     Graph& graph,
     GraphAttributes& attributes,
-    std::vector<std::vector<int>>& cycles
+    std::vector<std::vector<int>>& cycles,
+    std::mt19937& random_engine
 ) {
     const VariablesHandler handler(graph);
     CnfBuilder cnf_builder;
@@ -305,14 +286,14 @@ std::optional<Shape> build_shape_or_add_corner(
     add_nodes_constraints(graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(graph, cnf_builder, cycles, handler);
-    const int index = getpid();
-    const std::string cnf = add_index_to_filename(CONJUNCTIVE_NORMAL_FORM_FILE, index);
-    const std::string output = add_index_to_filename(OUTPUT_FILE, index);
-    const std::string proof = add_index_to_filename(PROOF_FILE, index);
+    const std::string cnf = get_unique_filename("cnf");
     cnf_builder.convert_to_cnf(cnf);
-    auto results = launch_glucose(cnf, output, proof, false);
+    auto results = launch_glucose(cnf, false);
+    remove(cnf.c_str());
     if (results.result == GlucoseResultType::UNSAT) {
-        const int variable_edge = find_variable_of_edge_to_remove(results.proof_lines);
+        const int variable_edge = find_variable_of_edge_to_remove(
+            results.proof_lines, random_engine
+        );
         const int i = handler.get_edge_of_variable(variable_edge).first;
         const int j = handler.get_edge_of_variable(variable_edge).second;
         const auto& new_node = graph.add_node();

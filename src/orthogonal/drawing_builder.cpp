@@ -5,6 +5,7 @@
 #include <ranges>
 #include <functional>
 #include <unordered_map>
+#include <unordered_set>
 
 class EquivalenceClasses {
 private:

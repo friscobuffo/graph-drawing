@@ -1,9 +1,11 @@
 #include "polygon.hpp"
+
 #include <cassert>
 #include <fstream>
-#include "../core/graph/graph.hpp"
 #include <cmath>
 #include <algorithm>
+
+#include "../core/graph/graph.hpp"
 
 Point2D::Point2D(double x, double y) 
 : x(x), y(y) {}
@@ -98,49 +100,6 @@ bool Polygon2D::isInside(Line2D& l) {
         if (!isInside(m)) return false;
     }
     return true;
-}
-
-Path2D Polygon2D::computePathInside(Point2D& p1, Point2D& p2) {
-    Line2D l(p1, p2);
-    if (isInside(l)) {
-        Path2D path;
-        path.addPoint(p1);
-        path.addPoint(p2);
-        return path;
-    }
-    Graph graph;
-    graph.add_node();
-    graph.add_node();
-    std::vector<Point2D> points;
-    points.push_back(p1);
-    points.push_back(p2);
-    for (int i = 0; i < m_points.size()-1; ++i) {
-        for (int j = i+2; j < m_points.size(); ++j) {
-            Point2D insideVertex = (m_points[i]+m_points[j])/2.0;
-            if (isInside(insideVertex) && !isOnBoundary(insideVertex)) {
-                graph.add_node();
-                points.push_back(insideVertex);
-            }
-        }
-    }
-    // for (int i = 0; i < graph.size()-1; ++i) {
-    //     Point2D& p1 = points[graph.get_nodes()[i].getIndex()];
-    //     for (int j = i+1; j < graph.size(); ++j) {
-    //         Point2D& p2 = points[graph.get_nodes()[j].getIndex()];
-    //         Line2D line(p1, p2);
-    //         if (isInside(line)) {
-    //             double distance = p1.distance(p2);
-    //             graph.add_edge(i,j,distance);
-    //         }
-    //     }
-    // }
-    // auto path = graph.shortestPath(0,1);
-    Path2D result;
-    // for (int i = 0; i < path.size(); ++i) {
-    //     Point2D& p = points[graph.getNode(path[i]).getIndex()];
-    //     result.addPoint(p);
-    // }
-    return result;
 }
 
 // Calcola il determinante tra tre punti (p, q, r)

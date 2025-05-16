@@ -2,14 +2,17 @@
 #define CONFIG_H
 
 #include <string>
-#include <unordered_map>
+#include <memory>
+
+class ConfigImpl;
 
 class Config {
 private:
-    std::unordered_map<std::string, std::string> m_config_map;
+    std::unique_ptr<ConfigImpl> m_config_impl;
 public:
     Config(const std::string& filename);
     const std::string& get(const std::string& key) const;
+    ~Config();
 };
 
 #endif

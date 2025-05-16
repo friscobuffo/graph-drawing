@@ -1,6 +1,9 @@
 #ifndef DRAWER_H
 #define DRAWER_H
 
+#include <string>
+#include "../core/graph/graph.hpp"
+
 struct OGDFResult {
     int crossings;
     int bends;
