@@ -10,7 +10,12 @@
 #include <fcntl.h>
 #include <stdexcept>
 
+#include <cstdlib>
+#include <ctime>
+
 #include "../core/utils.hpp"
+
+int glucose_id = 0;
 
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
@@ -42,32 +47,25 @@ void delete_glucose_temp_files(
 GlucoseResult launch_glucose(
     const std::string& conjunctive_normal_form_file,
     const std::string& output_file,
-    const std::string& proof_file
+    const std::string& proof_file,
+    bool randomize
 ) {
-    pid_t pid = fork();
-    if (pid == -1)
-        throw std::runtime_error("Failed to fork process");
-    if (pid == 0) {
-        // child process
-        int devNull = open("/dev/null", O_WRONLY);
-        if (devNull == -1)
-            _exit(1);
-        dup2(devNull, STDOUT_FILENO);
-        dup2(devNull, STDERR_FILENO);
-        close(devNull);
-        std::string proof_path("-certified-output=");
-        proof_path += proof_file;
-        execl(
-            "./glucose", "glucose", conjunctive_normal_form_file.c_str(), 
-            output_file.c_str(), "-certified", proof_path.c_str(), (char *)NULL
-        );
-        // if exec fails
-        _exit(1);
+    std::string command;
+    const std::string proof_path = "-certified-output=" + proof_file;
+    if (randomize) {
+        const std::string rnd_seed = "-rnd-seed=" + std::to_string(std::time(nullptr));
+        const std::string rnd_freq = "-rnd-freq=0.2";
+        const std::string phase_restart = "-phase-restart=2";
+        command = "./glucose" + conjunctive_normal_form_file + " " +
+            output_file + " " + proof_path + " -certified " +
+            "-rnd-init " + rnd_seed + " " + rnd_freq + " " +
+            phase_restart;
+    } else {
+        command = "./glucose " + conjunctive_normal_form_file + 
+            " " + output_file + " -certified " + proof_path;
     }
-    // parent process
-    int status;
-    if (waitpid(pid, &status, 0) == -1)
-        throw std::runtime_error("Failed to wait for process");
+    command += " > /dev/null 2>&1";
+    std::system(command.c_str());
     GlucoseResult result = get_results(output_file, proof_file);
     delete_glucose_temp_files(
         conjunctive_normal_form_file,

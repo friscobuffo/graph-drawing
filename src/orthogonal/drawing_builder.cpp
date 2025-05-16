@@ -584,7 +584,7 @@ void refine_result(
     NodesPositions& positions,
     Shape& shape
 ) {
-    std::vector<std::tuple<int,int,int>> nodes_to_remove;
+    std::vector<int> nodes_to_remove;
     for (auto& node : graph.get_nodes()) {
         int i = node.get_id();
         if (attributes.get_node_color(i) == Color::BLACK)
@@ -596,9 +596,15 @@ void refine_result(
         int j_2 = edges[1]->get_to().get_id();
         // if the added corner is flat, remove it
         if (shape.is_horizontal(i, j_1) == shape.is_horizontal(i, j_2))
-            nodes_to_remove.push_back(std::make_tuple(i, j_1, j_2));
+            nodes_to_remove.push_back(i);
     }
-    for (auto& [i, j_1, j_2] : nodes_to_remove) {
+    for (int i : nodes_to_remove) {
+        const auto& node = graph.get_node_by_id(i);
+        std::vector<const GraphEdge*> edges;
+        for (auto& edge : node.get_edges())
+            edges.push_back(&edge);
+        int j_1 = edges[0]->get_to().get_id();
+        int j_2 = edges[1]->get_to().get_id();
         Direction direction = shape.get_direction(j_1, i);
         graph.remove_node(i);
         graph.add_undirected_edge(j_1, j_2);

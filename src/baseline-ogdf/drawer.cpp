@@ -308,6 +308,7 @@ OGDFResult create_drawing(
     ol->cOverhang(0.4);
     pl.setPlanarLayouter(ol);
 
+    ogdf::setSeed(0);
     pl.call(GA);
     ogdf::LayoutStatistics stats;
     if (svg_output_filename != "")

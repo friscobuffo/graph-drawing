@@ -1,13 +1,13 @@
 #include "shape_builder.hpp"
 
-#include <cstdlib>
 #include <algorithm>
 #include <string>
-#include <unordered_set>
-#include <mutex>
 #include <optional>
-#include <cassert>
 #include <utility>
+#include <unordered_map>
+#include <stdexcept>
+#include <cstdlib>
+#include <unistd.h>
 
 #include "../sat/glucose.hpp"
 #include "../sat/cnf_builder.hpp"
@@ -249,7 +249,7 @@ int find_variable_of_edge_to_remove(const std::vector<std::string>& proof_lines)
             } else
                 token += c;
         }
-        assert(token == "0");
+        if (token != "0") throw std::runtime_error("Invalid proof line");
         if (tokens.size() == 1) unit_clauses.push_back(tokens[0]);
     }
     if (unit_clauses.size() == 0)
@@ -274,23 +274,6 @@ Shape build_shape(
     while (!shape.has_value())
         shape = build_shape_or_add_corner(graph, attributes, cycles);
     return std::move(shape.value());
-}
-
-std::unordered_set<int> used_indices;
-std::mutex mutex;
-
-int get_index_to_use() {
-    std::lock_guard<std::mutex> lock(mutex);
-    int index = 0;
-    while (used_indices.contains(index))
-        index++;
-    used_indices.insert(index);
-    return index;
-}
-
-void free_index(int index) {
-    std::lock_guard<std::mutex> lock(mutex);
-    used_indices.erase(index);
 }
 
 std::string add_index_to_filename(const std::string& filename, const int index) {
@@ -322,13 +305,12 @@ std::optional<Shape> build_shape_or_add_corner(
     add_nodes_constraints(graph, cnf_builder, handler);
     cnf_builder.add_comment("constraints cycles");
     add_cycles_constraints(graph, cnf_builder, cycles, handler);
-    const int index = get_index_to_use();
+    const int index = getpid();
     const std::string cnf = add_index_to_filename(CONJUNCTIVE_NORMAL_FORM_FILE, index);
     const std::string output = add_index_to_filename(OUTPUT_FILE, index);
     const std::string proof = add_index_to_filename(PROOF_FILE, index);
     cnf_builder.convert_to_cnf(cnf);
-    auto results = launch_glucose(cnf, output, proof);
-    free_index(index);
+    auto results = launch_glucose(cnf, output, proof, false);
     if (results.result == GlucoseResultType::UNSAT) {
         const int variable_edge = find_variable_of_edge_to_remove(results.proof_lines);
         const int i = handler.get_edge_of_variable(variable_edge).first;

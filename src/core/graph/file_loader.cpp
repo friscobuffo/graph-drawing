@@ -6,10 +6,17 @@
 #include "file_loader.hpp"
 
 std::unique_ptr<Graph> load_graph_from_txt_file(const std::string& filename) {
+    auto graph = std::make_unique<Graph>();
+    load_graph_from_txt_file(filename, *graph);
+    return std::move(graph);
+}
+
+void load_graph_from_txt_file(const std::string& filename, Graph& graph) {
+    if (graph.size() > 0)
+        throw std::runtime_error("Graph is not empty. Please use a new graph.");
     std::ifstream infile(filename);
     if (!infile)
         throw std::runtime_error("Could not open file: " + filename);
-    auto graph = std::make_unique<Graph>();
     std::string line;
     enum Section { NONE, NODES, EDGES } section = NONE;
     while (std::getline(infile, line)) {
@@ -22,16 +29,15 @@ std::unique_ptr<Graph> load_graph_from_txt_file(const std::string& filename) {
             if (section == NODES) {
                 int node_id;
                 if (iss >> node_id)
-                    graph->add_node(node_id);
+                    graph.add_node(node_id);
             } else if (section == EDGES) {
                 int from, to;
                 if (iss >> from >> to)
-                    graph->add_edge(from, to);
+                    graph.add_edge(from, to);
             }
         }
     }
     infile.close();
-    return graph;
 }
 
 std::unique_ptr<Graph> load_undirected_graph_from_gml_file(const std::string& filename) {

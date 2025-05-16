@@ -40,7 +40,7 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, title,
     sc = plt.scatter(x, y,
                     c=df['density'], cmap='viridis_r', 
                     vmin=df['density'].min(), vmax=df['density'].max(),
-                    edgecolor='k', s=35)
+                    edgecolor='k', s=15)
     plt.colorbar(sc, label='Density (edges/nodes)')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
@@ -70,7 +70,7 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, title,
     r2 = 1 - (ss_res / ss_tot)
 
     # Plot
-    fit_label = f'Best fit: y = {coeffs[0]:.2f}x² + {coeffs[1]:.2f}x + {coeffs[2]:.2f}\n(R² = {r2:.2f})'
+    fit_label = f'Best fit: y = {coeffs[0]:.4f}x² + {coeffs[1]:.4f}x + {coeffs[2]:.4f}\n(R² = {r2:.2f})'
     plt.plot(x_fit, y_fit, 'r--', label=fit_label)
 
     plt.legend()
@@ -142,107 +142,113 @@ def make_histogram_comparison(x_row_name, y_row_name, x_label, y_label, title, f
 
     print(f"Histogram plot saved to {filepath}")
 
+def make_histogram_bucket(df, col_name, cutoff, bin_size, output_dir, x_label, y_label):
+    column = df[col_name]
+    # Compute 95th percentile cutoff
+    value_cutoff = column.quantile(cutoff)
+    # Filter values under or equal to the cutoff
+    column_clipped = column[column <= value_cutoff]
+    mean_value = column.mean()
+    # Define bin edges up to the cutoff
+    max_value_display = math.ceil(value_cutoff)
+    bins = np.arange(0, max_value_display + bin_size, bin_size)
+
+
+    # Plot histogram
+    plt.figure(figsize=(8, 5))
+    plt.hist(column_clipped, bins=bins, edgecolor='black')
+    plt.title(f'Histogram of {col_name} ({bin_size} buckets size, {cutoff*100}% Cutoff)')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
+
+    # Draw average time line
+    plt.axvline(mean_value, color='red', linestyle='--', linewidth=1.5, label=f'Average {x_label} ≈ {mean_value:.2f}s')
+
+    # Set custom ticks every 10s
+    xticks = [b for b in bins if b % bin_size == 0]
+    plt.xticks(xticks)
+
+    # Add legend
+    plt.legend()
+
+    # Save the histogram
+    filename = f"{col_name}_histogram_buckets.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"{col_name} bucket histogram plot saved to {filepath}")
+
 output_dir = 'plot_results'
-make_scatter_comparisons(df, output_dir)
+generic_dir = os.path.join(output_dir, 'generic')
+less_1_5_dir = os.path.join(output_dir, 'less_1_5')
+more_1_5_dir = os.path.join(output_dir, 'more_1_5')
+
+make_scatter_comparisons(df, generic_dir)
 
 df_density_less_1_5 = df.copy()
 df_density_less_1_5 = df_density_less_1_5[df_density_less_1_5['density'] < 1.5]
 df_density_more_1_5 = df.copy()
 df_density_more_1_5 = df_density_more_1_5[df_density_more_1_5['density'] >= 1.5]
-make_scatter_comparisons(df_density_less_1_5, 'plot_results_less_1_5')
-make_scatter_comparisons(df_density_more_1_5, 'plot_results_more_1_5')
+make_scatter_comparisons(df_density_less_1_5, less_1_5_dir)
+make_scatter_comparisons(df_density_more_1_5, more_1_5_dir)
 
 make_scatter_comparison(df, 'nodes', 'shape_metrics_time',
              'Number of Nodes', 'Shape Metrics Time',
              'Time function per Number of Nodes',
-             'shape_metrics_time_function_nodes.png', output_dir,
+             'shape_metrics_time_function_nodes.png', generic_dir,
              add_diagonal=False)
 
 make_histogram_comparison('ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge',
              'Max Bends per Edge', 'Count',
              'Side-by-Side Histogram of Max Bends per Edge Distribution',
-             "max_bends_per_edge_histogram.png", output_dir)
+             "max_bends_per_edge_histogram.png", generic_dir)
 
 make_scatter_comparison(df, 'density', 'shape_metrics_time',
              'Density (edges/nodes)', 'Shape Metrics Time',
              'Time function per Density', 
-             'shape_metrics_time_function_density.png', output_dir,
+             'shape_metrics_time_function_density.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'nodes', 'shape_metrics_number_added_cycles',
              'Number of Nodes', 'Shape Metrics Number Added Cycles',
              'Number of Added Cycles function per Number of Nodes',
-             'shape_metrics_number_added_cycles_function_nodes.png', output_dir,
+             'shape_metrics_number_added_cycles_function_nodes.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'density', 'shape_metrics_number_added_cycles',
              'Density (edges/nodes)', 'Shape Metrics Number Added Cycles',
              'Number of Added Cycles function per Density',
-             'shape_metrics_number_added_cycles_function_density.png', output_dir,
+             'shape_metrics_number_added_cycles_function_density.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'nodes', 'shape_metrics_number_useless_bends',
              'Number of Nodes', 'Shape Metrics Number Useless Bends',
              'Number of Useless Bends function per Number of Nodes',
-             'shape_metrics_number_useless_bends_function_nodes.png', output_dir,
+             'shape_metrics_number_useless_bends_function_nodes.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'density', 'shape_metrics_number_useless_bends',
              'Density (edges/nodes)', 'Shape Metrics Number Useless Bends',
              'Number of Useless Bends function per Density',
-             'shape_metrics_number_useless_bends_function_density.png', output_dir,
+             'shape_metrics_number_useless_bends_function_density.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'nodes', 'shape_metrics_bends',
              'Number of Nodes', 'Shape Metrics Bends',
              'Bends function per Number of Nodes',
-             'shape_metrics_bends_function_nodes.png', output_dir,
+             'shape_metrics_bends_function_nodes.png', generic_dir,
              add_diagonal=False)
 
 make_scatter_comparison(df, 'density', 'shape_metrics_bends',
              'Density (edges/nodes)', 'Shape Metrics Bends',
              'Bends function per Density',
-             'shape_metrics_bends_function_density.png', output_dir,
+             'shape_metrics_bends_function_density.png', generic_dir,
              add_diagonal=False)
 
-# Extract times
-times = df['shape_metrics_time']
+make_histogram_bucket(df, 'shape_metrics_time', 0.925, 5, generic_dir, 'Time (seconds)', 'Number of Graphs')
 
-# Compute 95th percentile cutoff
-cutoff = 0.975
-time_cutoff = times.quantile(cutoff)
 
-# Filter values under or equal to the cutoff
-times_clipped = times[times <= time_cutoff]
+df['good_bends_ratio'] = df['shape_metrics_bends'] / (df['shape_metrics_bends'] + df['shape_metrics_number_useless_bends'])
 
-# Compute mean (average) of full data
-mean_time = times.mean()
-
-# Define bin edges up to the cutoff
-max_time_display = math.ceil(time_cutoff)
-bins = list(range(0, ((max_time_display // 5) + 2) * 5, 5))
-
-# Plot histogram
-plt.figure(figsize=(8, 5))
-plt.hist(times_clipped, bins=bins, edgecolor='black')
-plt.title(f'Histogram of shape_metrics_time (5s Buckets, {cutoff*100}% Cutoff)')
-plt.xlabel('Time (seconds)')
-plt.ylabel('Number of Graphs')
-plt.grid(axis='y', linestyle='--', alpha=0.7)
-
-# Draw average time line
-plt.axvline(mean_time, color='red', linestyle='--', linewidth=1.5, label=f'Average Time ≈ {mean_time:.2f}s')
-
-# Set custom ticks every 10s
-xticks = [b for b in bins if b % 10 == 0]
-plt.xticks(xticks)
-
-# Add legend
-plt.legend()
-
-# Save the histogram
-filename = "shape_metrics_time_histogram.png"
-filepath = os.path.join(output_dir, filename)
-plt.savefig(filepath, dpi=300, bbox_inches='tight')
-plt.close()
-print(f"Shape metrics time histogram plot saved to {filepath}")
+make_histogram_bucket(df, 'good_bends_ratio', 0.95, 0.05, generic_dir, 'Good Bends Ratio', 'Number of Graphs')

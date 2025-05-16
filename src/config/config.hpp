@@ -4,6 +4,12 @@
 #include <string>
 #include <unordered_map>
 
-std::unordered_map<std::string, std::string> parse_config(const std::string& filename);
+class Config {
+private:
+    std::unordered_map<std::string, std::string> m_config_map;
+public:
+    Config(const std::string& filename);
+    const std::string& get(const std::string& key) const;
+};
 
 #endif
