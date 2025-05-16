@@ -12,6 +12,7 @@
 #include <mutex>
 #include <atomic>
 #include <unordered_set>
+// #include <cstdlib>
 
 #include "core/graph/graph.hpp"
 #include "core/graph/file_loader.hpp"
@@ -107,17 +108,15 @@ void compare_approaches_in_folder(std::string& folder_path, std::ofstream& resul
     std::mutex input_output_lock;
     std::atomic<int> index{0};
     unsigned num_threads = std::thread::hardware_concurrency();
-    num_threads = 1;
     std::vector<std::thread> threads;
     for (unsigned i = 0; i < num_threads; ++i) {
         threads.emplace_back([&]() {
             while (true) {
-                // Get the next file index atomically
                 int current = index.fetch_add(1, std::memory_order_relaxed);
                 if (current >= txt_files.size()) break;
                 const auto& entry_path = txt_files[current];
                 const std::string graph_filename = std::filesystem::path(entry_path).stem().string();
-                int current_number = ++number_of_comparisons_done;
+                int current_number = number_of_comparisons_done.fetch_add(1, std::memory_order_relaxed);
                 {
                     std::lock_guard<std::mutex> lock(input_output_lock);
                     if (graphs_already_in_csv.contains(graph_filename))
