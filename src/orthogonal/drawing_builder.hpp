@@ -97,9 +97,7 @@ struct DrawingResult {
     int number_of_useless_bends;
 };
 
-DrawingResult make_rectilinear_drawing_incremental_basis(const Graph& graph);
-
-DrawingResult make_rectilinear_drawing_incremental_no_cycles(const Graph& graph);
+DrawingResult make_orthogonal_drawing(const Graph& graph);
 
 bool check_if_drawing_has_overlappings(
     const Graph& graph,

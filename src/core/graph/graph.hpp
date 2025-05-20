@@ -126,19 +126,6 @@ public:
     const std::any& get_edge_any_label(int edge_id) const;
 };
 
-class IsEdgeVisited {
-private:
-    std::unordered_map<int, std::unordered_set<int>> m_edge_visited;
-public:
-    IsEdgeVisited() {}
-    bool is_visited(int from_id, int to_id) const {
-        return m_edge_visited.contains(from_id) && m_edge_visited.at(from_id).contains(to_id);
-    }
-    void set_visited(int from_id, int to_id) {
-        if (!m_edge_visited.contains(from_id))
-            m_edge_visited[from_id] = std::unordered_set<int>();
-        m_edge_visited[from_id].insert(to_id);
-    }
-};
+typedef std::unordered_set<std::pair<int,int>, int_pair_hash> GraphEdgeHashSet;
 
 #endif

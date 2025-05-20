@@ -37,4 +37,12 @@ const std::string color_to_string(const Color color);
 
 std::string get_unique_filename(const std::string& base_filename);
 
+struct int_pair_hash {
+    int operator()(const std::pair<int, int>& p) const {
+        int h1 = std::hash<int>{}(p.first);
+        int h2 = std::hash<int>{}(p.second);
+        return h1 ^ (h2 * 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+    }
+};
+
 #endif

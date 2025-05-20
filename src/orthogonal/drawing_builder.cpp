@@ -61,11 +61,11 @@ void horizontal_edge_expander(
     const Graph& graph,
     int left, int right,
     int class_id,
-    IsEdgeVisited& is_edge_visited,
+    GraphEdgeHashSet& is_edge_visited,
     EquivalenceClasses& equivalence_classes_y
 ) {
-    is_edge_visited.set_visited(left, right);
-    is_edge_visited.set_visited(right, left);
+    is_edge_visited.insert({left, right});
+    is_edge_visited.insert({right, left});
     std::unordered_set<int> visited;
     visited.insert(left);
     visited.insert(right);
@@ -74,8 +74,8 @@ void horizontal_edge_expander(
     eq_class.push_back(right);
     while (shape.has_node_a_left_neighbor(left)) {
         int new_left = shape.get_left_neighbor(left);
-        is_edge_visited.set_visited(left, new_left);
-        is_edge_visited.set_visited(new_left, left);
+        is_edge_visited.insert({left, new_left});
+        is_edge_visited.insert({new_left, left});
         left = new_left;
         if (visited.contains(left)) break;
         visited.insert(left);
@@ -83,8 +83,8 @@ void horizontal_edge_expander(
     }
     while (shape.has_node_a_right_neighbor(right)) {
         int new_right = shape.get_right_neighbor(right);
-        is_edge_visited.set_visited(right, new_right);
-        is_edge_visited.set_visited(new_right, right);
+        is_edge_visited.insert({right, new_right});
+        is_edge_visited.insert({new_right, right});
         right = new_right;
         if (visited.contains(right)) break;
         visited.insert(right);
@@ -99,11 +99,11 @@ void vertical_edge_expander(
     const Graph& graph,
     int down, int up,
     int class_id,
-    IsEdgeVisited& is_edge_visited,
+    GraphEdgeHashSet& is_edge_visited,
     EquivalenceClasses& equivalence_classes_x
 ) {
-    is_edge_visited.set_visited(down, up);
-    is_edge_visited.set_visited(up, down);
+    is_edge_visited.insert({down, up});
+    is_edge_visited.insert({up, down});
     std::unordered_set<int> visited;
     visited.insert(down);
     visited.insert(up);
@@ -112,8 +112,8 @@ void vertical_edge_expander(
     eq_class.push_back(up);
     while (shape.has_node_a_down_neighbor(down)) {
         int new_down = shape.get_down_neighbor(down);
-        is_edge_visited.set_visited(down, new_down);
-        is_edge_visited.set_visited(new_down, down);
+        is_edge_visited.insert({down, new_down});
+        is_edge_visited.insert({new_down, down});
         down = new_down;
         if (visited.contains(down)) break;
         visited.insert(down);
@@ -121,8 +121,8 @@ void vertical_edge_expander(
     }
     while (shape.has_node_a_up_neighbor(up)) {
         int new_up = shape.get_up_neighbor(up);
-        is_edge_visited.set_visited(up, new_up);
-        is_edge_visited.set_visited(new_up, up);
+        is_edge_visited.insert({up, new_up});
+        is_edge_visited.insert({new_up, up});
         up = new_up;
         if (visited.contains(up)) break;
         visited.insert(up);
@@ -140,12 +140,12 @@ const auto build_equivalence_classes(
     EquivalenceClasses equivalence_classes_y;
     int next_class_x = 0;
     int next_class_y = 0;
-    IsEdgeVisited is_edge_visited;
+    GraphEdgeHashSet is_edge_visited;
     for (auto& node : graph.get_nodes()) {
         int i = node.get_id();
         for (auto& edge : node.get_edges()) {
             int j = edge.get_to().get_id();
-            if (is_edge_visited.is_visited(i, j)) continue;
+            if (is_edge_visited.contains({i, j})) continue;
             if (shape.is_horizontal(i, j)) {
                 int left = i;
                 int right = j;
@@ -814,13 +814,13 @@ bool check_if_drawing_has_overlappings(const Graph& graph, const NodesPositions&
     return false;
 }
 
-DrawingResult make_rectilinear_drawing_incremental(
+DrawingResult make_orthogonal_drawing_incremental(
     const Graph& graph, std::vector<std::vector<int>>& cycles
 ) {
     if (!is_graph_undirected(graph))
-        throw std::runtime_error("make_rectilinear_drawing_incremental: graph is not undirected");
+        throw std::runtime_error("make_orthogonal_drawing_incremental: graph is not undirected");
     if (!is_graph_connected(graph))
-        throw std::runtime_error("make_rectilinear_drawing_incremental: graph is not connected");
+        throw std::runtime_error("make_orthogonal_drawing_incremental: graph is not connected");
     auto augmented_graph = std::make_unique<Graph>();
     GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
@@ -830,7 +830,7 @@ DrawingResult make_rectilinear_drawing_incremental(
     }
     for (const auto& node : graph.get_nodes()) {
         if (node.get_degree() > 4)
-            throw std::runtime_error("make_rectilinear_drawing_incremental: found node with degree > 4");
+            throw std::runtime_error("make_orthogonal_drawing_incremental: found node with degree > 4");
         for (auto& edge : node.get_edges())
             augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
     }
@@ -880,12 +880,70 @@ DrawingResult make_rectilinear_drawing_incremental(
     };
 }
 
-DrawingResult make_rectilinear_drawing_incremental_basis(const Graph& graph) {
+DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph);
+
+DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph) {
     auto cycles = compute_cycle_basis(graph);
-    return make_rectilinear_drawing_incremental(graph, cycles);
+    return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
-DrawingResult make_rectilinear_drawing_incremental_no_cycles(const Graph& graph) {
-    std::vector<std::vector<int>> cycles;
-    return make_rectilinear_drawing_incremental(graph, cycles);
+DrawingResult make_orthogonal_drawing(const Graph& graph) {
+    for (const auto& node : graph.get_nodes())
+        if (node.get_degree() > 4)
+            return make_orthogonal_drawing_any_degree(graph);
+    return make_orthogonal_drawing_low_degree(graph);
+}
+
+std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet> compute_maximal_degree_4_subgraph(
+    const Graph& graph
+) {
+    auto subgraph = std::make_unique<Graph>();
+    GraphEdgeHashSet removed_edges;
+    for (const auto& node : graph.get_nodes())
+        subgraph->add_node(node.get_id());
+    for (const auto& node : graph.get_nodes()) {
+        int node_id = node.get_id();
+        for (auto& edge : node.get_edges()) {
+            int neighbor_id = edge.get_to().get_id();
+            if (subgraph->has_edge(node_id, neighbor_id))
+                continue;
+            if (removed_edges.contains({node_id, neighbor_id}))
+                continue;
+            if (
+                subgraph->get_node_by_id(node_id).get_degree() < 4 &&
+                subgraph->get_node_by_id(neighbor_id).get_degree() < 4
+            )
+                subgraph->add_undirected_edge(node_id, neighbor_id);
+            else {
+                removed_edges.insert({node_id, neighbor_id});
+                removed_edges.insert({neighbor_id, node_id});
+            }
+        }
+    }
+    return std::make_pair(std::move(subgraph), std::move(removed_edges));
+}
+
+DrawingResult merge_connected_components(const std::vector<DrawingResult> results);
+
+void add_back_removed_edge(DrawingResult& result, const std::pair<int,int>& edge);
+
+DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
+    auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
+    auto components = compute_connected_components(*subgraph);
+    std::vector<DrawingResult> results;
+    for (auto& component : components)
+        results.push_back(std::move(make_orthogonal_drawing_low_degree(*component)));
+    DrawingResult result = merge_connected_components(results);
+    for (auto& edge : removed_edges)
+        if (edge.first < edge.second)
+            add_back_removed_edge(result, edge);
+    return result;
+}
+
+DrawingResult merge_connected_components(const std::vector<DrawingResult> results) {
+    
+}
+
+void add_back_removed_edge(DrawingResult& result, const std::pair<int,int>& edge) {
+
 }
