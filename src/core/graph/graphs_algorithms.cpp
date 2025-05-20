@@ -215,3 +215,30 @@ bool are_cycles_equivalent(
     }
     return true;
 }
+
+std::vector<std::unique_ptr<Graph>> compute_connected_components(const Graph& graph) {
+    if (!is_graph_undirected(graph))
+        throw std::runtime_error("Graph is not undirected");
+    std::unordered_set<int> visited;
+    std::vector<std::unique_ptr<Graph>> components;
+    std::function<void(const GraphNode&, Graph& component)> explore_component = [&](
+        const GraphNode& node, Graph& component) {
+        visited.insert(node.get_id());
+        for (const auto& edge : node.get_edges()) {
+            const auto& neighbor = edge.get_to();
+            if (!visited.contains(neighbor.get_id())) {
+                component.add_node(neighbor.get_id());
+                component.add_undirected_edge(node.get_id(), neighbor.get_id());
+                explore_component(neighbor, component);
+            }
+        }
+    };
+    for (const auto& node : graph.get_nodes())
+        if (!visited.contains(node.get_id())) {
+            auto new_component = std::make_unique<Graph>();
+            new_component->add_node(node.get_id());
+            explore_component(node, *new_component);
+            components.push_back(std::move(new_component));
+        }
+    return std::move(components);
+}

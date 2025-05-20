@@ -114,10 +114,8 @@ enum class Attribute {
 
 class GraphAttributes {
 private:
-    const Graph& m_graph;
     std::unordered_map<Attribute, std::unordered_map<int, std::any>> mattribute_to_node;
 public:
-    GraphAttributes(const Graph& graph);
     bool has_attribute(Attribute attribute) const;
     void add_attribute(Attribute attribute);
     bool has_attribute_by_id(Attribute attribute, int id) const;

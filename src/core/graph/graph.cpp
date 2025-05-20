@@ -147,8 +147,6 @@ void Graph::remove_node(int id) {
     m_nodeid_to_incoming_edgesid_map.erase(id);
 }
 
-GraphAttributes::GraphAttributes(const Graph& graph) : m_graph(graph) {}
-
 bool GraphAttributes::has_attribute(Attribute attribute) const {
     return mattribute_to_node.contains(attribute);
 }

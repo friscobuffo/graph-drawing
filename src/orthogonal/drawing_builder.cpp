@@ -194,8 +194,8 @@ auto equivalence_classes_to_ordering(
         ordering_x->add_node(class_id);
     for (int class_id : equivalence_classes_y.get_all_classes())
         ordering_y->add_node(class_id);
-    GraphAttributes ordering_x_edge_to_graph_edge(*ordering_x);
-    GraphAttributes ordering_y_edge_to_graph_edge(*ordering_y);
+    GraphAttributes ordering_x_edge_to_graph_edge;
+    GraphAttributes ordering_y_edge_to_graph_edge;
     ordering_x_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
     ordering_y_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
     for (auto& node : graph.get_nodes()) {
@@ -273,7 +273,6 @@ std::vector<int> path_in_class(int from, int to, const std::vector<int>& class_e
         if (class_elems[i] == from) from_pos = i;
         if (class_elems[i] == to) to_pos = i;
     }
-    assert(from_pos != -1 && to_pos != -1);
     if (from_pos > to_pos) {
         auto path = path_in_class(to, from, class_elems);
         std::reverse(path.begin(), path.end());
@@ -431,7 +430,10 @@ std::tuple<int, int, double> compute_edge_length_metrics(
     for (const auto& node : graph.get_nodes()) {
         if (attributes.get_node_color(node.get_id()) != Color::BLACK)
             continue;
-        std::function<void(int, int, int)> dfs = [&](int current_id, int black_id, int current_length) {
+        std::function<void(int, int, int)> dfs = [
+                &graph, &visited, &positions, &attributes, &total_edge_length, &edge_lengths, &max_edge_length, &dfs
+            ] (int current_id, int black_id, int current_length) 
+        {
             visited.insert(current_id);
             for (const auto &edge : graph.get_node_by_id(current_id).get_edges()) {
                 int neighbor = edge.get_to().get_id();
@@ -443,9 +445,8 @@ std::tuple<int, int, double> compute_edge_length_metrics(
                 int y2 = positions.get_position_y(neighbor);
                 int length = std::abs(x1 - x2) + std::abs(y1 - y2);
                 Color neighbor_color = attributes.get_node_color(neighbor);
-                if (neighbor_color == Color::RED) {
+                if (neighbor_color == Color::RED)
                     dfs(neighbor, black_id, current_length + length);
-                }
                 else if (neighbor_color == Color::BLACK) {
                     if (black_id < neighbor) {
                         int total_length = current_length + length;
@@ -713,13 +714,11 @@ NodesPositions compact_area_x(
         if (visited_classes.contains(class_id)) continue;
         visited_classes.insert(class_id);
         int x = old_positions.get_position_x(i);
-        assert(!coordinate_to_classes.contains(x));
         coordinate_to_classes[x] = {class_id};
         max_coordinate = std::max(max_coordinate, x);
     }
     for (int i = 1; i <= max_coordinate; i++) {
         int actual_coordinate = i;
-        assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
         int class_id = *coordinate_to_classes[i].begin();
         while (can_move_left(class_id, coordinate_to_classes, actual_coordinate, old_positions, classes_x)) {
             coordinate_to_classes[actual_coordinate - 1].insert(class_id);
@@ -754,13 +753,11 @@ NodesPositions compact_area_y(
         if (visited_classes.contains(class_id)) continue;
         visited_classes.insert(class_id);
         int y = old_positions.get_position_y(i);
-        assert(!coordinate_to_classes.contains(y));
         coordinate_to_classes[y] = {class_id};
         max_coordinate = std::max(max_coordinate, y);
     }
     for (int i = 1; i <= max_coordinate; i++) {
         int actual_coordinate = i;
-        assert(coordinate_to_classes.contains(i) && coordinate_to_classes[i].size() == 1);
         int class_id = *coordinate_to_classes[i].begin();
         while (can_move_down(class_id, coordinate_to_classes, actual_coordinate, old_positions, classes_y)) {
             coordinate_to_classes[actual_coordinate - 1].insert(class_id);
@@ -825,7 +822,7 @@ DrawingResult make_rectilinear_drawing_incremental(
     if (!is_graph_connected(graph))
         throw std::runtime_error("make_rectilinear_drawing_incremental: graph is not connected");
     auto augmented_graph = std::make_unique<Graph>();
-    GraphAttributes attributes(*augmented_graph);
+    GraphAttributes attributes;
     attributes.add_attribute(Attribute::NODES_COLOR);
     for (const auto& node : graph.get_nodes()) {
         augmented_graph->add_node(node.get_id());
@@ -852,7 +849,6 @@ DrawingResult make_rectilinear_drawing_incremental(
     refine_result(*augmented_graph, attributes, positions, shape);
     int number_of_useless_bends = old_size - augmented_graph->size();
     result = build_nodes_positions(shape, *augmented_graph);
-    assert(result.type == BuildingResultType::OK);
     positions = std::move(result.positions.value());
     auto new_positions = compact_area_x(*augmented_graph, shape, positions);
     positions = std::move(new_positions);

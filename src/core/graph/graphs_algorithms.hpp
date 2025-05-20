@@ -33,4 +33,6 @@ bool are_cycles_equivalent(
     const std::vector<int>& cycle2
 );
 
+std::vector<std::unique_ptr<Graph>> compute_connected_components(const Graph& graph);
+
 #endif

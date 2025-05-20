@@ -4,7 +4,6 @@
 #include <vector>
 #include <iostream>
 #include <string>
-#include <cassert>
 #include <memory>
 
 template <typename Iterable>
@@ -34,15 +33,7 @@ enum class Color {
     ANY,
 };
 
-inline const std::string color_to_string(const Color color) {
-    switch (color) {
-        case Color::RED: return "red";
-        case Color::BLUE: return "blue";
-        case Color::BLACK: return "black";
-        default: assert(false);
-    }
-}
-
+const std::string color_to_string(const Color color);
 
 std::string get_unique_filename(const std::string& base_filename);
 
