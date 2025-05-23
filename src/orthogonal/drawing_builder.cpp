@@ -1243,28 +1243,15 @@ void all_positive_positions(Graph &graph, NodesPositions &positions);
 DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
 {
     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
-    DrawingResult result;
-    result = std::move(make_orthogonal_drawing_low_degree(*subgraph));
-    std::cout << "Number of removed edges: " << removed_edges.size() << std::endl;
-    for (auto &edge : removed_edges)
-        std::cout << "Removed edge: " << edge.first << " - " << edge.second << std::endl;
-
+    auto components = compute_connected_components(*subgraph);
+    std::vector<DrawingResult> results;
+    for (auto &component : components)
+        results.push_back(std::move(make_orthogonal_drawing_low_degree(*component)));
+    DrawingResult result = merge_connected_components(results);
     std::unordered_map<int, std::vector<std::tuple<int, int>>> chain_edges;
     for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-        {
-            std::cout << "Adding back edge: " << edge.first << " - " << edge.second << std::endl;
             add_back_removed_edge(result, edge, chain_edges);
-        }
-    for (auto &chain : chain_edges)
-    {
-        std::cout << "Chain for edge " << chain.first << ": ";
-        for (auto &edge : chain.second)
-        {
-            std::cout << "(" << std::get<0>(edge) << ", " << std::get<1>(edge) << ") ";
-        }
-        std::cout << std::endl;
-    }
     node_positions_to_svg_any_degree(
         result.positions,
         *result.augmented_graph,
@@ -1274,6 +1261,37 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
         "output.svg");
     return result;
 }
+
+// DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
+// {
+//     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
+//     DrawingResult result;
+//     result = std::move(make_orthogonal_drawing_low_degree(*subgraph));
+//     std::unordered_map<int, std::vector<std::tuple<int, int>>> chain_edges;
+//     for (auto &edge : removed_edges)
+//         if (edge.first < edge.second)
+//         {
+//             std::cout << "Adding back edge: " << edge.first << " - " << edge.second << std::endl;
+//             add_back_removed_edge(result, edge, chain_edges);
+//         }
+//     for (auto &chain : chain_edges)
+//     {
+//         std::cout << "Chain for edge " << chain.first << ": ";
+//         for (auto &edge : chain.second)
+//         {
+//             std::cout << "(" << std::get<0>(edge) << ", " << std::get<1>(edge) << ") ";
+//         }
+//         std::cout << std::endl;
+//     }
+//     node_positions_to_svg_any_degree(
+//         result.positions,
+//         *result.augmented_graph,
+//         result.attributes,
+//         chain_edges,
+//         removed_edges,
+//         "output.svg");
+//     return result;
+// }
 
 DrawingResult merge_connected_components(std::vector<DrawingResult> &results)
 {

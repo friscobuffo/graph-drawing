@@ -224,11 +224,15 @@ std::vector<std::unique_ptr<Graph>> compute_connected_components(const Graph& gr
     std::function<void(const GraphNode&, Graph& component)> explore_component = [&](
         const GraphNode& node, Graph& component) {
         visited.insert(node.get_id());
-        for (const auto& edge : node.get_edges()) {
-            const auto& neighbor = edge.get_to();
-            if (!visited.contains(neighbor.get_id())) {
+        for (const auto &edge : node.get_edges())
+        {
+            const auto &neighbor = edge.get_to();
+            if (!component.has_node(neighbor.get_id()))
                 component.add_node(neighbor.get_id());
+            if (!component.has_edge(node.get_id(), neighbor.get_id()))
                 component.add_undirected_edge(node.get_id(), neighbor.get_id());
+            if (!visited.contains(neighbor.get_id()))
+            {
                 explore_component(neighbor, component);
             }
         }
