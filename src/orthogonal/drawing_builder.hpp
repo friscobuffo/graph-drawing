@@ -28,8 +28,13 @@ private:
     std::unordered_map<int, NodePosition> m_nodeid_to_position_map;
 public:
     void set_position(int node, int position_x, int position_y);
+    void change_position(int node, int position_x, int position_y);
     int get_position_x(int node) const;
     int get_position_y(int node) const;
+    void x_right_shift(int x_pos);
+    void x_left_shift(int x_pos);
+    void y_up_shift(int y_pos);
+    void y_down_shift(int y_pos);
     bool has_position(int node) const;
     void remove_position(int node);
     const NodePosition& get_position(int node) const;
@@ -78,6 +83,13 @@ void node_positions_to_svg(
     const GraphAttributes& attributes,
     const std::string& filename
 );
+
+void node_positions_to_svg_any_degree(
+    const NodesPositions &positions,
+    const Graph &graph,
+    const GraphAttributes &attributes,
+    const std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges,
+    const GraphEdgeHashSet &removed_edges, const std::string &filename);
 
 struct DrawingResult {
     std::unique_ptr<Graph> augmented_graph;

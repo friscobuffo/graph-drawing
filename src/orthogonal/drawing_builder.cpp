@@ -3,6 +3,7 @@
 #include <list>
 #include <math.h>
 #include <ranges>
+#include <set>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
@@ -231,6 +232,11 @@ auto equivalence_classes_to_ordering(
     );
 }
 
+void NodesPositions::change_position(int node, int position_x, int position_y)
+{
+    m_nodeid_to_position_map[node] = NodePosition{position_x, position_y};
+}
+
 void NodesPositions::set_position(int node, int position_x, int position_y) {
     if (has_position(node))
         throw std::runtime_error("NodesPositions::set_position_x Node already has a position");
@@ -366,6 +372,225 @@ BuildingResult build_nodes_positions(
     return BuildingResult{std::move(positions), {}, BuildingResultType::OK};
 }
 
+int make_chain_key(int x, int y)
+{
+    return (x << 16) ^ y;
+}
+
+void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &from_y, double &to_y, int epsilon, std::__1::vector<std::__1::tuple<int, int>> &list, double &from_x, double &to_x)
+{
+    // primo quadrante
+    if (x_j > x_i && y_j > y_i)
+    {
+        // primo arco orizzontale
+        if (z == 0 && from_y == to_y)
+        {
+            from_y += epsilon;
+            to_y += epsilon;
+        }
+        // ultimo arco orizzontale
+        else if (z == list.size() - 1 && from_y == to_y)
+        {
+            from_y -= epsilon;
+            to_y -= epsilon;
+        }
+        // primo arco verticale
+        else if (z == 0 && from_x == to_x)
+        {
+            from_x += epsilon;
+            to_x += epsilon;
+        }
+        // ultimo arco verticale
+        else if (z == list.size() - 1 && from_x == to_x)
+        {
+            from_x -= epsilon;
+            to_x -= epsilon;
+        }
+        if (z > 0 && z < list.size() - 1)
+        {
+            if (list.size() == 4)
+            {
+                if (from_x == to_x)
+                {
+                    to_y -= epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x += epsilon;
+                }
+            }
+            else if (list.size() == 3)
+            {
+                if (from_x == to_x)
+                {
+                    from_y += epsilon;
+                    to_y -= epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x += epsilon;
+                    to_x -= epsilon;
+                }
+            }
+        }
+    }
+    // secondo quadrante
+    if (x_j < x_i && y_j > y_i)
+    {
+        if (z == 0 && from_y == to_y)
+        {
+            from_y += epsilon;
+            to_y += epsilon;
+        }
+        else if (z == list.size() - 1 && from_y == to_y)
+        {
+            from_y -= epsilon;
+            to_y -= epsilon;
+        }
+        else if (z == 0 && from_x == to_x)
+        {
+            from_x -= epsilon;
+            to_x -= epsilon;
+        }
+        else if (z == list.size() - 1 && from_x == to_x)
+        {
+            from_x += epsilon;
+            to_x += epsilon;
+        }
+        if (z > 0 && z < list.size() - 1)
+        {
+            if (list.size() == 4)
+            {
+                if (from_x == to_x)
+                {
+                    from_y += epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    to_x += epsilon;
+                }
+            }
+            else if (list.size() == 3)
+            {
+                if (from_x == to_x)
+                {
+                    from_y += epsilon;
+                    to_y -= epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x -= epsilon;
+                    to_x += epsilon;
+                }
+            }
+        }
+    }
+
+    // terzo quadrante
+    if (x_j < x_i && y_j < y_i)
+    {
+        if (z == 0 && from_y == to_y)
+        {
+            from_y -= epsilon;
+            to_y -= epsilon;
+        }
+        else if (z == list.size() - 1 && from_y == to_y)
+        {
+            from_y += epsilon;
+            to_y += epsilon;
+        }
+        else if (z == 0 && from_x == to_x)
+        {
+            from_x -= epsilon;
+            to_x -= epsilon;
+        }
+        else if (z == list.size() - 1 && from_x == to_x)
+        {
+            from_x += epsilon;
+            to_x += epsilon;
+        }
+        if (z > 0 && z < list.size() - 1)
+        {
+            if (list.size() == 4)
+            {
+                if (from_x == to_x)
+                {
+                    to_y += epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x -= epsilon;
+                }
+            }
+            else if (list.size() == 3)
+            {
+                if (from_x == to_x)
+                {
+                    from_y -= epsilon;
+                    to_y += epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x -= epsilon;
+                    to_x += epsilon;
+                }
+            }
+        }
+    }
+
+    // quarto quadrante
+    if (x_j > x_i && y_j < y_i)
+    {
+        if (z == 0 && from_y == to_y)
+        {
+            from_y -= epsilon;
+            to_y -= epsilon;
+        }
+        else if (z == list.size() - 1 && from_y == to_y)
+        {
+            from_y += epsilon;
+            to_y += epsilon;
+        }
+        else if (z == 0 && from_x == to_x)
+        {
+            from_x += epsilon;
+            to_x += epsilon;
+        }
+        else if (z == list.size() - 1 && from_x == to_x)
+        {
+            from_x -= epsilon;
+            to_x -= epsilon;
+        }
+        if (z > 0 && z < list.size() - 1)
+        {
+            if (list.size() == 4)
+            {
+                if (from_x == to_x)
+                {
+                    from_y -= epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    to_x -= epsilon;
+                }
+            }
+            else if (list.size() == 3)
+            {
+                if (from_x == to_x)
+                {
+                    from_y -= epsilon;
+                    to_y += epsilon;
+                }
+                if (from_y == to_y)
+                {
+                    from_x += epsilon;
+                    to_x -= epsilon;
+                }
+            }
+        }
+    }
+}
+
 void node_positions_to_svg(
     const NodesPositions& positions,
     const Graph& graph,
@@ -397,6 +622,89 @@ void node_positions_to_svg(
     }
     for (auto& node : graph.get_nodes()) {
         Color color = attributes.get_node_color(node.get_id());
+        drawer.add(points.at(node.get_id()), color_to_string(color), std::to_string(node.get_id()));
+    }
+    drawer.saveToFile(filename);
+}
+
+void node_positions_to_svg_any_degree(
+    const NodesPositions &positions,
+    const Graph &graph,
+    const GraphAttributes &attributes,
+    const std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges,
+    const GraphEdgeHashSet &removed_edges, const std::string &filename)
+{
+    int max_x = 0;
+    int max_y = 0;
+    for (auto &node : graph.get_nodes())
+    {
+        max_x = std::max(max_x, positions.get_position_x(node.get_id()));
+        max_y = std::max(max_y, positions.get_position_y(node.get_id()));
+    }
+    SvgDrawer drawer{800, 600};
+    ScaleLinear scale_x = ScaleLinear(0, max_x + 2, 0, 800);
+    ScaleLinear scale_y = ScaleLinear(0, max_y + 2, 0, 600);
+    std::unordered_map<int, Point2D> points;
+    for (auto &node : graph.get_nodes())
+    {
+        double x = scale_x.map(positions.get_position_x(node.get_id()) + 1);
+        double y = scale_y.map(positions.get_position_y(node.get_id()) + 1);
+        points.emplace(node.get_id(), Point2D(x, y));
+    }
+    for (auto &node : graph.get_nodes())
+    {
+        int i = node.get_id();
+        for (auto &edge : node.get_edges())
+        {
+            int j = edge.get_to().get_id();
+            Line2D line(points.at(i), points.at(j));
+            drawer.add(line);
+        }
+    }
+    int epsilon = 5;
+
+    for (auto edge : removed_edges)
+    {
+        int i = edge.first;
+        int j = edge.second;
+        if (i > j)
+            std::swap(i, j);
+
+        int x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
+        int x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
+
+        std::vector<std::tuple<int, int>> list;
+        try
+        {
+            list = chain_edges.at(make_chain_key(i, j));
+        }
+        catch (const std::out_of_range &e)
+        {
+            std::cerr << "Nino nino: 🚨 " << i << "," << j << std::endl;
+            continue;
+        }
+
+        for (int z = 0; z < list.size(); z++)
+        {
+            int from = std::get<0>(list[z]);
+            int to = std::get<1>(list[z]);
+
+            double from_x = points.at(from).x, from_y = points.at(from).y;
+            double to_x = points.at(to).x, to_y = points.at(to).y;
+
+            shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y, epsilon, list, from_x, to_x);
+
+            Point2D p1(from_x, from_y);
+            Point2D p2(to_x, to_y);
+            Line2D line(p1, p2);
+            drawer.add(line, "blue");
+        }
+    }
+    for (auto &node : graph.get_nodes())
+    {
+        Color color = attributes.get_node_color(node.get_id());
+        if (color == Color::RED)
+            continue;
         drawer.add(points.at(node.get_id()), color_to_string(color), std::to_string(node.get_id()));
     }
     drawer.saveToFile(filename);
@@ -911,9 +1219,10 @@ std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet> compute_maximal_degree_4_sub
                 continue;
             if (
                 subgraph->get_node_by_id(node_id).get_degree() < 4 &&
-                subgraph->get_node_by_id(neighbor_id).get_degree() < 4
-            )
+                subgraph->get_node_by_id(neighbor_id).get_degree() < 4)
+            {
                 subgraph->add_undirected_edge(node_id, neighbor_id);
+            }
             else {
                 removed_edges.insert({node_id, neighbor_id});
                 removed_edges.insert({neighbor_id, node_id});
@@ -923,27 +1232,352 @@ std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet> compute_maximal_degree_4_sub
     return std::make_pair(std::move(subgraph), std::move(removed_edges));
 }
 
-DrawingResult merge_connected_components(const std::vector<DrawingResult> results);
+DrawingResult merge_connected_components(std::vector<DrawingResult> &results);
 
-void add_back_removed_edge(DrawingResult& result, const std::pair<int,int>& edge);
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges);
 
-DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
+void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, NodesPositions &positions);
+
+void all_positive_positions(Graph &graph, NodesPositions &positions);
+
+DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
+{
     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
-    auto components = compute_connected_components(*subgraph);
-    std::vector<DrawingResult> results;
-    for (auto& component : components)
-        results.push_back(std::move(make_orthogonal_drawing_low_degree(*component)));
-    DrawingResult result = merge_connected_components(results);
-    for (auto& edge : removed_edges)
+    DrawingResult result;
+    result = std::move(make_orthogonal_drawing_low_degree(*subgraph));
+    std::cout << "Number of removed edges: " << removed_edges.size() << std::endl;
+    for (auto &edge : removed_edges)
+        std::cout << "Removed edge: " << edge.first << " - " << edge.second << std::endl;
+
+    std::unordered_map<int, std::vector<std::tuple<int, int>>> chain_edges;
+    for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-            add_back_removed_edge(result, edge);
+        {
+            std::cout << "Adding back edge: " << edge.first << " - " << edge.second << std::endl;
+            add_back_removed_edge(result, edge, chain_edges);
+        }
+    for (auto &chain : chain_edges)
+    {
+        std::cout << "Chain for edge " << chain.first << ": ";
+        for (auto &edge : chain.second)
+        {
+            std::cout << "(" << std::get<0>(edge) << ", " << std::get<1>(edge) << ") ";
+        }
+        std::cout << std::endl;
+    }
+    node_positions_to_svg_any_degree(
+        result.positions,
+        *result.augmented_graph,
+        result.attributes,
+        chain_edges,
+        removed_edges,
+        "output.svg");
     return result;
 }
 
-DrawingResult merge_connected_components(const std::vector<DrawingResult> results) {
-    
+DrawingResult merge_connected_components(std::vector<DrawingResult> &results)
+{
+    return DrawingResult{
+        std::move(results[0].augmented_graph),
+        std::move(results[0].attributes),
+        std::move(results[0].shape),
+        std::move(results[0].positions),
+        0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 }
 
-void add_back_removed_edge(DrawingResult& result, const std::pair<int,int>& edge) {
+void NodesPositions::x_right_shift(int x_pos)
+{
+    for (auto &entry : m_nodeid_to_position_map)
+    {
+        if (entry.second.m_x >= x_pos)
+        {
+            entry.second.m_x++;
+        }
+    }
+}
 
+void NodesPositions::x_left_shift(int x_pos)
+{
+    for (auto &entry : m_nodeid_to_position_map)
+    {
+        if (entry.second.m_x <= x_pos)
+            entry.second.m_x--;
+    }
+}
+
+void NodesPositions::y_up_shift(int y_pos)
+{
+    for (auto &entry : m_nodeid_to_position_map)
+    {
+        if (entry.second.m_y >= y_pos)
+            entry.second.m_y++;
+    }
+}
+
+void NodesPositions::y_down_shift(int y_pos)
+{
+    for (auto &entry : m_nodeid_to_position_map)
+    {
+        if (entry.second.m_y <= y_pos)
+            entry.second.m_y--;
+    }
+}
+
+void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction direction_ab, bool x_true, bool y_true, bool aligned, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges, Graph &graph, GraphAttributes &attributes, NodesPositions &positions)
+{
+    auto n0 = graph.add_node().get_id();
+    auto n1 = graph.add_node().get_id();
+    auto n2 = graph.add_node().get_id();
+    auto n3 = graph.add_node().get_id();
+    int n4 = -1;
+
+    attributes.set_node_color(n0, Color::RED);
+    attributes.set_node_color(n1, Color::RED);
+    attributes.set_node_color(n2, Color::RED);
+    attributes.set_node_color(n3, Color::RED);
+
+    std::cout << "4 " << std::endl;
+
+    std::cout << "make_chain_key" << i << " - " << j << std::endl;
+    chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n0, n1));
+    chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n1, n2));
+    chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n2, n3));
+
+    if (x_true == false && y_true == false && aligned == false)
+    {
+        n4 = graph.add_node().get_id();
+        attributes.set_node_color(n4, Color::RED);
+        chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n3, n4));
+    }
+
+    std::cout << "5" << std::endl;
+
+    int n1_x = positions.get_position_x(i), n1_y = positions.get_position_y(i);
+    int n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
+    int n3_x = positions.get_position_x(j), n3_y = positions.get_position_y(j);
+
+    auto get_x = [&](int index)
+    { return positions.get_position_x(index); };
+    auto get_y = [&](int index)
+    { return positions.get_position_y(index); };
+
+    auto shift_x_left = [&](int index)
+    { positions.x_left_shift(get_x(index)); };
+    auto shift_x_right = [&](int index)
+    { positions.x_right_shift(get_x(index)); };
+    auto shift_y_up = [&](int index)
+    { positions.y_up_shift(get_y(index)); };
+    auto shift_y_down = [&](int index)
+    { positions.y_down_shift(get_y(index)); };
+
+    std::cout << "6" << std::endl;
+
+    if (!aligned)
+    {
+        switch (direction_ia)
+        {
+        case Direction::LEFT:
+            n2_x = get_x(i);
+            n2_y = get_y(j);
+            shift_x_right(i);
+            if (direction_ab == Direction::UP)
+                shift_y_up(j);
+            else
+                shift_y_down(j);
+            break;
+
+        case Direction::UP:
+            n2_x = get_x(j);
+            n2_y = get_y(i);
+            if (direction_ab == Direction::RIGHT)
+            {
+                shift_x_right(j);
+                shift_y_down(i);
+            }
+            else
+            {
+                shift_x_left(j);
+                shift_y_down(i);
+            }
+            break;
+
+        case Direction::RIGHT:
+            n2_x = get_x(i);
+            n2_y = get_y(j);
+            shift_x_left(i);
+            if (direction_ab == Direction::DOWN)
+                shift_y_down(j);
+            else
+                shift_y_up(j);
+            break;
+
+        case Direction::DOWN:
+            n2_x = get_x(j);
+            n2_y = get_y(i);
+            shift_y_up(i);
+            if (direction_ab == Direction::LEFT)
+                shift_x_left(j);
+            else
+                shift_x_right(j);
+            break;
+        }
+    }
+    else
+    {
+        switch (direction_ia)
+        {
+        case Direction::UP:
+            positions.y_down_shift(positions.get_position_y(i));
+            break;
+        case Direction::RIGHT:
+            positions.x_left_shift(positions.get_position_x(i));
+            break;
+        }
+    }
+
+    std::cout << "7" << std::endl;
+
+    positions.set_position(n0, positions.get_position_x(i), positions.get_position_y(i));
+    positions.set_position(n1, n1_x, n1_y);
+
+    std::cout << "8" << std::endl;
+
+    if (aligned)
+    {
+        positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
+        positions.set_position(n2, n2_x, n2_y);
+    }
+    else if (y_true)
+    {
+        positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
+        positions.set_position(n2, positions.get_position_x(j), n2_y);
+    }
+    else if (x_true)
+    {
+        positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
+        positions.set_position(n2, n2_x, positions.get_position_y(j));
+    }
+    else
+    {
+        positions.set_position(n2, n2_x, n2_y);
+        positions.set_position(n3, n3_x, n3_y);
+        positions.set_position(n4, positions.get_position_x(j), positions.get_position_y(j));
+    }
+    std::cout << "9" << std::endl;
+}
+
+// assume that coor_i < coor_j
+bool check_if_the_segment_is_free(int coor_i, int coor_j, const std::set<int> &position_set)
+{
+    for (int c = coor_i + 1; c < coor_j; c++)
+    {
+        if (position_set.find(c) != position_set.end())
+            return false;
+    }
+    return true;
+}
+
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges)
+{
+
+    std::cout << "1 " << std::endl;
+
+    auto &graph = *result.augmented_graph;
+    auto &attributes = result.attributes;
+    auto &positions = result.positions;
+    int node_count = graph.size();
+
+    // std::set<int> x_position_set, y_position_set;
+    // create_set_positions(x_position_set, y_position_set, positions);
+    std::cout << "2 " << std::endl;
+
+    int i = edge.first;
+    int j = edge.second;
+    if (i > j)
+        std::swap(i, j);
+
+    int x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
+    int x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
+    std::cout << "3 " << std::endl;
+
+    if (x_i > x_j && y_i > y_j)
+    {
+
+        // if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
+        //     split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
+        // else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
+        //     split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
+        // else
+        split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, chain_edges, graph, attributes, positions);
+    }
+    else if (x_i < x_j && y_i < y_j)
+    {
+        // if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
+        //     split_and_rewire(i, j, Direction::RIGHT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
+        // else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
+        //     split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
+        // else
+        split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, chain_edges, graph, attributes, positions);
+    }
+    else if (x_i > x_j && y_i < y_j)
+    {
+        // if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
+        //     split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
+
+        // else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
+        //     split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
+        // else
+        split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, chain_edges, graph, attributes, positions);
+    }
+    else if (x_i < x_j && y_i > y_j)
+    {
+        // if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
+        //     split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, true, false, false, chain_edges, graph, attributes, positions);
+        // else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
+        //     split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
+        // else
+        split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, chain_edges, graph, attributes, positions);
+    }
+    else if (y_i == y_j && x_i < x_j)
+        split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, true, chain_edges, graph, attributes, positions);
+    else if (y_i == y_j && x_i > x_j)
+        split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, false, true, chain_edges, graph, attributes, positions);
+    else if (x_i == x_j && y_i < y_j)
+        split_and_rewire(i, j, Direction::RIGHT, Direction::UP, false, false, true, chain_edges, graph, attributes, positions);
+    else if (x_i == x_j && y_i > y_j)
+        split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, true, chain_edges, graph, attributes, positions);
+
+    all_positive_positions(graph, positions);
+}
+
+void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, NodesPositions &positions)
+{
+    // NEED TO FIX
+    //     for (    )
+    //     {
+    //         int x = positions.get_position_x(i);
+    //         int y = positions.get_position_y(i);
+    //         x_position_set.insert(x);
+    //         y_position_set.insert(y);
+    // }
+}
+
+void all_positive_positions(Graph &graph, NodesPositions &positions)
+{
+    std::cout << "10" << std::endl;
+
+    int min_x = INT_MAX;
+    int min_y = INT_MAX;
+    for (auto &node : graph.get_nodes())
+    {
+        int i = node.get_id();
+        min_x = std::min(min_x, positions.get_position_x(i));
+        min_y = std::min(min_y, positions.get_position_y(i));
+    }
+    for (auto &node : graph.get_nodes())
+    {
+        int i = node.get_id();
+        positions.change_position(i, positions.get_position_x(i) - min_x, positions.get_position_y(i) - min_y);
+    }
+    std::cout << "11" << std::endl;
 }
