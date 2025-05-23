@@ -380,7 +380,7 @@ int make_chain_key(int x, int y)
 void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &from_y, double &to_y, int epsilon, std::__1::vector<std::__1::tuple<int, int>> &list, double &from_x, double &to_x)
 {
     // primo quadrante
-    if (x_j > x_i && y_j > y_i)
+    if (x_j >= x_i && y_j >= y_i)
     {
         // primo arco orizzontale
         if (z == 0 && from_y == to_y)
@@ -435,7 +435,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
         }
     }
     // secondo quadrante
-    if (x_j < x_i && y_j > y_i)
+    if (x_j <= x_i && y_j >= y_i)
     {
         if (z == 0 && from_y == to_y)
         {
@@ -487,7 +487,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
     }
 
     // terzo quadrante
-    if (x_j < x_i && y_j < y_i)
+    if (x_j <= x_i && y_j <= y_i)
     {
         if (z == 0 && from_y == to_y)
         {
@@ -539,7 +539,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
     }
 
     // quarto quadrante
-    if (x_j > x_i && y_j < y_i)
+    if (x_j >= x_i && y_j <= y_i)
     {
         if (z == 0 && from_y == to_y)
         {
@@ -1234,9 +1234,9 @@ std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet> compute_maximal_degree_4_sub
 
 DrawingResult merge_connected_components(std::vector<DrawingResult> &results);
 
-void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges);
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges, int &new_bends);
 
-void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, NodesPositions &positions);
+void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, Graph &graph, NodesPositions &positions);
 
 void all_positive_positions(Graph &graph, NodesPositions &positions);
 
@@ -1249,9 +1249,29 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
         results.push_back(std::move(make_orthogonal_drawing_low_degree(*component)));
     DrawingResult result = merge_connected_components(results);
     std::unordered_map<int, std::vector<std::tuple<int, int>>> chain_edges;
+    int new_bends = 0;
     for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-            add_back_removed_edge(result, edge, chain_edges);
+        {
+            add_back_removed_edge(result, edge, chain_edges, new_bends);
+        }
+    // NEED TO FIX: crossings: non aggiungo veramente gli high deg edges, quindi non vengono contati nelle metriche
+
+    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
+        result.positions, *result.augmented_graph, result.attributes);
+    std::tuple<int, double> bends_metrics = compute_bends_metrics(*result.augmented_graph, result.attributes);
+    int number_of_crossings = compute_total_crossings(result.positions, *result.augmented_graph);
+    int total_area = compute_total_area(result.positions, *result.augmented_graph);
+    std::cout << "Shape metrics:\n";
+    std::cout << "Total edge length: " << std::get<0>(edge_length_metrics) << std::endl;
+    std::cout << "Max edge length: " << std::get<1>(edge_length_metrics) << std::endl;
+    std::cout << "Edge length stddev: " << std::get<2>(edge_length_metrics) << std::endl;
+    std::cout << "Max bends per edge: " << std::get<0>(bends_metrics) << std::endl;
+    std::cout << "Bends stddev: " << std::get<1>(bends_metrics) << std::endl;
+    std::cout << "Total crossings: " << number_of_crossings << std::endl;
+    std::cout << "Total area: " << total_area << std::endl;
+    std::cout << "Number of bends: " << result.bends + new_bends << std::endl;
+
     node_positions_to_svg_any_degree(
         result.positions,
         *result.augmented_graph,
@@ -1262,37 +1282,6 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
     return result;
 }
 
-// DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
-// {
-//     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
-//     DrawingResult result;
-//     result = std::move(make_orthogonal_drawing_low_degree(*subgraph));
-//     std::unordered_map<int, std::vector<std::tuple<int, int>>> chain_edges;
-//     for (auto &edge : removed_edges)
-//         if (edge.first < edge.second)
-//         {
-//             std::cout << "Adding back edge: " << edge.first << " - " << edge.second << std::endl;
-//             add_back_removed_edge(result, edge, chain_edges);
-//         }
-//     for (auto &chain : chain_edges)
-//     {
-//         std::cout << "Chain for edge " << chain.first << ": ";
-//         for (auto &edge : chain.second)
-//         {
-//             std::cout << "(" << std::get<0>(edge) << ", " << std::get<1>(edge) << ") ";
-//         }
-//         std::cout << std::endl;
-//     }
-//     node_positions_to_svg_any_degree(
-//         result.positions,
-//         *result.augmented_graph,
-//         result.attributes,
-//         chain_edges,
-//         removed_edges,
-//         "output.svg");
-//     return result;
-// }
-
 DrawingResult merge_connected_components(std::vector<DrawingResult> &results)
 {
     return DrawingResult{
@@ -1300,7 +1289,16 @@ DrawingResult merge_connected_components(std::vector<DrawingResult> &results)
         std::move(results[0].attributes),
         std::move(results[0].shape),
         std::move(results[0].positions),
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+        results[0].crossings,
+        results[0].bends,
+        results[0].area,
+        results[0].initial_number_of_cycles,
+        results[0].number_of_added_cycles,
+        results[0].total_edge_length,
+        results[0].max_edge_length,
+        results[0].edge_length_stddev,
+        results[0].max_bends_per_edge,
+        results[0].bends_stddev};
 }
 
 void NodesPositions::x_right_shift(int x_pos)
@@ -1354,9 +1352,6 @@ void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction dire
     attributes.set_node_color(n2, Color::RED);
     attributes.set_node_color(n3, Color::RED);
 
-    std::cout << "4 " << std::endl;
-
-    std::cout << "make_chain_key" << i << " - " << j << std::endl;
     chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n0, n1));
     chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n1, n2));
     chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n2, n3));
@@ -1367,8 +1362,6 @@ void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction dire
         attributes.set_node_color(n4, Color::RED);
         chain_edges[make_chain_key(i, j)].push_back(std::make_tuple(n3, n4));
     }
-
-    std::cout << "5" << std::endl;
 
     int n1_x = positions.get_position_x(i), n1_y = positions.get_position_y(i);
     int n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
@@ -1387,8 +1380,6 @@ void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction dire
     { positions.y_up_shift(get_y(index)); };
     auto shift_y_down = [&](int index)
     { positions.y_down_shift(get_y(index)); };
-
-    std::cout << "6" << std::endl;
 
     if (!aligned)
     {
@@ -1453,12 +1444,8 @@ void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction dire
         }
     }
 
-    std::cout << "7" << std::endl;
-
     positions.set_position(n0, positions.get_position_x(i), positions.get_position_y(i));
     positions.set_position(n1, n1_x, n1_y);
-
-    std::cout << "8" << std::endl;
 
     if (aligned)
     {
@@ -1481,7 +1468,6 @@ void split_and_rewire(size_t i, size_t j, Direction direction_ia, Direction dire
         positions.set_position(n3, n3_x, n3_y);
         positions.set_position(n4, positions.get_position_x(j), positions.get_position_y(j));
     }
-    std::cout << "9" << std::endl;
 }
 
 // assume that coor_i < coor_j
@@ -1495,19 +1481,16 @@ bool check_if_the_segment_is_free(int coor_i, int coor_j, const std::set<int> &p
     return true;
 }
 
-void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges)
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges, int &new_bends)
 {
-
-    std::cout << "1 " << std::endl;
 
     auto &graph = *result.augmented_graph;
     auto &attributes = result.attributes;
     auto &positions = result.positions;
     int node_count = graph.size();
 
-    // std::set<int> x_position_set, y_position_set;
-    // create_set_positions(x_position_set, y_position_set, positions);
-    std::cout << "2 " << std::endl;
+    std::set<int> x_position_set, y_position_set;
+    create_set_positions(x_position_set, y_position_set, graph, positions);
 
     int i = edge.first;
     int j = edge.second;
@@ -1516,73 +1499,87 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
 
     int x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
     int x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
-    std::cout << "3 " << std::endl;
 
     if (x_i > x_j && y_i > y_j)
     {
-
-        // if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
-        //     split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
-        // else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
-        //     split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
-        // else
-        split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, chain_edges, graph, attributes, positions);
+        if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
+            split_and_rewire(i, j, Direction::LEFT, Direction::DOWN, true, false, false, chain_edges, graph, attributes, positions);
+        else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
+            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
+        else
+            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, chain_edges, graph, attributes, positions);
+        // new_bends += 3;
     }
     else if (x_i < x_j && y_i < y_j)
     {
-        // if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
-        //     split_and_rewire(i, j, Direction::RIGHT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
-        // else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
-        //     split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
-        // else
-        split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, chain_edges, graph, attributes, positions);
+        if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
+            split_and_rewire(i, j, Direction::RIGHT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
+        else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
+            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
+        else
+            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, chain_edges, graph, attributes, positions);
+        // new_bends += 3;
     }
     else if (x_i > x_j && y_i < y_j)
     {
-        // if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
-        //     split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
+        if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
+            split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, chain_edges, graph, attributes, positions);
 
-        // else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
-        //     split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
-        // else
-        split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, chain_edges, graph, attributes, positions);
+        else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
+            split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
+        else
+            split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, chain_edges, graph, attributes, positions);
+        // new_bends += 3;
     }
     else if (x_i < x_j && y_i > y_j)
     {
-        // if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
-        //     split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, true, false, false, chain_edges, graph, attributes, positions);
-        // else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
-        //     split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
-        // else
-        split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, chain_edges, graph, attributes, positions);
+        if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
+            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, true, false, false, chain_edges, graph, attributes, positions);
+        else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
+            split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
+        else
+            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, chain_edges, graph, attributes, positions);
+        // new_bends += 3;
     }
     else if (y_i == y_j && x_i < x_j)
+    {
+        // new_bends += 2;
         split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, true, chain_edges, graph, attributes, positions);
+    }
     else if (y_i == y_j && x_i > x_j)
+    {
+        // new_bends += 2;
         split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, false, true, chain_edges, graph, attributes, positions);
+    }
+
     else if (x_i == x_j && y_i < y_j)
+    {
+        // new_bends += 2;
         split_and_rewire(i, j, Direction::RIGHT, Direction::UP, false, false, true, chain_edges, graph, attributes, positions);
+    }
     else if (x_i == x_j && y_i > y_j)
+    {
+        // new_bends += 2;
         split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, true, chain_edges, graph, attributes, positions);
+    }
 
     all_positive_positions(graph, positions);
 }
 
-void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, NodesPositions &positions)
+void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, Graph &graph, NodesPositions &positions)
 {
-    // NEED TO FIX
-    //     for (    )
-    //     {
-    //         int x = positions.get_position_x(i);
-    //         int y = positions.get_position_y(i);
-    //         x_position_set.insert(x);
-    //         y_position_set.insert(y);
-    // }
+    for (auto &node : graph.get_nodes())
+    {
+        int i = node.get_id();
+        int x = positions.get_position_x(i);
+        int y = positions.get_position_y(i);
+        x_position_set.insert(x);
+        y_position_set.insert(y);
+    }
 }
 
 void all_positive_positions(Graph &graph, NodesPositions &positions)
 {
-    std::cout << "10" << std::endl;
 
     int min_x = INT_MAX;
     int min_y = INT_MAX;
@@ -1597,5 +1594,4 @@ void all_positive_positions(Graph &graph, NodesPositions &positions)
         int i = node.get_id();
         positions.change_position(i, positions.get_position_x(i) - min_x, positions.get_position_y(i) - min_y);
     }
-    std::cout << "11" << std::endl;
 }
