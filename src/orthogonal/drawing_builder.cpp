@@ -379,28 +379,28 @@ int make_chain_key(int x, int y)
 
 void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &from_y, double &to_y, int epsilon, std::__1::vector<std::__1::tuple<int, int>> &list, double &from_x, double &to_x)
 {
-    // primo quadrante
+    // 1 quarter
     if (x_j >= x_i && y_j >= y_i)
     {
-        // primo arco orizzontale
+        // first horizontal edge
         if (z == 0 && from_y == to_y)
         {
             from_y += epsilon;
             to_y += epsilon;
         }
-        // ultimo arco orizzontale
+        // last horizontal edge
         else if (z == list.size() - 1 && from_y == to_y)
         {
             from_y -= epsilon;
             to_y -= epsilon;
         }
-        // primo arco verticale
+        // first vertical edge
         else if (z == 0 && from_x == to_x)
         {
             from_x += epsilon;
             to_x += epsilon;
         }
-        // ultimo arco verticale
+        // last vertical edge
         else if (z == list.size() - 1 && from_x == to_x)
         {
             from_x -= epsilon;
@@ -434,7 +434,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
             }
         }
     }
-    // secondo quadrante
+    // 2 quarter
     if (x_j <= x_i && y_j >= y_i)
     {
         if (z == 0 && from_y == to_y)
@@ -485,8 +485,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
             }
         }
     }
-
-    // terzo quadrante
+    // 3 quarter
     if (x_j <= x_i && y_j <= y_i)
     {
         if (z == 0 && from_y == to_y)
@@ -537,8 +536,7 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
             }
         }
     }
-
-    // quarto quadrante
+    // 4 quarter
     if (x_j >= x_i && y_j <= y_i)
     {
         if (z == 0 && from_y == to_y)
@@ -1255,8 +1253,8 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
         {
             add_back_removed_edge(result, edge, chain_edges, new_bends);
         }
-    // NEED TO FIX: crossings: non aggiungo veramente gli high deg edges, quindi non vengono contati nelle metriche
 
+    // NEED TO FIX: crossings, non aggiungo veramente gli high deg edges, quindi non vengono contati nelle metriche
     std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
         result.positions, *result.augmented_graph, result.attributes);
     std::tuple<int, double> bends_metrics = compute_bends_metrics(*result.augmented_graph, result.attributes);
@@ -1508,7 +1506,6 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
             split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
         else
             split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, chain_edges, graph, attributes, positions);
-        // new_bends += 3;
     }
     else if (x_i < x_j && y_i < y_j)
     {
@@ -1518,7 +1515,6 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
             split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
         else
             split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, chain_edges, graph, attributes, positions);
-        // new_bends += 3;
     }
     else if (x_i > x_j && y_i < y_j)
     {
@@ -1529,7 +1525,6 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
             split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, chain_edges, graph, attributes, positions);
         else
             split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, chain_edges, graph, attributes, positions);
-        // new_bends += 3;
     }
     else if (x_i < x_j && y_i > y_j)
     {
@@ -1539,27 +1534,22 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
             split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, chain_edges, graph, attributes, positions);
         else
             split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, chain_edges, graph, attributes, positions);
-        // new_bends += 3;
     }
     else if (y_i == y_j && x_i < x_j)
     {
-        // new_bends += 2;
         split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, true, chain_edges, graph, attributes, positions);
     }
     else if (y_i == y_j && x_i > x_j)
     {
-        // new_bends += 2;
         split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, false, true, chain_edges, graph, attributes, positions);
     }
 
     else if (x_i == x_j && y_i < y_j)
     {
-        // new_bends += 2;
         split_and_rewire(i, j, Direction::RIGHT, Direction::UP, false, false, true, chain_edges, graph, attributes, positions);
     }
     else if (x_i == x_j && y_i > y_j)
     {
-        // new_bends += 2;
         split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, true, chain_edges, graph, attributes, positions);
     }
 
