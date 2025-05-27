@@ -35,7 +35,6 @@ int main() {
         std::filesystem::create_directories(sub_folder);
         for (int i = 1; i <= graphs_generated_per_same_nodes_number; ++i) {
             double density = min_density + (max_density - min_density) * i / graphs_generated_per_same_nodes_number;
-            std::cout << "Generating graph " << i << " with density " << density << std::endl;
             int number_of_edges = static_cast<int>(density * number_of_nodes);
             auto graph = generate_connected_random_graph_degree_max_4(number_of_nodes, number_of_edges);
             std::string filename =
