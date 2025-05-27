@@ -1,4 +1,4 @@
-#include "drawing_builder.hpp"
+#include "orthogonal/drawing_builder.hpp"
 
 #include <list>
 #include <math.h>
@@ -11,7 +11,10 @@
 class EquivalenceClasses {
 private:
     std::unordered_map<int,int> m_elem_to_class;
-    std::unordered_map<int,std::vector<int>> m_class_to_elems;
+    std::unordered_map<int,std::unordered_set<int>> m_class_to_elems;
+    bool has_class(int class_id) const {
+        return m_class_to_elems.contains(class_id);
+    }
 public:
     void set_class(int elem, int class_id) {
         if (has_elem_a_class(elem))
@@ -19,15 +22,10 @@ public:
                 "EquivalenceClasses::set_class elem already has an assigned class"
             );
         m_elem_to_class[elem] = class_id;
-        if (!m_class_to_elems.contains(class_id))
-            m_class_to_elems[class_id] = std::vector<int>();
-        m_class_to_elems[class_id].push_back(elem);
+        m_class_to_elems[class_id].insert(elem);
     }
     bool has_elem_a_class(int elem) const {
         return m_elem_to_class.contains(elem);
-    }
-    bool has_class(int class_id) const {
-        return m_class_to_elems.contains(class_id);
     }
     int get_class_of_elem(int elem) const  {
         if (!has_elem_a_class(elem))
@@ -45,8 +43,8 @@ public:
     }
     std::string to_string() const {
         std::string result = "EquivalenceClasses:\n";
-        for (int i = 0; i < m_elem_to_class.size(); ++i)
-            result += std::to_string(i) + " -> " + std::to_string(m_elem_to_class.at(i)) + "\n";
+        for (const auto& [elem, class_id] : m_elem_to_class)
+            result += std::to_string(elem) + " -> " + std::to_string(class_id) + "\n";
         return result;
     }
     void print() const { std::cout << to_string() << std::endl; }
@@ -57,80 +55,52 @@ public:
     }
 };
 
-void horizontal_edge_expander(
-    const Shape& shape,
-    const Graph& graph,
-    int left, int right,
-    int class_id,
-    GraphEdgeHashSet& is_edge_visited,
-    EquivalenceClasses& equivalence_classes_y
+void directional_node_expander(
+    const Shape& shape, const Graph& graph, const GraphNode& node,
+    int class_id, EquivalenceClasses& equivalence_classes,
+    std::function<bool(const Shape&, int, int)> is_direction_wrong
 ) {
-    is_edge_visited.insert({left, right});
-    is_edge_visited.insert({right, left});
-    std::unordered_set<int> visited;
-    visited.insert(left);
-    visited.insert(right);
-    std::list<int> eq_class;
-    eq_class.push_back(left);
-    eq_class.push_back(right);
-    while (shape.has_node_a_left_neighbor(left)) {
-        int new_left = shape.get_left_neighbor(left);
-        is_edge_visited.insert({left, new_left});
-        is_edge_visited.insert({new_left, left});
-        left = new_left;
-        if (visited.contains(left)) break;
-        visited.insert(left);
-        eq_class.push_front(left);
+    int node_id = node.get_id();
+    equivalence_classes.set_class(node_id, class_id);
+    for (auto& edge : node.get_edges()) {
+        int neighbor_id = edge.get_to().get_id();
+        if (equivalence_classes.has_elem_a_class(neighbor_id))
+            continue;
+        if (is_direction_wrong(shape, node_id, neighbor_id))
+            continue;
+        directional_node_expander(
+            shape, graph, edge.get_to(), class_id,
+            equivalence_classes, is_direction_wrong
+        );
     }
-    while (shape.has_node_a_right_neighbor(right)) {
-        int new_right = shape.get_right_neighbor(right);
-        is_edge_visited.insert({right, new_right});
-        is_edge_visited.insert({new_right, right});
-        right = new_right;
-        if (visited.contains(right)) break;
-        visited.insert(right);
-        eq_class.push_back(right);
-    }
-    for (int node : eq_class)
-        equivalence_classes_y.set_class(node, class_id);
 }
 
-void vertical_edge_expander(
-    const Shape& shape,
-    const Graph& graph,
-    int down, int up,
-    int class_id,
-    GraphEdgeHashSet& is_edge_visited,
-    EquivalenceClasses& equivalence_classes_x
+void horizontal_node_expander(
+    const Shape& shape, const Graph& graph, const GraphNode& node,
+    int class_id, GraphEdgeHashSet& is_edge_visited,
+    EquivalenceClasses& equivalence_classes
 ) {
-    is_edge_visited.insert({down, up});
-    is_edge_visited.insert({up, down});
-    std::unordered_set<int> visited;
-    visited.insert(down);
-    visited.insert(up);
-    std::list<int> eq_class;
-    eq_class.push_back(down);
-    eq_class.push_back(up);
-    while (shape.has_node_a_down_neighbor(down)) {
-        int new_down = shape.get_down_neighbor(down);
-        is_edge_visited.insert({down, new_down});
-        is_edge_visited.insert({new_down, down});
-        down = new_down;
-        if (visited.contains(down)) break;
-        visited.insert(down);
-        eq_class.push_front(down);
-    }
-    while (shape.has_node_a_up_neighbor(up)) {
-        int new_up = shape.get_up_neighbor(up);
-        is_edge_visited.insert({up, new_up});
-        is_edge_visited.insert({new_up, up});
-        up = new_up;
-        if (visited.contains(up)) break;
-        visited.insert(up);
-        eq_class.push_back(up);
-    }
-    for (int node : eq_class)
-        equivalence_classes_x.set_class(node, class_id);
+    auto is_direction_wrong = [](const Shape& shape, int i, int j) {
+        return shape.is_vertical(i, j);
+    };
+    directional_node_expander(
+        shape, graph, node, class_id,
+        equivalence_classes, is_direction_wrong
+    );
+}
+
+void vertical_node_expander(
+    const Shape& shape, const Graph& graph, const GraphNode& node,
+    int class_id, GraphEdgeHashSet& is_edge_visited,
+    EquivalenceClasses& equivalence_classes
+) {
+    auto is_direction_wrong = [](const Shape& shape, int i, int j) {
+        return shape.is_horizontal(i, j);
+    };
+    directional_node_expander(
+        shape, graph, node, class_id,
+        equivalence_classes, is_direction_wrong
+    );
 }
 
 const auto build_equivalence_classes(
@@ -143,34 +113,16 @@ const auto build_equivalence_classes(
     int next_class_y = 0;
     GraphEdgeHashSet is_edge_visited;
     for (auto& node : graph.get_nodes()) {
-        int i = node.get_id();
-        for (auto& edge : node.get_edges()) {
-            int j = edge.get_to().get_id();
-            if (is_edge_visited.contains({i, j})) continue;
-            if (shape.is_horizontal(i, j)) {
-                int left = i;
-                int right = j;
-                if (shape.is_left(i, j)) {
-                    left = j;
-                    right = i;
-                }
-                horizontal_edge_expander(
-                    shape, graph, left, right, next_class_y++,
-                    is_edge_visited, equivalence_classes_y
-                );
-            } else {
-                int down = i;
-                int up = j;
-                if (shape.is_down(i, j)) {
-                    down = j;
-                    up = i;
-                }
-                vertical_edge_expander(
-                    shape, graph, down, up, next_class_x++,
-                    is_edge_visited, equivalence_classes_x
-                );
-            }
-        }
+        if (!equivalence_classes_y.has_elem_a_class(node.get_id()))
+            horizontal_node_expander(
+                shape, graph, node, next_class_y++,
+                is_edge_visited, equivalence_classes_y
+            );
+        if (!equivalence_classes_x.has_elem_a_class(node.get_id()))
+            vertical_node_expander(
+                shape, graph, node, next_class_x++,
+                is_edge_visited, equivalence_classes_x
+            );
     }
     for (const auto& node : graph.get_nodes()) {
         if (!equivalence_classes_x.has_elem_a_class(node.get_id()))
@@ -232,8 +184,7 @@ auto equivalence_classes_to_ordering(
     );
 }
 
-void NodesPositions::change_position(int node, int position_x, int position_y)
-{
+void NodesPositions::change_position(int node, int position_x, int position_y) {
     m_nodeid_to_position_map[node] = NodePosition{position_x, position_y};
 }
 
@@ -271,29 +222,48 @@ void NodesPositions::remove_position(int node) {
     m_nodeid_to_position_map.erase(node);
 }
 
-std::vector<int> path_in_class(int from, int to, const std::vector<int>& class_elems) {
+std::vector<int> path_in_class(
+    const Graph& graph, int from, int to, const Shape& shape, bool go_horizontal
+) {
     std::vector<int> path;
-    int from_pos = -1;
-    int to_pos = -1;
-    for (int i = 0; i < class_elems.size(); ++i) {
-        if (class_elems[i] == from) from_pos = i;
-        if (class_elems[i] == to) to_pos = i;
-    }
-    if (from_pos > to_pos) {
-        auto path = path_in_class(to, from, class_elems);
-        std::reverse(path.begin(), path.end());
-        return path;
-    }
-    for (int i = from_pos; i <= to_pos; ++i)
-        path.push_back(class_elems[i]);
+    
+    // make a dfs that finds a path from `from` to `to`, but only using horizontal or vertical edges
+    // based on `go_horizontal`
+
+    std::unordered_set<int> visited;
+    std::function<void(int)> dfs = [&](int current) {
+        if (current == to) {
+            path.push_back(current);
+            return;
+        }
+        visited.insert(current);
+        for (const auto& edge : graph.get_node_by_id(current).get_edges()) {
+            int neighbor = edge.get_to().get_id();
+            if (visited.contains(neighbor))
+                continue;
+            if (go_horizontal == shape.is_horizontal(current, neighbor)) {
+                dfs(neighbor);
+                if (!path.empty()) {
+                    path.push_back(current);
+                    return;
+                }
+            }
+        }
+        visited.erase(current);
+    };
+    dfs(from);
+    std::reverse(path.begin(), path.end());    
     return path;
 }
 
 std::vector<int> build_cycle_in_graph_from_cycle_in_ordering(
+    const Graph& graph,
+    const Shape& shape,
     const std::vector<int>& cycle_in_ordering,
     const Graph& ordering,
     const EquivalenceClasses& equivalence_classes,
-    const GraphAttributes& ordering_edge_to_graph_edge
+    const GraphAttributes& ordering_edge_to_graph_edge,
+    bool go_horizontal
 ) {
     std::vector<int> cycle;
     for (int i = 0; i < cycle_in_ordering.size(); ++i) {
@@ -309,7 +279,7 @@ std::vector<int> build_cycle_in_graph_from_cycle_in_ordering(
         const std::any& next_edge_label = ordering_edge_to_graph_edge.get_edge_any_label(next_edge.get_id());
         int next_from = std::any_cast<std::pair<int,int>>(next_edge_label).first;
         if (to != next_from) {
-            auto path = path_in_class(to, next_from, equivalence_classes.get_elems_of_class(next_class_id));
+            auto path = path_in_class(graph, to, next_from, shape, go_horizontal);
             for (int i = 0; i < path.size()-1; ++i)
                 cycle.push_back(path[i]);
         }
@@ -335,13 +305,15 @@ BuildingResult build_nodes_positions(
         std::vector<std::vector<int>> cycles_to_be_added;
         if (cycle_x.has_value()) {
             auto cycle_x_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
-                cycle_x.value(), *ordering_x, classes_x, ordering_x_edge_to_graph_edge
+                graph, shape, cycle_x.value(),
+                *ordering_x, classes_x, ordering_x_edge_to_graph_edge, false
             );
             cycles_to_be_added.push_back(cycle_x_in_original_graph);
         }
-        if (cycle_y.has_value()) {
+        else {
             auto cycle_y_in_original_graph = build_cycle_in_graph_from_cycle_in_ordering(
-                cycle_y.value(), *ordering_y, classes_y, ordering_y_edge_to_graph_edge
+                graph, shape, cycle_y.value(), 
+                *ordering_y, classes_y, ordering_y_edge_to_graph_edge, true
             );
             cycles_to_be_added.push_back(cycle_y_in_original_graph);
         }
@@ -372,62 +344,50 @@ BuildingResult build_nodes_positions(
     return BuildingResult{std::move(positions), {}, BuildingResultType::OK};
 }
 
-int make_chain_key(int x, int y)
-{
+int make_chain_key(int x, int y) {
     return (x << 16) ^ y;
 }
 
-void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &from_y, double &to_y, int epsilon, std::__1::vector<std::__1::tuple<int, int>> &list, double &from_x, double &to_x)
-{
+void shift_by_epsilon_factor(
+    int x_j, int x_i, int y_j, int y_i, int z,
+    double &from_y, double &to_y, int epsilon, std::vector<std::tuple<int, int>> &list,
+    double &from_x, double &to_x
+) {
     // 1 quarter
-    if (x_j >= x_i && y_j >= y_i)
-    {
+    if (x_j >= x_i && y_j >= y_i) {
         // first horizontal edge
-        if (z == 0 && from_y == to_y)
-        {
+        if (z == 0 && from_y == to_y) {
             from_y += epsilon;
             to_y += epsilon;
         }
         // last horizontal edge
-        else if (z == list.size() - 1 && from_y == to_y)
-        {
+        else if (z == list.size() - 1 && from_y == to_y) {
             from_y -= epsilon;
             to_y -= epsilon;
         }
         // first vertical edge
-        else if (z == 0 && from_x == to_x)
-        {
+        else if (z == 0 && from_x == to_x) {
             from_x += epsilon;
             to_x += epsilon;
         }
         // last vertical edge
-        else if (z == list.size() - 1 && from_x == to_x)
-        {
+        else if (z == list.size() - 1 && from_x == to_x) {
             from_x -= epsilon;
             to_x -= epsilon;
         }
-        if (z > 0 && z < list.size() - 1)
-        {
-            if (list.size() == 4)
-            {
+        if (z > 0 && z < list.size() - 1) {
+            if (list.size() == 4) {
                 if (from_x == to_x)
-                {
                     to_y -= epsilon;
-                }
                 if (from_y == to_y)
-                {
                     from_x += epsilon;
-                }
             }
-            else if (list.size() == 3)
-            {
-                if (from_x == to_x)
-                {
+            else if (list.size() == 3) {
+                if (from_x == to_x) {
                     from_y += epsilon;
                     to_y -= epsilon;
                 }
-                if (from_y == to_y)
-                {
+                if (from_y == to_y) {
                     from_x += epsilon;
                     to_x -= epsilon;
                 }
@@ -435,50 +395,36 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
         }
     }
     // 2 quarter
-    if (x_j <= x_i && y_j >= y_i)
-    {
-        if (z == 0 && from_y == to_y)
-        {
+    if (x_j <= x_i && y_j >= y_i) {
+        if (z == 0 && from_y == to_y) {
             from_y += epsilon;
             to_y += epsilon;
         }
-        else if (z == list.size() - 1 && from_y == to_y)
-        {
+        else if (z == list.size() - 1 && from_y == to_y) {
             from_y -= epsilon;
             to_y -= epsilon;
         }
-        else if (z == 0 && from_x == to_x)
-        {
+        else if (z == 0 && from_x == to_x) {
             from_x -= epsilon;
             to_x -= epsilon;
         }
-        else if (z == list.size() - 1 && from_x == to_x)
-        {
+        else if (z == list.size() - 1 && from_x == to_x) {
             from_x += epsilon;
             to_x += epsilon;
         }
-        if (z > 0 && z < list.size() - 1)
-        {
-            if (list.size() == 4)
-            {
+        if (z > 0 && z < list.size() - 1) {
+            if (list.size() == 4) {
                 if (from_x == to_x)
-                {
                     from_y += epsilon;
-                }
                 if (from_y == to_y)
-                {
                     to_x += epsilon;
-                }
             }
-            else if (list.size() == 3)
-            {
-                if (from_x == to_x)
-                {
+            else if (list.size() == 3) {
+                if (from_x == to_x) {
                     from_y += epsilon;
                     to_y -= epsilon;
                 }
-                if (from_y == to_y)
-                {
+                if (from_y == to_y) {
                     from_x -= epsilon;
                     to_x += epsilon;
                 }
@@ -486,50 +432,36 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
         }
     }
     // 3 quarter
-    if (x_j <= x_i && y_j <= y_i)
-    {
-        if (z == 0 && from_y == to_y)
-        {
+    if (x_j <= x_i && y_j <= y_i) {
+        if (z == 0 && from_y == to_y) {
             from_y -= epsilon;
             to_y -= epsilon;
         }
-        else if (z == list.size() - 1 && from_y == to_y)
-        {
+        else if (z == list.size() - 1 && from_y == to_y) {
             from_y += epsilon;
             to_y += epsilon;
         }
-        else if (z == 0 && from_x == to_x)
-        {
+        else if (z == 0 && from_x == to_x) {
             from_x -= epsilon;
             to_x -= epsilon;
         }
-        else if (z == list.size() - 1 && from_x == to_x)
-        {
+        else if (z == list.size() - 1 && from_x == to_x) {
             from_x += epsilon;
             to_x += epsilon;
         }
-        if (z > 0 && z < list.size() - 1)
-        {
-            if (list.size() == 4)
-            {
+        if (z > 0 && z < list.size() - 1) {
+            if (list.size() == 4) {
                 if (from_x == to_x)
-                {
                     to_y += epsilon;
-                }
                 if (from_y == to_y)
-                {
                     from_x -= epsilon;
-                }
             }
-            else if (list.size() == 3)
-            {
-                if (from_x == to_x)
-                {
+            else if (list.size() == 3) {
+                if (from_x == to_x) {
                     from_y -= epsilon;
                     to_y += epsilon;
                 }
-                if (from_y == to_y)
-                {
+                if (from_y == to_y) {
                     from_x -= epsilon;
                     to_x += epsilon;
                 }
@@ -537,25 +469,20 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z, double &
         }
     }
     // 4 quarter
-    if (x_j >= x_i && y_j <= y_i)
-    {
-        if (z == 0 && from_y == to_y)
-        {
+    if (x_j >= x_i && y_j <= y_i) {
+        if (z == 0 && from_y == to_y) {
             from_y -= epsilon;
             to_y -= epsilon;
         }
-        else if (z == list.size() - 1 && from_y == to_y)
-        {
+        else if (z == list.size() - 1 && from_y == to_y) {
             from_y += epsilon;
             to_y += epsilon;
         }
-        else if (z == 0 && from_x == to_x)
-        {
+        else if (z == 0 && from_x == to_x) {
             from_x += epsilon;
             to_x += epsilon;
         }
-        else if (z == list.size() - 1 && from_x == to_x)
-        {
+        else if (z == list.size() - 1 && from_x == to_x) {
             from_x -= epsilon;
             to_x -= epsilon;
         }
@@ -1584,4 +1511,91 @@ void all_positive_positions(Graph &graph, NodesPositions &positions)
         int i = node.get_id();
         positions.change_position(i, positions.get_position_x(i) - min_x, positions.get_position_y(i) - min_y);
     }
+}
+
+DrawingResult make_orthogonal_drawing_incremental_special(
+    const Graph& graph, std::vector<std::vector<int>>& cycles
+);
+
+DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph) {
+    bool has_low_degree = true;
+    for (const auto& node : graph.get_nodes())
+        if (node.get_degree() > 4) {
+            has_low_degree = false;
+            break;
+        }
+    if (has_low_degree)
+        return make_orthogonal_drawing_low_degree(graph);
+    // auto cycles = compute_cycle_basis(graph);
+    auto cycles = compute_all_cycles_in_undirected_graph(graph);
+    return make_orthogonal_drawing_incremental_special(graph, cycles);
+}
+
+BuildingResult build_nodes_positions_special(
+    const Shape& shape,
+    const Graph& graph
+);
+
+DrawingResult make_orthogonal_drawing_incremental_special(
+    const Graph& graph, std::vector<std::vector<int>>& cycles
+) {
+    if (!is_graph_undirected(graph))
+        throw std::runtime_error("make_orthogonal_drawing_incremental: graph is not undirected");
+    if (!is_graph_connected(graph))
+        throw std::runtime_error("make_orthogonal_drawing_incremental: graph is not connected");
+    auto augmented_graph = std::make_unique<Graph>();
+    GraphAttributes attributes;
+    attributes.add_attribute(Attribute::NODES_COLOR);
+    for (const auto& node : graph.get_nodes()) {
+        augmented_graph->add_node(node.get_id());
+        attributes.set_node_color(node.get_id(), Color::BLACK);
+    }
+    for (const auto& node : graph.get_nodes())
+        for (auto& edge : node.get_edges())
+            augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
+    Shape shape = build_shape_special(*augmented_graph, attributes, cycles);
+    shape.print();
+    BuildingResult result = build_nodes_positions(shape, *augmented_graph);
+    int number_of_added_cycles = 0;
+    while (result.type == BuildingResultType::CYCLES_TO_BE_ADDED) {
+        for (auto& cycle_to_add : result.cycles_to_be_added)
+            cycles.push_back(cycle_to_add);
+        number_of_added_cycles += result.cycles_to_be_added.size();
+        shape = build_shape_special(*augmented_graph, attributes, cycles);
+        result = build_nodes_positions(shape, *augmented_graph);
+    }
+    NodesPositions positions(std::move(result.positions.value()));
+    int old_size = augmented_graph->size();
+    // refine_result(*augmented_graph, attributes, positions, shape);
+    int number_of_useless_bends = old_size - augmented_graph->size();
+    result = build_nodes_positions(shape, *augmented_graph);
+    positions = std::move(result.positions.value());
+    // auto new_positions = compact_area_x(*augmented_graph, shape, positions);
+    // positions = std::move(new_positions);
+    // new_positions = compact_area_y(*augmented_graph, shape, positions);
+    // positions = std::move(new_positions);
+    int number_of_corners = augmented_graph->size() - graph.size();
+    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
+        positions, *augmented_graph, attributes
+    );
+    std::tuple<int, double> bends_metrics = compute_bends_metrics(*augmented_graph, attributes);
+    int number_of_crossings = compute_total_crossings(positions, *augmented_graph);
+    int total_area = compute_total_area(positions, *augmented_graph);
+    return {
+        std::move(augmented_graph),
+        std::move(attributes),
+        std::move(shape),
+        std::move(positions),
+        number_of_crossings,
+        number_of_corners,
+        total_area,
+        (int)cycles.size() - number_of_added_cycles,
+        number_of_added_cycles,
+        std::get<0>(edge_length_metrics),
+        std::get<1>(edge_length_metrics),
+        std::get<2>(edge_length_metrics),
+        std::get<0>(bends_metrics),
+        std::get<1>(bends_metrics),
+        number_of_useless_bends,
+    };
 }

@@ -1,4 +1,4 @@
-#include "cnf_builder.hpp"
+#include "sat/cnf_builder.hpp"
 
 #include <fstream>
 #include <iostream>

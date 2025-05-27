@@ -1,8 +1,8 @@
-#include "graph.hpp"
+#include "core/graph/graph.hpp"
 
 #include <iostream>
 
-#include "../utils.hpp"
+#include "core/utils.hpp"
 
 GraphEdge::GraphEdge(int id, const GraphNode& from, const GraphNode& to, const Graph& owner)
     : m_id(id), m_from(from), m_to(to), m_graph_owner(owner)

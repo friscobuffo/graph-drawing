@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "graph.hpp"
+#include "core/graph/graph.hpp"
 
 std::unique_ptr<Graph> generate_connected_random_graph_degree_max_4(int number_of_nodes, int number_of_edges);
 

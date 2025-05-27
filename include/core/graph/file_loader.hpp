@@ -5,7 +5,7 @@
 #include <memory>
 #include <vector>
 
-#include "graph.hpp"
+#include "core/graph/graph.hpp"
 
 std::unique_ptr<Graph> load_graph_from_txt_file(const std::string& filename);
 

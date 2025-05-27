@@ -1,9 +1,9 @@
+#include "core/graph/file_loader.hpp"
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <stdexcept>
-
-#include "file_loader.hpp"
 
 std::unique_ptr<Graph> load_graph_from_txt_file(const std::string& filename) {
     auto graph = std::make_unique<Graph>();

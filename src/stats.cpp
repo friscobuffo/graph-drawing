@@ -25,7 +25,7 @@ auto test_shape_metrics_approach(
     const Graph &graph, const std::string &svg_output_filename
 ) {
     auto start = std::chrono::high_resolution_clock::now();
-    DrawingResult result = make_orthogonal_drawing(graph);
+    DrawingResult result = make_orthogonal_drawing_low_degree(graph);
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
     node_positions_to_svg(

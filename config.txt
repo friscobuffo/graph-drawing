@@ -1,7 +1,7 @@
 #################################
 # MAIN CONFIG
 #################################
-input_graph_file=generated-graphs/graph_1_n20_m25.txt
+input_graph_file=generated-graphs/20/graph_77_n20_m32.txt
 output_svg_shape_metrics=drawing_sm.svg
 output_svg_ogdf=drawing_ogdf.svg
 
@@ -13,7 +13,7 @@ generated_graphs_folder=generated-graphs/
 min_graph_density=1.25
 max_graph_density=1.75
 min_number_of_nodes=20
-max_number_of_nodes=50
+max_number_of_nodes=20
 graphs_generated_per_same_nodes_number=100
 
 

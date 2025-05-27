@@ -1,4 +1,4 @@
-#include "glucose.hpp"
+#include "sat/glucose.hpp"
 
 #include <iostream>
 #include <fstream>
@@ -6,7 +6,7 @@
 #include <stdexcept>
 #include <random>
 
-#include "../core/utils.hpp"
+#include "core/utils.hpp"
 
 std::string GlucoseResult::to_string() const {
     std::string r = result == GlucoseResultType::SAT ? "SAT" : "UNSAT";
@@ -56,10 +56,7 @@ GlucoseResult launch_glucose(
     command += " > /dev/null 2>&1";
     std::system(command.c_str());
     GlucoseResult result = get_results(output_file, proof_file);
-    delete_glucose_temp_files(
-        output_file,
-        proof_file
-    );
+    delete_glucose_temp_files(output_file, proof_file);
     return std::move(result);
 }
 

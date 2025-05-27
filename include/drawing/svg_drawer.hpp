@@ -3,8 +3,8 @@
 
 #include <sstream>
 
-#include "polygon.hpp"
-#include "linear_scale.hpp"
+#include "drawing/polygon.hpp"
+#include "drawing/linear_scale.hpp"
 
 class SvgDrawer {
 private:

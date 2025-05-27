@@ -1,11 +1,11 @@
-#include "polygon.hpp"
+#include "drawing/polygon.hpp"
 
 #include <cassert>
 #include <fstream>
 #include <cmath>
 #include <algorithm>
 
-#include "../core/graph/graph.hpp"
+#include "core/graph/graph.hpp"
 
 Point2D::Point2D(double x, double y) 
 : x(x), y(y) {}

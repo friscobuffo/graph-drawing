@@ -7,13 +7,13 @@
 #include <optional>
 #include <tuple>
 
-#include "shape.hpp"
-#include "../core/graph/graph.hpp"
-#include "../core/utils.hpp"
-#include "../core/graph/graphs_algorithms.hpp"
-#include "../drawing/svg_drawer.hpp"
-#include "../drawing/linear_scale.hpp"
-#include "shape_builder.hpp"
+#include "core/graph/graph.hpp"
+#include "core/graph/graphs_algorithms.hpp"
+#include "core/utils.hpp"
+#include "drawing/svg_drawer.hpp"
+#include "drawing/linear_scale.hpp"
+#include "orthogonal/shape/shape_builder.hpp"
+#include "orthogonal/shape/shape.hpp"
 
 struct NodePosition {
     int m_x{-1};
@@ -109,11 +109,15 @@ struct DrawingResult {
     int number_of_useless_bends;
 };
 
-DrawingResult make_orthogonal_drawing(const Graph& graph);
+// DrawingResult make_orthogonal_drawing(const Graph& graph);
+
+DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph);
 
 bool check_if_drawing_has_overlappings(
     const Graph& graph,
     const NodesPositions& positions
 );
+
+DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph);
 
 #endif

@@ -8,7 +8,7 @@
 #include <ranges>
 #include <any>
 
-#include "../utils.hpp"
+#include "core/utils.hpp"
 
 class GraphNode;
 class Graph;
@@ -126,6 +126,9 @@ public:
     const std::any& get_edge_any_label(int edge_id) const;
 };
 
-typedef std::unordered_set<std::pair<int,int>, int_pair_hash> GraphEdgeHashSet;
+using GraphEdgeHashSet = std::unordered_set<std::pair<int,int>, int_pair_hash>;
+
+template<typename T>
+using GraphEdgeHashMap = std::unordered_map<std::pair<int, int>, T, int_pair_hash>;
 
 #endif

@@ -3,8 +3,8 @@
 
 #include <string>
 
-#include "shape.hpp"
-#include "../core/graph/graph.hpp"
+#include "orthogonal/shape/shape.hpp"
+#include "core/graph/graph.hpp"
 
 Shape load_shape_from_file(const std::string& filename);
 

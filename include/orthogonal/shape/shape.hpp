@@ -6,7 +6,7 @@
 #include <tuple>
 #include <utility>
 
-#include "../core/utils.hpp"
+#include "core/utils.hpp"
 
 enum class Direction {
     LEFT,
@@ -20,6 +20,8 @@ const std::string direction_to_string(const Direction direction);
 Direction string_to_direction(const std::string& direction);
 
 Direction opposite_direction(const Direction direction);
+
+Direction rotate_90_degrees(const Direction direction);
 
 class Shape {
 private:

@@ -4,7 +4,7 @@
 #include <vector>
 #include <optional>
 
-#include "graph.hpp"
+#include "core/graph/graph.hpp"
 
 bool is_graph_connected(const Graph& graph);
 

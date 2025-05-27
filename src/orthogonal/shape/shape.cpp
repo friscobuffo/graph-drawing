@@ -1,4 +1,4 @@
-#include "shape.hpp"
+#include "orthogonal/shape/shape.hpp"
 
 #include <stdexcept>
 
@@ -26,6 +26,16 @@ Direction opposite_direction(const Direction direction) {
         case Direction::RIGHT: return Direction::LEFT;
         case Direction::UP: return Direction::DOWN;
         case Direction::DOWN: return Direction::UP;
+        default: throw std::invalid_argument("Unknown direction");
+    }
+}
+
+Direction rotate_90_degrees(const Direction direction) {
+    switch (direction) {
+        case Direction::LEFT: return Direction::UP;
+        case Direction::RIGHT: return Direction::DOWN;
+        case Direction::UP: return Direction::RIGHT;
+        case Direction::DOWN: return Direction::LEFT;
         default: throw std::invalid_argument("Unknown direction");
     }
 }
@@ -155,6 +165,8 @@ void Shape::remove_direction(const int i, const int j) {
 std::string Shape::to_string() const {
     std::string result = "Shape:\n";
     for (auto& [pair, direction] : m_shape) {
+        if (direction == Direction::LEFT) continue;
+        if (direction == Direction::DOWN) continue;
         result += (
             "(" + std::to_string(pair.first) + " -> "+
             std::to_string(pair.second) + "): " +

@@ -1,3 +1,5 @@
+#include "core/graph/graphs_algorithms.hpp"
+
 #include <algorithm>
 #include <queue>
 #include <functional>
@@ -5,9 +7,8 @@
 #include <utility>
 #include <unordered_set>
 
-#include "graphs_algorithms.hpp"
-#include "../tree/tree.hpp"
-#include "../tree/tree_algorithms.hpp"
+#include "core/tree/tree.hpp"
+#include "core/tree/tree_algorithms.hpp"
 
 bool is_graph_connected(const Graph& graph) {
     if (graph.size() == 0) return true;
@@ -51,28 +52,24 @@ std::vector<std::vector<int>> compute_all_cycles_with_node_in_undirected_graph(
     const Graph& graph, const GraphNode& node, std::unordered_set<int>& taboo_nodes
 ) {
     std::vector<std::vector<int>> cycles;
-    std::vector<int> path;
     std::unordered_set<int> visited;
-    std::function<void(const GraphNode&, const GraphNode&)> dfs = [&](const GraphNode& current, const GraphNode& start) {
-        if (taboo_nodes.contains(current.get_id())) return;
-        if (visited.contains(current.get_id())) {
-            if (current.get_id() == start.get_id() && path.size() > 2)
+    std::function<void(int, int, std::vector<int>&)> dfs = [&](int current, int start, std::vector<int>& path) {
+        visited.insert(current);
+        path.push_back(current);
+        for (const auto& edge : graph.get_node_by_id(current).get_edges()) {
+            int neighbor = edge.get_to().get_id();
+            if (taboo_nodes.contains(neighbor)) continue; // skip taboo nodes
+            if (neighbor == start && path.size() > 2) { // found a cycle
                 cycles.push_back(path);
-            return;
+            } else if (!visited.contains(neighbor)) {
+                dfs(neighbor, start, path);
+            }
         }
-        visited.insert(current.get_id());
-        path.push_back(current.get_id());
-        for (auto& edge : current.get_edges()) {
-            const auto& neighbor = edge.get_to();
-            if (path.size() > 2 && &neighbor == &start)
-                cycles.push_back(path);
-            else
-                dfs(neighbor, start);
-        }
-        visited.insert(current.get_id());
         path.pop_back();
+        visited.erase(current);
     };
-    dfs(node, node);
+    std::vector<int> path;
+    dfs(node.get_id(), node.get_id(), path);
     return cycles;
 }
 

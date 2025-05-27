@@ -1,11 +1,11 @@
-#include "generators.hpp"
+#include "core/graph/generators.hpp"
 
 #include <random>
 #include <algorithm>
 #include <iostream>
 #include <unordered_set>
 
-#include "graphs_algorithms.hpp"
+#include "core/graph/graphs_algorithms.hpp"
 
 std::unique_ptr<Graph> generate_connected_random_graph_degree_max_4(
     int number_of_nodes, int number_of_edges

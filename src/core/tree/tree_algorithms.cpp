@@ -1,9 +1,9 @@
+#include "core/tree/tree_algorithms.hpp"
+
 #include <list>
 #include <cassert>
 #include <unordered_set>
 #include <algorithm>
-
-#include "tree_algorithms.hpp"
 
 std::unique_ptr<Tree> build_spanning_tree(const Graph& graph) {
     std::unordered_set<int> visited;

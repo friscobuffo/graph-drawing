@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include "../graph/graph.hpp"
-#include "tree.hpp"
+#include "core/graph/graph.hpp"
+#include "core/tree/tree.hpp"
 
 std::unique_ptr<Tree> build_spanning_tree(const Graph& graph);
 

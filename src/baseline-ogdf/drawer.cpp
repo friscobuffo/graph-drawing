@@ -1,3 +1,5 @@
+#include "baseline-ogdf/drawer.hpp"
+
 #include <ogdf/basic/GraphAttributes.h>
 #include <ogdf/basic/GraphList.h>
 #include <ogdf/basic/Graph.h>
@@ -10,16 +12,17 @@
 #include <ogdf/planarity/SubgraphPlanarizer.h>
 #include <ogdf/planarity/VariableEmbeddingInserter.h>
 #include <ogdf/basic/LayoutStatistics.h>
-#include "../core/graph/graph.hpp"
-#include "../orthogonal/drawing_builder.hpp"
-#include "../core/graph/graphs_algorithms.hpp"
-#include "drawer.hpp"
+
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <format>
 #include <cmath>
 #include <set>
+
+#include "core/graph/graph.hpp"
+#include "orthogonal/drawing_builder.hpp"
+#include "core/graph/graphs_algorithms.hpp"
 
 class OGDFDrawing {
 private:
