@@ -50,22 +50,18 @@ os.makedirs(scatter_percentage_dir)
 os.makedirs(histograms_dir)
 os.makedirs(shape_metrics_functions_dir)
 
-def make_percentage_difference_scatter(df, metric_name, filename, output_dir):
+def make_winner_comparison_scatter(df, metric_name, filename, output_dir):
     grouped = df.groupby(['nodes', 'density']).agg({
         f'ogdf_{metric_name}': 'mean',
         f'shape_metrics_{metric_name}': 'mean'
     }).reset_index()
 
-    grouped[f'ogdf_{metric_name}'] += 1  # Avoid division by zero
-    grouped[f'shape_metrics_{metric_name}'] += 1
-
-    # grouped['metric_diff'] = 100 * (grouped[f'ogdf_{metric_name}'] - grouped[f'shape_metrics_{metric_name}']) / (grouped[f'ogdf_{metric_name}'])
     grouped['metric_diff'] = np.sign(grouped[f'ogdf_{metric_name}'] - grouped[f'shape_metrics_{metric_name}'])
     
     max_abs_diff = np.abs(grouped['metric_diff']).max()
 
     plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(
+    plt.scatter(
         grouped['nodes'], grouped['density'],
         c=grouped['metric_diff'],
         cmap='coolwarm_r',
@@ -77,7 +73,6 @@ def make_percentage_difference_scatter(df, metric_name, filename, output_dir):
 
     plt.xlabel('Number of Vertices (n)')
     plt.ylabel('Density (m/n)')
-    # plt.colorbar(scatter, label=f'Ratio {metric_name} (ogdf - shape_metrics) / ogdf')
     plt.grid(True, linestyle='--', alpha=0.7)
     plt.tight_layout()
 
@@ -230,42 +225,41 @@ def make_histogram_comparison(x_row_name, y_row_name, x_label, y_label, title, f
 
     print(f"Histogram plot saved to {filepath}")
 
-def make_loglog_histogram(df, col_name, cutoff, output_dir, x_label, y_label, num_bins=50):
+def make_histogram_bucket(df, col_name, cutoff, bin_size, output_dir, x_label, y_label):
     column = df[col_name]
-
-    # Compute cutoff
+    # Compute 95th percentile cutoff
     value_cutoff = column.quantile(cutoff)
+    # Filter values under or equal to the cutoff
     column_clipped = column[column <= value_cutoff]
-
-    # Mean (for reference, even if it's not strictly on-log)
     mean_value = column.mean()
-
-    # Define logarithmic bins
-    min_val = column_clipped.min()
-    max_val = column_clipped.max()
-    bins = np.logspace(np.log10(min_val), np.log10(max_val), num=num_bins)
+    # Define bin edges up to the cutoff
+    max_value_display = math.ceil(value_cutoff)
+    bins = np.arange(0, max_value_display + bin_size, bin_size)
 
     # Plot histogram
     plt.figure(figsize=(8, 5))
-    plt.hist(column_clipped, bins=bins, edgecolor='black', log=True)  # log=True applies to y-axis
-    plt.xscale('log')
-    plt.yscale('log')
-    plt.title(f'Log-Log Histogram of {col_name} (≤ {cutoff*100:.0f}th percentile)')
-    plt.xlabel(x_label + ' (log scale)')
-    plt.ylabel(y_label + ' (log scale)')
-    plt.grid(True, which='both', linestyle='--', alpha=0.6)
+    plt.hist(column_clipped, bins=bins, edgecolor='black')
+    plt.title(f'Histogram of {col_name} ({bin_size} buckets size, {cutoff*100}% Cutoff)')
+    plt.xlabel(x_label)
+    plt.ylabel(y_label)
+    plt.grid(axis='y', linestyle='--', alpha=0.7)
 
-    # Draw mean line if it's within visible range
-    if min_val <= mean_value <= max_val:
-        plt.axvline(mean_value, color='red', linestyle='--', linewidth=1.5, label=f'Average {x_label} ≈ {mean_value:.2f}')
-        plt.legend()
+    # Draw average time line
+    plt.axvline(mean_value, color='red', linestyle='--', linewidth=1.5, label=f'Average {x_label} ≈ {mean_value:.2f}s')
 
-    # Save plot
-    filename = f"{col_name}_histogram_loglog.pdf"
+    # Set custom ticks every 10s
+    xticks = [b for b in bins if b % bin_size == 0]
+    plt.xticks(xticks)
+
+    # Add legend
+    plt.legend()
+
+    # Save the histogram
+    filename = f"{col_name}_histogram_buckets.png"
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"{col_name} log-log histogram plot saved to {filepath}")
+    print(f"{col_name} bucket histogram plot saved to {filepath}")
 
 def print_percentages_comparison(df, metric, x, y):
     ogdf_higher_count = (df[x] > df[y]).sum()
@@ -333,7 +327,7 @@ def generate_all_plots_parallel(df):
 
         
         for metric, filename in metrics_percentage_difference:
-            futures.append(executor.submit(make_percentage_difference_scatter, df, metric, filename, scatter_percentage_dir))
+            futures.append(executor.submit(make_winner_comparison_scatter, df, metric, filename, scatter_percentage_dir))
 
         futures += [
             executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_time', 'Number of Nodes', 'Shape Metrics Time', 'shape_metrics_time_nodes.pdf', shape_metrics_functions_dir, False),
@@ -345,9 +339,9 @@ def generate_all_plots_parallel(df):
             executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_bends', 'Nodes', 'Bends', 'bends_nodes.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_bends', 'Density', 'Bends', 'bends_density.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_histogram_comparison, 'ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge', 'Max Bends per Edge', 'Count', '', 'max_bends_hist.pdf', histograms_dir),
-            executor.submit(make_loglog_histogram, df, 'shape_metrics_time', 0.925, 5, histograms_dir, 'Time (s)', 'Graphs'),
-            executor.submit(make_loglog_histogram, df, 'good_bends_ratio', 0.95, 0.05, histograms_dir, 'Good Bends Ratio', 'Graphs'),
-            executor.submit(make_loglog_histogram, df, 'shape_metrics_number_added_cycles', 1.00, 10, histograms_dir, 'Added Cycles', 'Graphs'),
+            executor.submit(make_histogram_bucket, df, 'shape_metrics_time', 0.925, 5, histograms_dir, 'Time (s)', 'Graphs'),
+            executor.submit(make_histogram_bucket, df, 'good_bends_ratio', 0.95, 0.05, histograms_dir, 'Good Bends Ratio', 'Graphs'),
+            executor.submit(make_histogram_bucket, df, 'shape_metrics_number_added_cycles', 1.00, 10, histograms_dir, 'Added Cycles', 'Graphs'),
         ]
 
         for fut in futures:

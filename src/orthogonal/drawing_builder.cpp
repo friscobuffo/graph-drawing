@@ -1003,8 +1003,7 @@ void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_positi
 
 void all_positive_positions(Graph &graph, NodesPositions &positions);
 
-DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
-{
+DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph) {
     int high_degree_bends = 0;
     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
     auto components = compute_connected_components(*subgraph);
@@ -1014,33 +1013,7 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
     DrawingResult result = merge_connected_components(results);
     for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-        {
-            add_back_removed_edge(result, edge, chain_edges, new_bends);
-        }
-
-    // NEED TO FIX: crossings, non aggiungo veramente gli high deg edges, quindi non vengono contati nelle metriche
-    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
-        result.positions, *result.augmented_graph, result.attributes);
-    std::tuple<int, double> bends_metrics = compute_bends_metrics(*result.augmented_graph, result.attributes);
-    int number_of_crossings = compute_total_crossings(result.positions, *result.augmented_graph);
-    int total_area = compute_total_area(result.positions, *result.augmented_graph);
-    std::cout << "Shape metrics:\n";
-    std::cout << "Total edge length: " << std::get<0>(edge_length_metrics) << std::endl;
-    std::cout << "Max edge length: " << std::get<1>(edge_length_metrics) << std::endl;
-    std::cout << "Edge length stddev: " << std::get<2>(edge_length_metrics) << std::endl;
-    std::cout << "Max bends per edge: " << std::get<0>(bends_metrics) << std::endl;
-    std::cout << "Bends stddev: " << std::get<1>(bends_metrics) << std::endl;
-    std::cout << "Total crossings: " << number_of_crossings << std::endl;
-    std::cout << "Total area: " << total_area << std::endl;
-    std::cout << "Number of bends: " << result.bends + new_bends << std::endl;
-
-    node_positions_to_svg_any_degree(
-        result.positions,
-        *result.augmented_graph,
-        result.attributes,
-        chain_edges,
-        removed_edges,
-        "output.svg");
+            add_back_removed_edge(result, edge, high_degree_bends);
     return result;
 }
 
@@ -1074,8 +1047,12 @@ void NodesPositions::y_down_shift(int y_pos) {
             entry.second.m_y--;
 }
 
-void split_and_rewire(int i, int j, Direction direction_ia, Direction direction_ab, bool x_true, bool y_true, bool aligned, Graph &graph, GraphAttributes &attributes, NodesPositions &positions, int &high_degree_bends)
-{
+void split_and_rewire(
+    int i, int j, Direction direction_ia, Direction direction_ab,
+    bool x_true, bool y_true, bool aligned, Graph &graph,
+    GraphAttributes &attributes, NodesPositions &positions,
+    int &high_degree_bends
+) {
     auto n0 = graph.add_node().get_id();
     auto n1 = graph.add_node().get_id();
     auto n2 = graph.add_node().get_id();
@@ -1209,7 +1186,6 @@ bool check_if_the_segment_is_free(
 
 void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, int &high_degree_bends)
 {
-
     auto &graph = *result.augmented_graph;
     auto &attributes = result.attributes;
     auto &positions = result.positions;
