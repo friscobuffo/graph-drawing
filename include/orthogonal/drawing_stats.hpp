@@ -1,8 +1,8 @@
 #ifndef MY_DRAWING_STATS_H
 #define MY_DRAWING_STATS_H
 
-#include "orthogonal/drawing_builder.hpp"
 #include "core/graph/graph.hpp"
+#include "orthogonal/drawing_builder.hpp"
 
 int compute_total_edge_length(const DrawingResult& result);
 
@@ -21,14 +21,14 @@ int compute_total_area(const DrawingResult& result);
 int compute_total_crossings(const DrawingResult& result);
 
 struct OrthogonalStats {
-    int crossings;
-    int bends;
-    int area;
-    int total_edge_length;
-    int max_edge_length;
-    double edge_length_stddev;
-    int max_bends_per_edge;
-    double bends_stddev;
+  int crossings;
+  int bends;
+  int area;
+  int total_edge_length;
+  int max_edge_length;
+  double edge_length_stddev;
+  int max_bends_per_edge;
+  double bends_stddev;
 };
 
 OrthogonalStats compute_all_orthogonal_stats(const DrawingResult& result);
