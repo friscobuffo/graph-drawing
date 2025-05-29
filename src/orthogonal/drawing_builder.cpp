@@ -997,14 +997,14 @@ std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet> compute_maximal_degree_4_sub
 
 DrawingResult merge_connected_components(std::vector<DrawingResult> &results);
 
-void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, int &high_degree_bends);
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge);
 
 void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, Graph &graph, NodesPositions &positions);
 
 void all_positive_positions(Graph &graph, NodesPositions &positions);
 
-DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph) {
-    int high_degree_bends = 0;
+DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
+{
     auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
     auto components = compute_connected_components(*subgraph);
     std::vector<DrawingResult> results;
@@ -1013,7 +1013,7 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph) {
     DrawingResult result = merge_connected_components(results);
     for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-            add_back_removed_edge(result, edge, high_degree_bends);
+            add_back_removed_edge(result, edge);
     return result;
 }
 
@@ -1050,24 +1050,21 @@ void NodesPositions::y_down_shift(int y_pos) {
 void split_and_rewire(
     int i, int j, Direction direction_ia, Direction direction_ab,
     bool x_true, bool y_true, bool aligned, Graph &graph,
-    GraphAttributes &attributes, NodesPositions &positions,
-    int &high_degree_bends
-) {
+    GraphAttributes &attributes, NodesPositions &positions)
+{
     auto n0 = graph.add_node().get_id();
     auto n1 = graph.add_node().get_id();
     auto n2 = graph.add_node().get_id();
     auto n3 = graph.add_node().get_id();
     int n4 = -1;
 
-    attributes.set_node_color(n0, Color::RED);
+    attributes.set_node_color(n0, Color::BLUE);
     attributes.set_node_color(n1, Color::RED);
     attributes.set_node_color(n2, Color::RED);
-    attributes.set_node_color(n3, Color::RED);
+    attributes.set_node_color(n3, Color::BLUE);
     attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n0, n1));
     attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n1, n2));
     attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n2, n3));
-
-    high_degree_bends += 2;
 
     graph.add_undirected_edge(n0, n1);
     graph.add_undirected_edge(n1, n2);
@@ -1077,7 +1074,6 @@ void split_and_rewire(
         n4 = graph.add_node().get_id();
         attributes.set_node_color(n4, Color::RED);
         attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n3, n4));
-        high_degree_bends += 1;
         graph.add_undirected_edge(n3, n4);
     }
 
@@ -1184,7 +1180,7 @@ bool check_if_the_segment_is_free(
     return true;
 }
 
-void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge, int &high_degree_bends)
+void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edge)
 {
     auto &graph = *result.augmented_graph;
     auto &attributes = result.attributes;
@@ -1204,48 +1200,48 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
     if (x_i > x_j && y_i > y_j)
     {
         if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
-            split_and_rewire(i, j, Direction::LEFT, Direction::DOWN, true, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::LEFT, Direction::DOWN, true, false, false, graph, attributes, positions);
         else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
-            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, true, false, graph, attributes, positions);
         else
-            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::DOWN, Direction::LEFT, false, false, false, graph, attributes, positions);
     }
     else if (x_i < x_j && y_i < y_j)
     {
         if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
-            split_and_rewire(i, j, Direction::RIGHT, Direction::UP, true, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::RIGHT, Direction::UP, true, false, false, graph, attributes, positions);
         else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
-            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, true, false, graph, attributes, positions);
         else
-            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, false, graph, attributes, positions);
     }
     else if (x_i > x_j && y_i < y_j)
     {
         if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
-            split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::LEFT, Direction::UP, true, false, false, graph, attributes, positions);
         else if (check_if_the_segment_is_free(y_i, y_j, y_position_set))
-            split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, true, false, graph, attributes, positions);
         else
-            split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::LEFT, Direction::UP, false, false, false, graph, attributes, positions);
     }
     else if (x_i < x_j && y_i > y_j)
     {
         if (check_if_the_segment_is_free(x_i, x_j, x_position_set))
-            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, true, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, true, false, false, graph, attributes, positions);
         else if (check_if_the_segment_is_free(y_j, y_i, y_position_set))
-            split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::DOWN, Direction::RIGHT, false, true, false, graph, attributes, positions);
         else
-            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, graph, attributes, positions, high_degree_bends);
+            split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, false, graph, attributes, positions);
     }
     else if (y_i == y_j && x_i < x_j)
-        split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, true, graph, attributes, positions, high_degree_bends);
+        split_and_rewire(i, j, Direction::UP, Direction::RIGHT, false, false, true, graph, attributes, positions);
     else if (y_i == y_j && x_i > x_j)
-        split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, false, true, graph, attributes, positions, high_degree_bends);
+        split_and_rewire(i, j, Direction::UP, Direction::LEFT, false, false, true, graph, attributes, positions);
 
     else if (x_i == x_j && y_i < y_j)
-        split_and_rewire(i, j, Direction::RIGHT, Direction::UP, false, false, true, graph, attributes, positions, high_degree_bends);
+        split_and_rewire(i, j, Direction::RIGHT, Direction::UP, false, false, true, graph, attributes, positions);
     else if (x_i == x_j && y_i > y_j)
-        split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, true, graph, attributes, positions, high_degree_bends);
+        split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false, true, graph, attributes, positions);
 
     all_positive_positions(graph, positions);
 }
