@@ -175,6 +175,33 @@ void GraphAttributes::set_node_color(int node_id, Color color) {
     mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
 }
 
+void GraphAttributes::set_chain_edges(
+    int key, const std::tuple<int, int> &edge)
+{
+    if (!has_attribute(Attribute::CHAIN_EDGES))
+        add_attribute(Attribute::CHAIN_EDGES);
+
+    auto &chain_edges = mattribute_to_node[Attribute::CHAIN_EDGES];
+
+    if (chain_edges.find(key) == chain_edges.end())
+    {
+        chain_edges[key] = std::vector<std::tuple<int, int>>{};
+    }
+
+    auto &any_value = chain_edges[key];
+    auto &vec = std::any_cast<std::vector<std::tuple<int, int>> &>(any_value);
+    vec.push_back(edge);
+}
+
+std::vector<std::tuple<int, int>> GraphAttributes::get_chain_edges(int key) {
+    if (!has_attribute_by_id(Attribute::CHAIN_EDGES, key))
+        throw std::runtime_error("GraphAttributes::get_chain_edges: the chain doesn't exist");
+
+    const std::any& any_value = mattribute_to_node.at(Attribute::CHAIN_EDGES).at(key);
+    return std::any_cast<const std::vector<std::tuple<int, int>>&>(any_value);
+}
+
+
 Color GraphAttributes::get_node_color(int node_id) const {
     if (!has_attribute_by_id(Attribute::NODES_COLOR, node_id))
         throw std::runtime_error("GraphAttributes::get_node_color: the node does not have a color");

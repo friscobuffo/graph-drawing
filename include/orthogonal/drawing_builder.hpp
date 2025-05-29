@@ -87,9 +87,7 @@ void node_positions_to_svg(
 void node_positions_to_svg_any_degree(
     const NodesPositions &positions,
     const Graph &graph,
-    const GraphAttributes &attributes,
-    const std::unordered_map<int, std::vector<std::tuple<int, int>>> &chain_edges,
-    const GraphEdgeHashSet &removed_edges, const std::string &filename);
+    const GraphAttributes &attributes, const std::string &filename);
 
 struct DrawingResult {
     std::unique_ptr<Graph> augmented_graph;
@@ -109,7 +107,7 @@ struct DrawingResult {
     int number_of_useless_bends;
 };
 
-// DrawingResult make_orthogonal_drawing(const Graph& graph);
+DrawingResult make_orthogonal_drawing(const Graph &graph);
 
 DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph);
 

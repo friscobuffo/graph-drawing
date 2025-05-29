@@ -101,7 +101,8 @@ public:
     const Graph& get_owner() const { return m_graph_owner; }
 };
 
-enum class Attribute {
+enum class Attribute
+{
     NODES_COLOR,
     // EDGES_COLOR,
     // NODES_WEIGHT,
@@ -110,6 +111,7 @@ enum class Attribute {
     // EDGES_STRING_LABEL,
     // NODES_ANY_LABEL,
     EDGES_ANY_LABEL,
+    CHAIN_EDGES,
 };
 
 class GraphAttributes {
@@ -123,6 +125,8 @@ public:
     void set_node_color(int node_id, Color color);
     Color get_node_color(int node_id) const;
     void set_edge_any_label(int edge_id, const std::any& label);
+    void set_chain_edges(int key, const std::tuple<int, int> &edge);
+    std::vector<std::tuple<int, int>> get_chain_edges(int key);
     const std::any& get_edge_any_label(int edge_id) const;
 };
 
