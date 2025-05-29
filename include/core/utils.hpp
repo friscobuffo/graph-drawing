@@ -45,4 +45,8 @@ struct int_pair_hash {
     }
 };
 
+std::vector<std::string> collect_txt_files(const std::string& folder_path);
+
+double compute_stddev(const std::vector<int>& values);
+
 #endif

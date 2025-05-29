@@ -1,12 +1,13 @@
 #include "orthogonal/drawing_builder.hpp"
 
 #include <list>
-#include <math.h>
 #include <ranges>
 #include <set>
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
+
+#include "core/utils.hpp"
 
 class EquivalenceClasses {
 private:
@@ -185,13 +186,15 @@ auto equivalence_classes_to_ordering(
 }
 
 void NodesPositions::change_position(int node, int position_x, int position_y) {
-    m_nodeid_to_position_map[node] = NodePosition{position_x, position_y};
+    if (!has_position(node))
+        throw std::runtime_error("NodesPositions::change_position Node does not have a position");
+    m_nodeid_to_position_map.insert({node, NodePosition(position_x, position_y)});
 }
 
 void NodesPositions::set_position(int node, int position_x, int position_y) {
     if (has_position(node))
         throw std::runtime_error("NodesPositions::set_position_x Node already has a position");
-    m_nodeid_to_position_map[node] = NodePosition{position_x, position_y};
+    m_nodeid_to_position_map.insert({node, NodePosition(position_x, position_y)});
 }
 
 int NodesPositions::get_position_x(int node) const {
@@ -226,10 +229,6 @@ std::vector<int> path_in_class(
     const Graph& graph, int from, int to, const Shape& shape, bool go_horizontal
 ) {
     std::vector<int> path;
-    
-    // make a dfs that finds a path from `from` to `to`, but only using horizontal or vertical edges
-    // based on `go_horizontal`
-
     std::unordered_set<int> visited;
     std::function<void(int)> dfs = [&](int current) {
         if (current == to) {
@@ -629,128 +628,8 @@ void node_positions_to_svg_any_degree(
     drawer.saveToFile(filename);
 }
 
-double compute_stddev(const std::vector<int> &values) {
-    double mean = 0;
-    for (const auto &value : values)
-        mean += value;
-    mean /= values.size();
-    double variance = 0;
-    for (const auto &value : values)
-        variance += (value - mean) * (value - mean);
-    variance /= values.size();
-    return std::sqrt(variance);
-}
-
-// total edge length
-// max edge length
-// edge length stddev
-std::tuple<int, int, double> compute_edge_length_metrics(
-    const NodesPositions &positions,
-    const Graph &graph,
-    const GraphAttributes& attributes
-) {
-    std::vector<int> edge_lengths;
-    int total_edge_length = 0;
-    int max_edge_length = 0;
-    int n = graph.get_nodes().size();
-    std::unordered_set<int> visited;
-    for (const auto& node : graph.get_nodes()) {
-        if (attributes.get_node_color(node.get_id()) != Color::BLACK)
-            continue;
-        std::function<void(int, int, int)> dfs = [
-                &graph, &visited, &positions, &attributes, &total_edge_length, &edge_lengths, &max_edge_length, &dfs
-            ] (int current_id, int black_id, int current_length) 
-        {
-            visited.insert(current_id);
-            for (const auto &edge : graph.get_node_by_id(current_id).get_edges()) {
-                int neighbor = edge.get_to().get_id();
-                if (visited.contains(neighbor))
-                    continue;
-                int x1 = positions.get_position_x(current_id);
-                int y1 = positions.get_position_y(current_id);
-                int x2 = positions.get_position_x(neighbor);
-                int y2 = positions.get_position_y(neighbor);
-                int length = std::abs(x1 - x2) + std::abs(y1 - y2);
-                Color neighbor_color = attributes.get_node_color(neighbor);
-                if (neighbor_color == Color::RED)
-                    dfs(neighbor, black_id, current_length + length);
-                else if (neighbor_color == Color::BLACK) {
-                    if (black_id < neighbor) {
-                        int total_length = current_length + length;
-                        total_edge_length += total_length;
-                        edge_lengths.push_back(total_length);
-                        max_edge_length = std::max(max_edge_length, total_length);
-                    }
-                }
-            }
-            visited.erase(current_id);
-        };
-        dfs(node.get_id(), node.get_id(), 0);
-    }
-    if (edge_lengths.empty())
-        return std::make_tuple(total_edge_length, max_edge_length, 0.0);
-    double stddev = compute_stddev(edge_lengths);
-    return std::make_tuple(total_edge_length, max_edge_length, stddev);
-}
-
-// max bends per edge
-// bends stddev
-std::tuple<int, double> compute_bends_metrics(
-    const Graph &graph, 
-    const GraphAttributes& attributes
-) {
-    std::vector<int> red_counts;
-    int max_reds = 0;
-    for (const auto& node : graph.get_nodes()) {
-        if (attributes.get_node_color(node.get_id()) != Color::BLACK)
-            continue;
-        std::unordered_set<int> visited;
-        std::function<void(int, int, int)> dfs = [&](int current, int black, int red_count) {
-            visited.insert(current);
-            for (const auto &edge : graph.get_node_by_id(current).get_edges()) {
-                int neighbor = edge.get_to().get_id();
-                if (visited.contains(neighbor))
-                    continue;
-                Color neighbor_color = attributes.get_node_color(neighbor);
-                if (neighbor_color == Color::RED) {
-                    dfs(neighbor, black, red_count + 1);
-                }
-                else if (neighbor_color == Color::BLACK) {
-                    if (black < neighbor) {
-                        max_reds = std::max(max_reds, red_count);
-                        red_counts.push_back(red_count);
-                    }
-                }
-            }
-            visited.erase(current);
-        };
-        dfs(node.get_id(), node.get_id(), 0);
-    }
-    if (red_counts.empty())
-        return std::make_tuple(max_reds, 0.0);
-    double stddev = compute_stddev(red_counts);
-    return std::make_tuple(max_reds, stddev);
-}
-
-int compute_total_area(const NodesPositions& positions, const Graph& graph) {
-    int min_x = graph.size();
-    int min_y = graph.size();
-    int max_x = 0;
-    int max_y = 0;
-    for (auto& node : graph.get_nodes()) {
-        int i = node.get_id();
-        min_x = std::min(min_x, positions.get_position_x(i));
-        min_y = std::min(min_y, positions.get_position_y(i));
-        max_x = std::max(max_x, positions.get_position_x(i));
-        max_y = std::max(max_y, positions.get_position_y(i));
-    }
-    return (max_x - min_x + 1) * (max_y - min_y + 1);
-}
-
 bool do_edges_cross(
-    const NodesPositions& positions,
-    int i, int j,
-    int k, int l
+    const NodesPositions& positions, int i, int j, int k, int l
 ) {
     int i_pos_x = positions.get_position_x(i);
     int i_pos_y = positions.get_position_y(i);
@@ -783,26 +662,6 @@ bool do_edges_cross(
     if (i_pos_y < std::min(k_pos_y, l_pos_y) || i_pos_y > std::max(k_pos_y, l_pos_y))
         return false;
     return true;
-}
-
-int compute_total_crossings(const NodesPositions& positions, const Graph& graph) {
-    int total_crossings = 0;
-    for (auto& edge : graph.get_edges()) {
-        int edge_id = edge.get_id();
-        for (auto& other_edge : graph.get_edges()) {
-            int other_edge_id = other_edge.get_id();
-            if (edge_id >= other_edge_id) continue;
-            int i = edge.get_from().get_id();
-            int j = edge.get_to().get_id();
-            int k = other_edge.get_from().get_id();
-            int l = other_edge.get_to().get_id();
-            if (i == k || i == l || j == k || j == l)
-                continue;
-            if (do_edges_cross(positions, i, j, k, l))
-                ++total_crossings;
-        }
-    }
-    return total_crossings/4;
 }
 
 // removes useless corners from the graph and from the shape
@@ -1081,29 +940,14 @@ DrawingResult make_orthogonal_drawing_incremental(
     positions = std::move(new_positions);
     new_positions = compact_area_y(*augmented_graph, shape, positions);
     positions = std::move(new_positions);
-    int number_of_corners = augmented_graph->size() - graph.size();
-    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
-        positions, *augmented_graph, attributes
-    );
-    std::tuple<int, double> bends_metrics = compute_bends_metrics(*augmented_graph, attributes);
-    int number_of_crossings = compute_total_crossings(positions, *augmented_graph);
-    int total_area = compute_total_area(positions, *augmented_graph);
     return {
         std::move(augmented_graph),
         std::move(attributes),
         std::move(shape),
         std::move(positions),
-        number_of_crossings,
-        number_of_corners,
-        total_area,
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles,
-        std::get<0>(edge_length_metrics),
-        std::get<1>(edge_length_metrics),
-        std::get<2>(edge_length_metrics),
-        std::get<0>(bends_metrics),
-        std::get<1>(bends_metrics),
-        number_of_useless_bends,
+        number_of_useless_bends
     };
 }
 
@@ -1170,53 +1014,61 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph)
     DrawingResult result = merge_connected_components(results);
     for (auto &edge : removed_edges)
         if (edge.first < edge.second)
-            add_back_removed_edge(result, edge, high_degree_bends);
-    result.bends += high_degree_bends;
+        {
+            add_back_removed_edge(result, edge, chain_edges, new_bends);
+        }
+
+    // NEED TO FIX: crossings, non aggiungo veramente gli high deg edges, quindi non vengono contati nelle metriche
+    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
+        result.positions, *result.augmented_graph, result.attributes);
+    std::tuple<int, double> bends_metrics = compute_bends_metrics(*result.augmented_graph, result.attributes);
+    int number_of_crossings = compute_total_crossings(result.positions, *result.augmented_graph);
+    int total_area = compute_total_area(result.positions, *result.augmented_graph);
+    std::cout << "Shape metrics:\n";
+    std::cout << "Total edge length: " << std::get<0>(edge_length_metrics) << std::endl;
+    std::cout << "Max edge length: " << std::get<1>(edge_length_metrics) << std::endl;
+    std::cout << "Edge length stddev: " << std::get<2>(edge_length_metrics) << std::endl;
+    std::cout << "Max bends per edge: " << std::get<0>(bends_metrics) << std::endl;
+    std::cout << "Bends stddev: " << std::get<1>(bends_metrics) << std::endl;
+    std::cout << "Total crossings: " << number_of_crossings << std::endl;
+    std::cout << "Total area: " << total_area << std::endl;
+    std::cout << "Number of bends: " << result.bends + new_bends << std::endl;
+
+    node_positions_to_svg_any_degree(
+        result.positions,
+        *result.augmented_graph,
+        result.attributes,
+        chain_edges,
+        removed_edges,
+        "output.svg");
     return result;
 }
 
-DrawingResult merge_connected_components(std::vector<DrawingResult> &results)
-{
-    return DrawingResult{
-        std::move(results[0].augmented_graph),
-        std::move(results[0].attributes),
-        std::move(results[0].shape),
-        std::move(results[0].positions),
-        results[0].crossings,
-        results[0].bends,
-        results[0].area,
-        results[0].initial_number_of_cycles,
-        results[0].number_of_added_cycles,
-        results[0].total_edge_length,
-        results[0].max_edge_length,
-        results[0].edge_length_stddev,
-        results[0].max_bends_per_edge,
-        results[0].bends_stddev};
+DrawingResult merge_connected_components(std::vector<DrawingResult> &results) {
+    if (results.size() != 1)
+        throw std::runtime_error("merge_connected_components: not really implemented");
+    return std::move(results[0]);
 }
 
-void NodesPositions::x_right_shift(int x_pos)
-{
+void NodesPositions::x_right_shift(int x_pos) {
     for (auto &entry : m_nodeid_to_position_map)
         if (entry.second.m_x >= x_pos)
             entry.second.m_x++;
 }
 
-void NodesPositions::x_left_shift(int x_pos)
-{
+void NodesPositions::x_left_shift(int x_pos) {
     for (auto &entry : m_nodeid_to_position_map)
         if (entry.second.m_x <= x_pos)
             entry.second.m_x--;
 }
 
-void NodesPositions::y_up_shift(int y_pos)
-{
+void NodesPositions::y_up_shift(int y_pos) {
     for (auto &entry : m_nodeid_to_position_map)
         if (entry.second.m_y >= y_pos)
             entry.second.m_y++;
 }
 
-void NodesPositions::y_down_shift(int y_pos)
-{
+void NodesPositions::y_down_shift(int y_pos) {
     for (auto &entry : m_nodeid_to_position_map)
         if (entry.second.m_y <= y_pos)
             entry.second.m_y--;
@@ -1244,8 +1096,7 @@ void split_and_rewire(int i, int j, Direction direction_ia, Direction direction_
     graph.add_undirected_edge(n1, n2);
     graph.add_undirected_edge(n2, n3);
 
-    if (x_true == false && y_true == false && aligned == false)
-    {
+    if (x_true == false && y_true == false && aligned == false) {
         n4 = graph.add_node().get_id();
         attributes.set_node_color(n4, Color::RED);
         attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n3, n4));
@@ -1262,103 +1113,84 @@ void split_and_rewire(int i, int j, Direction direction_ia, Direction direction_
     int n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
     int n3_x = positions.get_position_x(j), n3_y = positions.get_position_y(j);
 
-    auto get_x = [&](int index)
-    { return positions.get_position_x(index); };
-    auto get_y = [&](int index)
-    { return positions.get_position_y(index); };
+    auto get_x = [&](int index) { return positions.get_position_x(index); };
+    auto get_y = [&](int index) { return positions.get_position_y(index); };
 
-    auto shift_x_left = [&](int index)
-    { positions.x_left_shift(get_x(index)); };
-    auto shift_x_right = [&](int index)
-    { positions.x_right_shift(get_x(index)); };
-    auto shift_y_up = [&](int index)
-    { positions.y_up_shift(get_y(index)); };
-    auto shift_y_down = [&](int index)
-    { positions.y_down_shift(get_y(index)); };
+    auto shift_x_left = [&](int index) { positions.x_left_shift(get_x(index)); };
+    auto shift_x_right = [&](int index) { positions.x_right_shift(get_x(index)); };
+    auto shift_y_up = [&](int index) { positions.y_up_shift(get_y(index)); };
+    auto shift_y_down = [&](int index) { positions.y_down_shift(get_y(index)); };
 
-    if (!aligned)
-    {
-        switch (direction_ia)
-        {
-        case Direction::LEFT:
-            n2_x = get_x(i);
-            n2_y = get_y(j);
-            shift_x_right(i);
-            if (direction_ab == Direction::UP)
-                shift_y_up(j);
-            else
-                shift_y_down(j);
-            break;
-
-        case Direction::UP:
-            n2_x = get_x(j);
-            n2_y = get_y(i);
-            if (direction_ab == Direction::RIGHT)
-            {
-                shift_x_right(j);
-                shift_y_down(i);
-            }
-            else
-            {
-                shift_x_left(j);
-                shift_y_down(i);
-            }
-            break;
-
-        case Direction::RIGHT:
-            n2_x = get_x(i);
-            n2_y = get_y(j);
-            shift_x_left(i);
-            if (direction_ab == Direction::DOWN)
-                shift_y_down(j);
-            else
-                shift_y_up(j);
-            break;
-
-        case Direction::DOWN:
-            n2_x = get_x(j);
-            n2_y = get_y(i);
-            shift_y_up(i);
-            if (direction_ab == Direction::LEFT)
-                shift_x_left(j);
-            else
-                shift_x_right(j);
-            break;
+    if (!aligned) {
+        switch (direction_ia) {
+            case Direction::LEFT:
+                n2_x = get_x(i);
+                n2_y = get_y(j);
+                shift_x_right(i);
+                if (direction_ab == Direction::UP)
+                    shift_y_up(j);
+                else
+                    shift_y_down(j);
+                break;
+            case Direction::UP:
+                n2_x = get_x(j);
+                n2_y = get_y(i);
+                if (direction_ab == Direction::RIGHT) {
+                    shift_x_right(j);
+                    shift_y_down(i);
+                }
+                else {
+                    shift_x_left(j);
+                    shift_y_down(i);
+                }
+                break;
+            case Direction::RIGHT:
+                n2_x = get_x(i);
+                n2_y = get_y(j);
+                shift_x_left(i);
+                if (direction_ab == Direction::DOWN)
+                    shift_y_down(j);
+                else
+                    shift_y_up(j);
+                break;
+            case Direction::DOWN:
+                n2_x = get_x(j);
+                n2_y = get_y(i);
+                shift_y_up(i);
+                if (direction_ab == Direction::LEFT)
+                    shift_x_left(j);
+                else
+                    shift_x_right(j);
+                break;
         }
     }
-    else
-    {
-        switch (direction_ia)
-        {
-        case Direction::UP:
-            positions.y_down_shift(positions.get_position_y(i));
-            break;
-        case Direction::RIGHT:
-            positions.x_left_shift(positions.get_position_x(i));
-            break;
+    else {
+        switch (direction_ia) {
+            case Direction::UP:
+                positions.y_down_shift(positions.get_position_y(i));
+                break;
+            case Direction::RIGHT:
+                positions.x_left_shift(positions.get_position_x(i));
+                break;
         }
     }
 
     positions.set_position(n0, positions.get_position_x(i), positions.get_position_y(i));
     positions.set_position(n1, n1_x, n1_y);
 
-    if (aligned)
-    {
+    if (aligned) {
         positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
         positions.set_position(n2, n2_x, n2_y);
     }
-    else if (y_true)
-    {
+    else if (y_true) {
         positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
         positions.set_position(n2, positions.get_position_x(j), n2_y);
     }
-    else if (x_true)
-    {
+    else if (x_true) {
         positions.set_position(n3, positions.get_position_x(j), positions.get_position_y(j));
         positions.set_position(n2, n2_x, positions.get_position_y(j));
     }
-    else
-    {
+    else {
         positions.set_position(n2, n2_x, n2_y);
         positions.set_position(n3, n3_x, n3_y);
         positions.set_position(n4, positions.get_position_x(j), positions.get_position_y(j));
@@ -1366,13 +1198,12 @@ void split_and_rewire(int i, int j, Direction direction_ia, Direction direction_
 }
 
 // assume that coor_i < coor_j
-bool check_if_the_segment_is_free(int coor_i, int coor_j, const std::set<int> &position_set)
-{
+bool check_if_the_segment_is_free(
+    int coor_i, int coor_j, const std::set<int> &position_set
+) {
     for (int c = coor_i + 1; c < coor_j; c++)
-    {
         if (position_set.find(c) != position_set.end())
             return false;
-    }
     return true;
 }
 
@@ -1443,10 +1274,11 @@ void add_back_removed_edge(DrawingResult &result, const std::pair<int, int> &edg
     all_positive_positions(graph, positions);
 }
 
-void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_position_set, Graph &graph, NodesPositions &positions)
-{
-    for (auto &node : graph.get_nodes())
-    {
+void create_set_positions(
+    std::set<int> &x_position_set, std::set<int> &y_position_set,
+    Graph &graph, NodesPositions &positions
+) {
+    for (auto &node : graph.get_nodes()) {
         int i = node.get_id();
         int x = positions.get_position_x(i);
         int y = positions.get_position_y(i);
@@ -1455,19 +1287,15 @@ void create_set_positions(std::set<int> &x_position_set, std::set<int> &y_positi
     }
 }
 
-void all_positive_positions(Graph &graph, NodesPositions &positions)
-{
-
+void all_positive_positions(Graph &graph, NodesPositions &positions) {
     int min_x = INT_MAX;
     int min_y = INT_MAX;
-    for (auto &node : graph.get_nodes())
-    {
+    for (auto &node : graph.get_nodes()) {
         int i = node.get_id();
         min_x = std::min(min_x, positions.get_position_x(i));
         min_y = std::min(min_y, positions.get_position_y(i));
     }
-    for (auto &node : graph.get_nodes())
-    {
+    for (auto &node : graph.get_nodes()) {
         int i = node.get_id();
         positions.change_position(i, positions.get_position_x(i) - min_x, positions.get_position_y(i) - min_y);
     }
@@ -1514,7 +1342,6 @@ DrawingResult make_orthogonal_drawing_incremental_special(
         for (auto& edge : node.get_edges())
             augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
     Shape shape = build_shape_special(*augmented_graph, attributes, cycles);
-    // shape.print();
     BuildingResult result = build_nodes_positions(shape, *augmented_graph);
     int number_of_added_cycles = 0;
     while (result.type == BuildingResultType::CYCLES_TO_BE_ADDED) {
@@ -1534,28 +1361,13 @@ DrawingResult make_orthogonal_drawing_incremental_special(
     // positions = std::move(new_positions);
     // new_positions = compact_area_y(*augmented_graph, shape, positions);
     // positions = std::move(new_positions);
-    int number_of_corners = augmented_graph->size() - graph.size();
-    std::tuple<int, int, double> edge_length_metrics = compute_edge_length_metrics(
-        positions, *augmented_graph, attributes
-    );
-    std::tuple<int, double> bends_metrics = compute_bends_metrics(*augmented_graph, attributes);
-    int number_of_crossings = compute_total_crossings(positions, *augmented_graph);
-    int total_area = compute_total_area(positions, *augmented_graph);
     return {
         std::move(augmented_graph),
         std::move(attributes),
         std::move(shape),
         std::move(positions),
-        number_of_crossings,
-        number_of_corners,
-        total_area,
         (int)cycles.size() - number_of_added_cycles,
         number_of_added_cycles,
-        std::get<0>(edge_length_metrics),
-        std::get<1>(edge_length_metrics),
-        std::get<2>(edge_length_metrics),
-        std::get<0>(bends_metrics),
-        std::get<1>(bends_metrics),
         number_of_useless_bends,
     };
 }

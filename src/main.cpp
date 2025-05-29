@@ -6,6 +6,7 @@
 #include "core/graph/generators.hpp"
 #include "config/config.hpp"
 #include "baseline-ogdf/drawer.hpp"
+#include "orthogonal/drawing_stats.hpp"
 
 void prova0() {
     Graph graph;
@@ -59,6 +60,54 @@ void prova1() {
     graph.add_undirected_edge(1, 5);
     graph.add_undirected_edge(4, 0);
     auto result = make_orthogonal_drawing_sperimental(graph);
+    node_positions_to_svg(
+        result.positions,
+        *result.augmented_graph,
+        result.attributes,
+        "daje.svg"
+    );
+}
+
+void cut_vertices_stats(std::string& folder_path) {
+    auto txt_files = collect_txt_files(folder_path);
+    int pattern_1_times = 0;
+    int pattern_2_times = 0;
+    int pattern_3_times = 0;
+    for (const auto& entry_path : txt_files) {
+        std::unique_ptr<Graph> graph = load_graph_from_txt_file(entry_path);
+        auto biconnected_components = compute_biconnected_components(*graph);
+        for (const int cutvertex : biconnected_components.cutvertices) {
+            int node_degree = graph->get_node_by_id(cutvertex).get_degree();
+            if (node_degree == 4) {
+                int components_with_this_cutvertex = 0;
+                for (auto& component : biconnected_components.components)
+                    if (component->has_node(cutvertex))
+                        components_with_this_cutvertex++;
+                if (components_with_this_cutvertex == 3)
+                    pattern_2_times++;
+                else if (components_with_this_cutvertex == 2) {
+                    for (auto& component : biconnected_components.components) {
+                        if (component->has_node(cutvertex)) {
+                            int deg = component->get_node_by_id(cutvertex).get_degree();
+                            if (deg == 2) pattern_1_times++;
+                            break;
+                        }
+                    }
+                }
+            }
+            else if (node_degree == 3) {
+                int components_with_this_cutvertex = 0;
+                for (auto& component : biconnected_components.components)
+                    if (component->has_node(cutvertex))
+                        components_with_this_cutvertex++;
+                if (components_with_this_cutvertex == 2)
+                    pattern_3_times++;
+            }
+        }
+    }
+    std::cout << "pattern 1: " << pattern_1_times << "\n";
+    std::cout << "pattern 2: " << pattern_2_times << "\n";
+    std::cout << "pattern 3: " << pattern_3_times << "\n";
 }
 
 int main() {
@@ -82,10 +131,15 @@ int main() {
         result.attributes,
         filename
     );
+    auto stats = compute_all_orthogonal_stats(result);
     std::cout << "Shape metrics:\n";
-    std::cout << "Area: " << result.area << "\n";
-    std::cout << "Crossings: " << result.crossings << "\n";
-    std::cout << "Bends: " << result.bends << "\n";
-    std::cout << "Total edge length: " << result.total_edge_length << "\n";
+    std::cout << "Area: " << stats.area << "\n";
+    std::cout << "Crossings: " << stats.crossings << "\n";
+    std::cout << "Bends: " << stats.bends << "\n";
+    std::cout << "Total edge length: " << stats.total_edge_length << "\n";
+
+    std::string graphs_folder = "generated-graphs";
+    // cut_vertices_stats(graphs_folder);
+
     return 0;
 }

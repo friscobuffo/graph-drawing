@@ -16,8 +16,9 @@
 #include "orthogonal/shape/shape.hpp"
 
 struct NodePosition {
-    int m_x{-1};
-    int m_y{-1};
+    int m_x;
+    int m_y;
+    NodePosition(int x, int y) : m_x(x), m_y(y) {}
     bool operator==(const NodePosition& other) const {
         return m_x == other.m_x && m_y == other.m_y;
     }
@@ -39,27 +40,6 @@ public:
     void remove_position(int node);
     const NodePosition& get_position(int node) const;
 };
-
-int compute_total_area(
-    const NodesPositions& positions,
-    const Graph& graph
-);
-
-int compute_total_crossings(
-    const NodesPositions& positions,
-    const Graph& graph
-);
-
-std::tuple<int, int, double> compute_edge_length_metrics(
-    const NodesPositions& positions,
-    const Graph& graph,
-    const GraphAttributes& attributes
-);
-
-std::tuple<int, double> compute_bends_metrics(
-    const Graph& graph,
-    const GraphAttributes& attributes
-);
 
 enum class BuildingResultType {
     OK,
@@ -94,16 +74,8 @@ struct DrawingResult {
     GraphAttributes attributes;
     Shape shape;
     NodesPositions positions;
-    int crossings;
-    int bends;
-    int area;
     int initial_number_of_cycles;
     int number_of_added_cycles;
-    int total_edge_length;
-    int max_edge_length;
-    double edge_length_stddev;
-    int max_bends_per_edge;
-    double bends_stddev;
     int number_of_useless_bends;
 };
 
@@ -117,5 +89,9 @@ bool check_if_drawing_has_overlappings(
 );
 
 DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph);
+
+bool do_edges_cross(
+    const NodesPositions& positions, int i, int j, int k, int l
+);
 
 #endif

@@ -6,6 +6,8 @@
 #include <limits>
 #include <utility>
 #include <unordered_set>
+#include <unordered_map>
+#include <list>
 
 #include "core/tree/tree.hpp"
 #include "core/tree/tree_algorithms.hpp"
@@ -242,4 +244,118 @@ std::vector<std::unique_ptr<Graph>> compute_connected_components(const Graph& gr
             components.push_back(std::move(new_component));
         }
     return std::move(components);
+}
+
+void dfs_bic_com(
+    const GraphNode& node, std::unordered_map<int, int>& old_node_id_to_new_id,
+    std::unordered_map<int, int>& prev_of_node, int& next_id_to_assign,
+    std::unordered_map<int, int>& low_point, std::list<int>& stack_of_nodes,
+    std::list<std::pair<int, int>>& stack_of_edges,
+    std::vector<std::unique_ptr<Graph>>& components,
+    std::unordered_set<int>& cut_vertices
+);
+
+BiconnectedComponents compute_biconnected_components(const Graph& graph) {
+    std::unordered_map<int, int> old_node_id_to_new_id;
+    std::unordered_map<int, int> prev_of_node;
+    std::unordered_map<int, int> low_point;
+    std::unordered_set<int> cut_vertices;
+    std::vector<std::unique_ptr<Graph>> components;
+    int next_id_to_assign = 0;
+    std::list<int> stack_of_nodes{};
+    std::list<std::pair<int, int>> stack_of_edges{};
+    for (auto& node : graph.get_nodes())
+        if (!old_node_id_to_new_id.contains(node.get_id())) // node not visited
+            dfs_bic_com(
+                node, old_node_id_to_new_id, prev_of_node, next_id_to_assign,
+                low_point, stack_of_nodes, stack_of_edges,
+                components, cut_vertices
+            );
+    if (stack_of_nodes.size() > 0 || stack_of_edges.size() > 0)
+        throw std::runtime_error(
+            "Biconnected components algorithm did not finish correctly"
+        );
+    BiconnectedComponents result;
+    result.cutvertices = std::move(cut_vertices);
+    result.components = std::move(components);
+    return result;
+}
+
+void build_component(
+    Graph& component, std::list<int>& nodes,
+    std::list<std::pair<int, int>>& edges
+);
+
+void dfs_bic_com(
+    const GraphNode& node, std::unordered_map<int, int>& old_node_id_to_new_id,
+    std::unordered_map<int, int>& prev_of_node, int& next_id_to_assign,
+    std::unordered_map<int, int>& low_point, std::list<int>& stack_of_nodes,
+    std::list<std::pair<int, int>>& stack_of_edges,
+    std::vector<std::unique_ptr<Graph>>& components,
+    std::unordered_set<int>& cut_vertices
+) {
+    int node_id = node.get_id();
+    old_node_id_to_new_id[node_id] = next_id_to_assign;
+    low_point[node_id] = next_id_to_assign;
+    ++next_id_to_assign;
+    int children_number = 0;
+    for (const GraphEdge& edge : node.get_edges()) {
+        const GraphNode& neighbor = edge.get_to();
+        int neighbor_id = neighbor.get_id();
+        if (prev_of_node.contains(node_id) && prev_of_node[node_id] == neighbor_id)
+            continue;
+        if (!old_node_id_to_new_id.contains(neighbor_id)) { // means node is not visited
+            std::list<int> new_stack_of_nodes{};
+            std::list<std::pair<int, int>> new_stack_of_edges{};
+            ++children_number;
+            prev_of_node[neighbor_id] = node_id;
+            new_stack_of_nodes.push_back(neighbor_id);
+            new_stack_of_edges.push_back(std::make_pair(node_id, neighbor_id));
+            dfs_bic_com(
+                neighbor, old_node_id_to_new_id, prev_of_node, next_id_to_assign,
+                low_point, new_stack_of_nodes, new_stack_of_edges,
+                components, cut_vertices
+            );
+            if (low_point[neighbor_id] < low_point[node_id])
+                low_point[node_id] = low_point[neighbor_id];
+            if (low_point[neighbor_id] >= old_node_id_to_new_id[node_id]) {
+                new_stack_of_nodes.push_back(node_id);
+                components.push_back(std::make_unique<Graph>());
+                build_component(*components.back(), new_stack_of_nodes, new_stack_of_edges);
+                if (prev_of_node.contains(node_id)) // the root needs to be handled differently
+                    // (handled at end of function)
+                    cut_vertices.insert(node_id);
+            }
+            else {
+                stack_of_nodes.splice(stack_of_nodes.end(), new_stack_of_nodes);
+                stack_of_edges.splice(stack_of_edges.end(), new_stack_of_edges);
+            }
+        }
+        else { // node got already visited
+            int neighbor_node_id = old_node_id_to_new_id[neighbor_id];
+            if (neighbor_node_id < old_node_id_to_new_id[node_id]) {
+                stack_of_edges.push_back(std::make_pair(node_id, neighbor_id));
+                if (neighbor_node_id < low_point[node_id])
+                    low_point[node_id] = neighbor_node_id;
+            }
+        }
+    }
+    if (!prev_of_node.contains(node_id)) { // handling of node with no parents (the root)
+        if (children_number >= 2)
+            cut_vertices.insert(node_id);
+        else if (children_number == 0) { // node is isolated
+            components.push_back(std::make_unique<Graph>());
+            components.back()->add_node(node_id);
+        }
+    }
+}
+
+void build_component(
+    Graph& component, std::list<int>& nodes,
+    std::list<std::pair<int, int>>& edges
+) {
+    for (int node : nodes)
+        component.add_node(node);
+    for (const auto& edge : edges)
+        component.add_undirected_edge(edge.first, edge.second);
 }

@@ -35,4 +35,11 @@ bool are_cycles_equivalent(
 
 std::vector<std::unique_ptr<Graph>> compute_connected_components(const Graph& graph);
 
+struct BiconnectedComponents {
+    std::unordered_set<int> cutvertices;
+    std::vector<std::unique_ptr<Graph>> components;
+};
+
+BiconnectedComponents compute_biconnected_components(const Graph& graph);
+
 #endif

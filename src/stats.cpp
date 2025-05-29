@@ -18,6 +18,7 @@
 #include "config/config.hpp"
 #include "baseline-ogdf/drawer.hpp"
 #include "core/csv.hpp"
+#include "orthogonal/drawing_stats.hpp"
 
 std::unordered_set<std::string> graphs_already_in_csv;
 
@@ -56,22 +57,23 @@ void save_stats(
     const OGDFResult& results_ogdf, double ogdf_time,
     const std::string &graph_name
 ) {
+    auto stats_shape_metrics = compute_all_orthogonal_stats(results_shape_metrics);
     results_file << graph_name << ",";
-    results_file << results_shape_metrics.crossings << ",";
+    results_file << stats_shape_metrics.crossings << ",";
     results_file << results_ogdf.crossings << ",";
-    results_file << results_shape_metrics.bends << ",";
+    results_file << stats_shape_metrics.bends << ",";
     results_file << results_ogdf.bends << ",";
-    results_file << results_shape_metrics.area << ",";
+    results_file << stats_shape_metrics.area << ",";
     results_file << results_ogdf.area << ",";
-    results_file << results_shape_metrics.total_edge_length << ",";
+    results_file << stats_shape_metrics.total_edge_length << ",";
     results_file << results_ogdf.total_edge_length << ",";
-    results_file << results_shape_metrics.max_edge_length << ",";
+    results_file << stats_shape_metrics.max_edge_length << ",";
     results_file << results_ogdf.max_edge_length << ",";
-    results_file << results_shape_metrics.max_bends_per_edge << ",";
+    results_file << stats_shape_metrics.max_bends_per_edge << ",";
     results_file << results_ogdf.max_bends_per_edge << ",";
-    results_file << results_shape_metrics.edge_length_stddev << ",";
+    results_file << stats_shape_metrics.edge_length_stddev << ",";
     results_file << results_ogdf.edge_length_stddev << ",";
-    results_file << results_shape_metrics.bends_stddev << ",";
+    results_file << stats_shape_metrics.bends_stddev << ",";
     results_file << results_ogdf.bends_stddev << ",";
     results_file << shape_metrics_time << ",";
     results_file << ogdf_time << ",";
@@ -79,14 +81,6 @@ void save_stats(
     results_file << results_shape_metrics.number_of_added_cycles << ",";
     results_file << results_shape_metrics.number_of_useless_bends;
     results_file << std::endl;
-}
-
-std::vector<std::string> collect_txt_files(const std::string& folder_path) {
-    std::vector<std::string> txt_files;
-    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
-        if (entry.is_regular_file() && entry.path().extension() == ".txt")
-            txt_files.push_back(entry.path().string());
-    return txt_files;
 }
 
 void compare_approaches_in_folder(std::string& folder_path, std::ofstream& results_file, std::string& output_svgs_folder) {

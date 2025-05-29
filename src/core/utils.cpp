@@ -4,6 +4,8 @@
 #include <unistd.h> // For close
 #include <fstream>  // To read the file later
 #include <sstream>  // For std::stringstream
+#include <filesystem>
+#include <math.h>
 
 #ifdef __linux__
 const char TEMPORARY_FOLDER[] = "/dev/shm/";
@@ -37,4 +39,25 @@ const std::string color_to_string(const Color color) {
         case Color::BLACK: return "black";
         default: throw std::invalid_argument("Invalid color");
     }
+}
+
+std::vector<std::string> collect_txt_files(const std::string& folder_path) {
+    std::vector<std::string> txt_files;
+    for (const auto& entry : std::filesystem::recursive_directory_iterator(folder_path))
+        if (entry.is_regular_file() && entry.path().extension() == ".txt")
+            txt_files.push_back(entry.path().string());
+    return txt_files;
+}
+
+double compute_stddev(const std::vector<int>& values) {
+    if (values.empty()) return 0.0;
+    double mean = 0;
+    for (const auto &value : values)
+        mean += value;
+    mean /= values.size();
+    double variance = 0;
+    for (const auto &value : values)
+        variance += (value - mean) * (value - mean);
+    variance /= (values.size() - 1);
+    return std::sqrt(variance);
 }
