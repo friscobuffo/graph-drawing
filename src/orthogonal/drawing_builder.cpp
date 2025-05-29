@@ -962,54 +962,46 @@ void NodesPositions::y_down_shift(float y_pos) {
     if (entry.second.m_y <= y_pos) entry.second.m_y--;
 }
 
+void add_colored_node(Graph& graph, GraphAttributes& attributes, int& node_id,
+                      Color color) {
+  node_id = graph.add_node().get_id();
+  attributes.set_node_color(node_id, color);
+}
+
+void set_chain_and_edge(Graph& graph, GraphAttributes& attributes, int i, int j,
+                        int u, int v) {
+  attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(u, v));
+  graph.add_undirected_edge(u, v);
+}
+
 void split_and_rewire(int i, int j, Direction direction_ia,
                       Direction direction_ab, bool x_true, bool y_true,
                       bool aligned, Graph& graph, GraphAttributes& attributes,
                       NodesPositions& positions) {
-  auto n0 = graph.add_node().get_id();
-  auto n1 = graph.add_node().get_id();
-  auto n2 = graph.add_node().get_id();
-  auto n3 = graph.add_node().get_id();
-  int n4 = -1;
-
-  attributes.set_node_color(n0, Color::BLUE);
-  attributes.set_node_color(n1, Color::RED);
-  attributes.set_node_color(n2, Color::RED);
-  attributes.set_node_color(n3, Color::BLUE);
-  attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n0, n1));
-  attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n1, n2));
-  attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n2, n3));
-
-  graph.add_undirected_edge(n0, n1);
-  graph.add_undirected_edge(n1, n2);
-  graph.add_undirected_edge(n2, n3);
+  int n0 = -1, n1 = -1, n2 = -1, n3 = -1,  n4 = -1;
+  add_colored_node(graph, attributes, n0, Color::BLUE);
+  add_colored_node(graph, attributes, n1, Color::RED);
+  add_colored_node(graph, attributes, n2, Color::RED);
+  add_colored_node(graph, attributes, n3, Color::BLUE);
+  set_chain_and_edge(graph, attributes, i, j, n0, n1);
+  set_chain_and_edge(graph, attributes, i, j, n1, n2);
+  set_chain_and_edge(graph, attributes, i, j, n2, n3);
 
   if (x_true == false && y_true == false && aligned == false) {
-    n4 = graph.add_node().get_id();
-    attributes.set_node_color(n4, Color::RED);
-    attributes.set_chain_edges(make_chain_key(i, j), std::make_tuple(n3, n4));
-    graph.add_undirected_edge(n3, n4);
+    add_colored_node(graph, attributes, n4, Color::RED);
+    set_chain_and_edge(graph, attributes, i, j, n3, n4);
   }
-
-  // std::vector<std::tuple<int, int>> list =
-  // attributes.get_chain_edges(make_chain_key(i, j)); std::cout << "----------
-  // CHAIN EDGES LIST ----------" << std::endl; for (const auto &[a, b] : list)
-  //     std::cout << "(" << a << ", " << b << ")\n";
-
-  int n1_x = positions.get_position_x(i), n1_y = positions.get_position_y(i);
-  int n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
-  int n3_x = positions.get_position_x(j), n3_y = positions.get_position_y(j);
-
+  float n1_x = positions.get_position_x(i), n1_y = positions.get_position_y(i);
+  float n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
+  float n3_x = positions.get_position_x(j), n3_y = positions.get_position_y(j);
   auto get_x = [&](int index) { return positions.get_position_x(index); };
   auto get_y = [&](int index) { return positions.get_position_y(index); };
-
   auto shift_x_left = [&](int index) { positions.x_left_shift(get_x(index)); };
   auto shift_x_right = [&](int index) {
     positions.x_right_shift(get_x(index));
   };
   auto shift_y_up = [&](int index) { positions.y_up_shift(get_y(index)); };
   auto shift_y_down = [&](int index) { positions.y_down_shift(get_y(index)); };
-
   if (!aligned) {
     switch (direction_ia) {
       case Direction::LEFT:
