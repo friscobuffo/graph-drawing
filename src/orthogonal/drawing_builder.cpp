@@ -978,103 +978,117 @@ void split_and_rewire(int i, int j, Direction direction_ia,
                       Direction direction_ab, bool x_true, bool y_true,
                       bool aligned, Graph& graph, GraphAttributes& attributes,
                       NodesPositions& positions) {
-  int n0 = -1, n1 = -1, n2 = -1, n3 = -1,  n4 = -1;
+  int n0 = -1, n1 = -1, n2 = -1, n3 = -1, n4 = -1;
+
   add_colored_node(graph, attributes, n0, Color::BLUE);
   add_colored_node(graph, attributes, n1, Color::RED);
   add_colored_node(graph, attributes, n2, Color::RED);
   add_colored_node(graph, attributes, n3, Color::BLUE);
+
   set_chain_and_edge(graph, attributes, i, j, n0, n1);
   set_chain_and_edge(graph, attributes, i, j, n1, n2);
   set_chain_and_edge(graph, attributes, i, j, n2, n3);
 
-  if (x_true == false && y_true == false && aligned == false) {
+  if (!x_true && !y_true && !aligned) {
     add_colored_node(graph, attributes, n4, Color::RED);
     set_chain_and_edge(graph, attributes, i, j, n3, n4);
   }
-  float n1_x = positions.get_position_x(i), n1_y = positions.get_position_y(i);
-  float n2_x = positions.get_position_x(j), n2_y = positions.get_position_y(j);
-  float n3_x = positions.get_position_x(j), n3_y = positions.get_position_y(j);
-  auto get_x = [&](int index) { return positions.get_position_x(index); };
-  auto get_y = [&](int index) { return positions.get_position_y(index); };
-  auto shift_x_left = [&](int index) { positions.x_left_shift(get_x(index)); };
-  auto shift_x_right = [&](int index) {
-    positions.x_right_shift(get_x(index));
-  };
-  auto shift_y_up = [&](int index) { positions.y_up_shift(get_y(index)); };
-  auto shift_y_down = [&](int index) { positions.y_down_shift(get_y(index)); };
+
+  float i_x = positions.get_position_x(i);
+  float i_y = positions.get_position_y(i);
+  float j_x = positions.get_position_x(j);
+  float j_y = positions.get_position_y(j);
+
+  float n1_x = i_x, n1_y = i_y;
+  float n2_x = j_x, n2_y = j_y;
+  float n3_x = j_x, n3_y = j_y;  
+
+  auto shift_x_left = [&](float x) { positions.x_left_shift(x); };
+  auto shift_x_right = [&](float x) { positions.x_right_shift(x); };
+  auto shift_y_up = [&](float y) { positions.y_up_shift(y); };
+  auto shift_y_down = [&](float y) { positions.y_down_shift(y); };
+
   if (!aligned) {
     switch (direction_ia) {
       case Direction::LEFT:
-        n2_x = get_x(i);
-        n2_y = get_y(j);
-        shift_x_right(i);
+        n2_x = i_x;
+        n2_y = j_y;
+        shift_x_right(i_x);
         if (direction_ab == Direction::UP)
-          shift_y_up(j);
+          shift_y_up(j_y);
         else
-          shift_y_down(j);
+          shift_y_down(j_y);
         break;
+
       case Direction::UP:
-        n2_x = get_x(j);
-        n2_y = get_y(i);
+        n2_x = j_x;
+        n2_y = i_y;
         if (direction_ab == Direction::RIGHT) {
-          shift_x_right(j);
-          shift_y_down(i);
+          shift_x_right(j_x);
+          shift_y_down(i_y);
         } else {
-          shift_x_left(j);
-          shift_y_down(i);
+          shift_x_left(j_x);
+          shift_y_down(i_y);
         }
         break;
+
       case Direction::RIGHT:
-        n2_x = get_x(i);
-        n2_y = get_y(j);
-        shift_x_left(i);
+        n2_x = i_x;
+        n2_y = j_y;
+        shift_x_left(i_x);
         if (direction_ab == Direction::DOWN)
-          shift_y_down(j);
+          shift_y_down(j_y);
         else
-          shift_y_up(j);
+          shift_y_up(j_y);
         break;
+
       case Direction::DOWN:
-        n2_x = get_x(j);
-        n2_y = get_y(i);
-        shift_y_up(i);
+        n2_x = j_x;
+        n2_y = i_y;
+        shift_y_up(i_y);
         if (direction_ab == Direction::LEFT)
-          shift_x_left(j);
+          shift_x_left(j_x);
         else
-          shift_x_right(j);
+          shift_x_right(j_x);
         break;
     }
+
+    j_x = positions.get_position_x(j);
+    j_y = positions.get_position_y(j);
   } else {
     switch (direction_ia) {
       case Direction::UP:
-        positions.y_down_shift(positions.get_position_y(i));
+        shift_y_down(i_y);
         break;
       case Direction::RIGHT:
-        positions.x_left_shift(positions.get_position_x(i));
+        shift_x_left(i_x);
+        break;
+      default:
         break;
     }
+
+    i_x = positions.get_position_x(i);
+    i_y = positions.get_position_y(i);
+    j_x = positions.get_position_x(j);
+    j_y = positions.get_position_y(j);
   }
 
-  positions.set_position(n0, positions.get_position_x(i),
-                         positions.get_position_y(i));
+  positions.set_position(n0, i_x, i_y);
   positions.set_position(n1, n1_x, n1_y);
 
   if (aligned) {
-    positions.set_position(n3, positions.get_position_x(j),
-                           positions.get_position_y(j));
     positions.set_position(n2, n2_x, n2_y);
+    positions.set_position(n3, j_x, j_y);
   } else if (y_true) {
-    positions.set_position(n3, positions.get_position_x(j),
-                           positions.get_position_y(j));
-    positions.set_position(n2, positions.get_position_x(j), n2_y);
+    positions.set_position(n2, j_x, n2_y);
+    positions.set_position(n3, j_x, j_y);
   } else if (x_true) {
-    positions.set_position(n3, positions.get_position_x(j),
-                           positions.get_position_y(j));
-    positions.set_position(n2, n2_x, positions.get_position_y(j));
+    positions.set_position(n2, n2_x, j_y);
+    positions.set_position(n3, j_x, j_y);
   } else {
     positions.set_position(n2, n2_x, n2_y);
     positions.set_position(n3, n3_x, n3_y);
-    positions.set_position(n4, positions.get_position_x(j),
-                           positions.get_position_y(j));
+    positions.set_position(n4, j_x, j_y);
   }
 }
 
