@@ -16,9 +16,9 @@
 #include "orthogonal/shape/shape_builder.hpp"
 
 struct NodePosition {
-  int m_x;
-  int m_y;
-  NodePosition(int x, int y) : m_x(x), m_y(y) {}
+  float m_x;
+  float m_y;
+  NodePosition(float x, float y) : m_x(x), m_y(y) {}
   bool operator==(const NodePosition& other) const {
     return m_x == other.m_x && m_y == other.m_y;
   }
@@ -29,14 +29,14 @@ class NodesPositions {
   std::unordered_map<int, NodePosition> m_nodeid_to_position_map;
 
  public:
-  void set_position(int node, int position_x, int position_y);
-  void change_position(int node, int position_x, int position_y);
-  int get_position_x(int node) const;
-  int get_position_y(int node) const;
-  void x_right_shift(int x_pos);
-  void x_left_shift(int x_pos);
-  void y_up_shift(int y_pos);
-  void y_down_shift(int y_pos);
+  void set_position(int node, float position_x, float position_y);
+  void change_position(int node, float position_x, float position_y);
+  float get_position_x(int node) const;
+  float get_position_y(int node) const;
+  void x_right_shift(float x_pos);
+  void x_left_shift(float x_pos);
+  void y_up_shift(float y_pos);
+  void y_down_shift(float y_pos);
   bool has_position(int node) const;
   void remove_position(int node);
   const NodePosition& get_position(int node) const;

@@ -1,5 +1,7 @@
 #include "orthogonal/drawing_builder.hpp"
 
+#include <algorithm>
+#include <cfloat>
 #include <functional>
 #include <list>
 #include <ranges>
@@ -34,7 +36,7 @@ class EquivalenceClasses {
           "EquivalenceClasses::get_class elem does not have a class");
     return m_elem_to_class.at(elem);
   }
-  const auto &get_elems_of_class(int class_id) const {
+  const auto& get_elems_of_class(int class_id) const {
     if (!has_class(class_id))
       throw std::runtime_error(
           "EquivalenceClasses::get_elems class does not exist");
@@ -42,7 +44,7 @@ class EquivalenceClasses {
   }
   std::string to_string() const {
     std::string result = "EquivalenceClasses:\n";
-    for (const auto &[elem, class_id] : m_elem_to_class)
+    for (const auto& [elem, class_id] : m_elem_to_class)
       result += std::to_string(elem) + " -> " + std::to_string(class_id) + "\n";
     return result;
   }
@@ -50,17 +52,17 @@ class EquivalenceClasses {
   auto get_all_classes() const {
     return m_class_to_elems |
            std::views::transform(
-               [](const auto &pair) -> int { return pair.first; });
+               [](const auto& pair) -> int { return pair.first; });
   }
 };
 
 void directional_node_expander(
-    const Shape &shape, const Graph &graph, const GraphNode &node, int class_id,
-    EquivalenceClasses &equivalence_classes,
-    std::function<bool(const Shape &, int, int)> is_direction_wrong) {
+    const Shape& shape, const Graph& graph, const GraphNode& node, int class_id,
+    EquivalenceClasses& equivalence_classes,
+    std::function<bool(const Shape&, int, int)> is_direction_wrong) {
   int node_id = node.get_id();
   equivalence_classes.set_class(node_id, class_id);
-  for (auto &edge : node.get_edges()) {
+  for (auto& edge : node.get_edges()) {
     int neighbor_id = edge.get_to().get_id();
     if (equivalence_classes.has_elem_a_class(neighbor_id)) continue;
     if (is_direction_wrong(shape, node_id, neighbor_id)) continue;
@@ -69,35 +71,35 @@ void directional_node_expander(
   }
 }
 
-void horizontal_node_expander(const Shape &shape, const Graph &graph,
-                              const GraphNode &node, int class_id,
-                              GraphEdgeHashSet &is_edge_visited,
-                              EquivalenceClasses &equivalence_classes) {
-  auto is_direction_wrong = [](const Shape &shape, int i, int j) {
+void horizontal_node_expander(const Shape& shape, const Graph& graph,
+                              const GraphNode& node, int class_id,
+                              GraphEdgeHashSet& is_edge_visited,
+                              EquivalenceClasses& equivalence_classes) {
+  auto is_direction_wrong = [](const Shape& shape, int i, int j) {
     return shape.is_vertical(i, j);
   };
   directional_node_expander(shape, graph, node, class_id, equivalence_classes,
                             is_direction_wrong);
 }
 
-void vertical_node_expander(const Shape &shape, const Graph &graph,
-                            const GraphNode &node, int class_id,
-                            GraphEdgeHashSet &is_edge_visited,
-                            EquivalenceClasses &equivalence_classes) {
-  auto is_direction_wrong = [](const Shape &shape, int i, int j) {
+void vertical_node_expander(const Shape& shape, const Graph& graph,
+                            const GraphNode& node, int class_id,
+                            GraphEdgeHashSet& is_edge_visited,
+                            EquivalenceClasses& equivalence_classes) {
+  auto is_direction_wrong = [](const Shape& shape, int i, int j) {
     return shape.is_horizontal(i, j);
   };
   directional_node_expander(shape, graph, node, class_id, equivalence_classes,
                             is_direction_wrong);
 }
 
-const auto build_equivalence_classes(const Shape &shape, const Graph &graph) {
+const auto build_equivalence_classes(const Shape& shape, const Graph& graph) {
   EquivalenceClasses equivalence_classes_x;
   EquivalenceClasses equivalence_classes_y;
   int next_class_x = 0;
   int next_class_y = 0;
   GraphEdgeHashSet is_edge_visited;
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     if (!equivalence_classes_y.has_elem_a_class(node.get_id()))
       horizontal_node_expander(shape, graph, node, next_class_y++,
                                is_edge_visited, equivalence_classes_y);
@@ -105,7 +107,7 @@ const auto build_equivalence_classes(const Shape &shape, const Graph &graph) {
       vertical_node_expander(shape, graph, node, next_class_x++,
                              is_edge_visited, equivalence_classes_x);
   }
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (!equivalence_classes_x.has_elem_a_class(node.get_id()))
       equivalence_classes_x.set_class(node.get_id(), next_class_x++);
     if (!equivalence_classes_y.has_elem_a_class(node.get_id()))
@@ -116,9 +118,9 @@ const auto build_equivalence_classes(const Shape &shape, const Graph &graph) {
 }
 
 auto equivalence_classes_to_ordering(
-    const EquivalenceClasses &equivalence_classes_x,
-    const EquivalenceClasses &equivalence_classes_y, const Graph &graph,
-    const Shape &shape) {
+    const EquivalenceClasses& equivalence_classes_x,
+    const EquivalenceClasses& equivalence_classes_y, const Graph& graph,
+    const Shape& shape) {
   auto ordering_x = std::make_unique<Graph>();
   auto ordering_y = std::make_unique<Graph>();
   for (int class_id : equivalence_classes_x.get_all_classes())
@@ -129,16 +131,16 @@ auto equivalence_classes_to_ordering(
   GraphAttributes ordering_y_edge_to_graph_edge;
   ordering_x_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
   ordering_y_edge_to_graph_edge.add_attribute(Attribute::EDGES_ANY_LABEL);
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
-    for (auto &edge : node.get_edges()) {
+    for (auto& edge : node.get_edges()) {
       int j = edge.get_to().get_id();
       if (shape.is_right(i, j)) {
         int node_class_x = equivalence_classes_x.get_class_of_elem(i);
         int neighbor_class_x = equivalence_classes_x.get_class_of_elem(j);
         if (ordering_x->has_edge(node_class_x, neighbor_class_x)) continue;
         if (node_class_x == neighbor_class_x) continue;
-        auto &e = ordering_x->add_edge(node_class_x, neighbor_class_x);
+        auto& e = ordering_x->add_edge(node_class_x, neighbor_class_x);
         ordering_x_edge_to_graph_edge.set_edge_any_label(e.get_id(),
                                                          std::make_pair(i, j));
       } else if (shape.is_up(i, j)) {
@@ -146,7 +148,7 @@ auto equivalence_classes_to_ordering(
         int neighbor_class_y = equivalence_classes_y.get_class_of_elem(j);
         if (ordering_y->has_edge(node_class_y, neighbor_class_y)) continue;
         if (node_class_y == neighbor_class_y) continue;
-        auto &e = ordering_y->add_edge(node_class_y, neighbor_class_y);
+        auto& e = ordering_y->add_edge(node_class_y, neighbor_class_y);
         ordering_y_edge_to_graph_edge.set_edge_any_label(e.get_id(),
                                                          std::make_pair(i, j));
       }
@@ -157,35 +159,37 @@ auto equivalence_classes_to_ordering(
                          std::move(ordering_y_edge_to_graph_edge));
 }
 
-void NodesPositions::change_position(int node, int position_x, int position_y) {
+void NodesPositions::change_position(int node, float position_x,
+                                     float position_y) {
   if (!has_position(node))
     throw std::runtime_error(
         "NodesPositions::change_position Node does not have a position");
   m_nodeid_to_position_map.insert({node, NodePosition(position_x, position_y)});
 }
 
-void NodesPositions::set_position(int node, int position_x, int position_y) {
+void NodesPositions::set_position(int node, float position_x,
+                                  float position_y) {
   if (has_position(node))
     throw std::runtime_error(
         "NodesPositions::set_position_x Node already has a position");
   m_nodeid_to_position_map.insert({node, NodePosition(position_x, position_y)});
 }
 
-int NodesPositions::get_position_x(int node) const {
+float NodesPositions::get_position_x(int node) const {
   if (!has_position(node))
     throw std::runtime_error(
         "NodesPositions::get_position_x Node does not have a position");
   return m_nodeid_to_position_map.at(node).m_x;
 }
 
-int NodesPositions::get_position_y(int node) const {
+float NodesPositions::get_position_y(int node) const {
   if (!has_position(node))
     throw std::runtime_error(
         "NodesPositions::get_position_y Node does not have a position");
   return m_nodeid_to_position_map.at(node).m_y;
 }
 
-const NodePosition &NodesPositions::get_position(int node) const {
+const NodePosition& NodesPositions::get_position(int node) const {
   if (!has_position(node))
     throw std::runtime_error(
         "NodesPositions::get_position Node does not have a position");
@@ -203,8 +207,8 @@ void NodesPositions::remove_position(int node) {
   m_nodeid_to_position_map.erase(node);
 }
 
-std::vector<int> path_in_class(const Graph &graph, int from, int to,
-                               const Shape &shape, bool go_horizontal) {
+std::vector<int> path_in_class(const Graph& graph, int from, int to,
+                               const Shape& shape, bool go_horizontal) {
   std::vector<int> path;
   std::unordered_set<int> visited;
   std::function<void(int)> dfs = [&](int current) {
@@ -213,7 +217,7 @@ std::vector<int> path_in_class(const Graph &graph, int from, int to,
       return;
     }
     visited.insert(current);
-    for (const auto &edge : graph.get_node_by_id(current).get_edges()) {
+    for (const auto& edge : graph.get_node_by_id(current).get_edges()) {
       int neighbor = edge.get_to().get_id();
       if (visited.contains(neighbor)) continue;
       if (go_horizontal == shape.is_horizontal(current, neighbor)) {
@@ -232,24 +236,24 @@ std::vector<int> path_in_class(const Graph &graph, int from, int to,
 }
 
 std::vector<int> build_cycle_in_graph_from_cycle_in_ordering(
-    const Graph &graph, const Shape &shape,
-    const std::vector<int> &cycle_in_ordering, const Graph &ordering,
-    const EquivalenceClasses &equivalence_classes,
-    const GraphAttributes &ordering_edge_to_graph_edge, bool go_horizontal) {
+    const Graph& graph, const Shape& shape,
+    const std::vector<int>& cycle_in_ordering, const Graph& ordering,
+    const EquivalenceClasses& equivalence_classes,
+    const GraphAttributes& ordering_edge_to_graph_edge, bool go_horizontal) {
   std::vector<int> cycle;
   for (int i = 0; i < cycle_in_ordering.size(); ++i) {
     int class_id = cycle_in_ordering[i];
     int next_class_id = cycle_in_ordering[(i + 1) % cycle_in_ordering.size()];
-    auto &edge = ordering.get_edge(class_id, next_class_id);
-    const std::any &edge_label =
+    auto& edge = ordering.get_edge(class_id, next_class_id);
+    const std::any& edge_label =
         ordering_edge_to_graph_edge.get_edge_any_label(edge.get_id());
     int from = std::any_cast<std::pair<int, int>>(edge_label).first;
     int to = std::any_cast<std::pair<int, int>>(edge_label).second;
     cycle.push_back(from);
     int next_next_class_id =
         cycle_in_ordering[(i + 2) % cycle_in_ordering.size()];
-    auto &next_edge = ordering.get_edge(next_class_id, next_next_class_id);
-    const std::any &next_edge_label =
+    auto& next_edge = ordering.get_edge(next_class_id, next_next_class_id);
+    const std::any& next_edge_label =
         ordering_edge_to_graph_edge.get_edge_any_label(next_edge.get_id());
     int next_from = std::any_cast<std::pair<int, int>>(next_edge_label).first;
     if (to != next_from) {
@@ -260,16 +264,16 @@ std::vector<int> build_cycle_in_graph_from_cycle_in_ordering(
   return cycle;
 }
 
-BuildingResult build_nodes_positions(const Shape &shape, const Graph &graph) {
+BuildingResult build_nodes_positions(const Shape& shape, const Graph& graph) {
   auto classes = build_equivalence_classes(shape, graph);
-  auto &classes_x = classes.first;
-  auto &classes_y = classes.second;
+  auto& classes_x = classes.first;
+  auto& classes_y = classes.second;
   auto ordering =
       equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
-  auto &ordering_x = std::get<0>(ordering);
-  auto &ordering_y = std::get<1>(ordering);
-  auto &ordering_x_edge_to_graph_edge = std::get<2>(ordering);
-  auto &ordering_y_edge_to_graph_edge = std::get<3>(ordering);
+  auto& ordering_x = std::get<0>(ordering);
+  auto& ordering_y = std::get<1>(ordering);
+  auto& ordering_x_edge_to_graph_edge = std::get<2>(ordering);
+  auto& ordering_y_edge_to_graph_edge = std::get<3>(ordering);
   auto cycle_x = find_a_cycle_directed_graph(*ordering_x);
   auto cycle_y = find_a_cycle_directed_graph(*ordering_y);
   if (cycle_x.has_value() || cycle_y.has_value()) {
@@ -292,24 +296,24 @@ BuildingResult build_nodes_positions(const Shape &shape, const Graph &graph) {
   }
   auto classes_x_ordering = make_topological_ordering(*ordering_x);
   auto classes_y_ordering = make_topological_ordering(*ordering_y);
-  int current_position_x = 0;
-  std::unordered_map<int, int> node_id_to_position_x;
-  for (auto &class_id : classes_x_ordering) {
-    for (auto &node : classes_x.get_elems_of_class(class_id))
+  float current_position_x = 0;
+  std::unordered_map<int, float> node_id_to_position_x;
+  for (auto& class_id : classes_x_ordering) {
+    for (auto& node : classes_x.get_elems_of_class(class_id))
       node_id_to_position_x[node] = current_position_x;
     ++current_position_x;
   }
-  int current_position_y = 0;
-  std::unordered_map<int, int> node_id_to_position_y;
-  for (auto &class_id : classes_y_ordering) {
-    for (auto &node : classes_y.get_elems_of_class(class_id))
+  float current_position_y = 0;
+  std::unordered_map<int, float> node_id_to_position_y;
+  for (auto& class_id : classes_y_ordering) {
+    for (auto& node : classes_y.get_elems_of_class(class_id))
       node_id_to_position_y[node] = current_position_y;
     ++current_position_y;
   }
   NodesPositions positions;
   for (int node_id : graph.get_nodes_ids()) {
-    int x = node_id_to_position_x[node_id];
-    int y = node_id_to_position_y[node_id];
+    float x = node_id_to_position_x[node_id];
+    float y = node_id_to_position_y[node_id];
     positions.set_position(node_id, x, y);
   }
   return BuildingResult{std::move(positions), {}, BuildingResultType::OK};
@@ -318,9 +322,9 @@ BuildingResult build_nodes_positions(const Shape &shape, const Graph &graph) {
 int make_chain_key(int x, int y) { return (x << 16) ^ y; }
 
 void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z,
-                             double &from_y, double &to_y, int epsilon,
-                             std::vector<std::tuple<int, int>> &list,
-                             double &from_x, double &to_x) {
+                             double& from_y, double& to_y, int epsilon,
+                             std::vector<std::tuple<int, int>>& list,
+                             double& from_x, double& to_x) {
   // 1 quarter
   if (x_j >= x_i && y_j >= y_i) {
     // first horizontal edge
@@ -458,12 +462,12 @@ void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z,
   }
 }
 
-void node_positions_to_svg(const NodesPositions &positions, const Graph &graph,
-                           const GraphAttributes &attributes,
-                           const std::string &filename) {
-  int max_x = 0;
-  int max_y = 0;
-  for (auto &node : graph.get_nodes()) {
+void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
+                           const GraphAttributes& attributes,
+                           const std::string& filename) {
+  float max_x = 0;
+  float max_y = 0;
+  for (auto& node : graph.get_nodes()) {
     max_x = std::max(max_x, positions.get_position_x(node.get_id()));
     max_y = std::max(max_y, positions.get_position_y(node.get_id()));
   }
@@ -471,20 +475,20 @@ void node_positions_to_svg(const NodesPositions &positions, const Graph &graph,
   ScaleLinear scale_x = ScaleLinear(0, max_x + 2, 0, 800);
   ScaleLinear scale_y = ScaleLinear(0, max_y + 2, 0, 600);
   std::unordered_map<int, Point2D> points;
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     double x = scale_x.map(positions.get_position_x(node.get_id()) + 1);
     double y = scale_y.map(positions.get_position_y(node.get_id()) + 1);
     points.emplace(node.get_id(), Point2D(x, y));
   }
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
-    for (auto &edge : node.get_edges()) {
+    for (auto& edge : node.get_edges()) {
       int j = edge.get_to().get_id();
       Line2D line(points.at(i), points.at(j));
       drawer.add(line);
     }
   }
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     Color color = attributes.get_node_color(node.get_id());
     drawer.add(points.at(node.get_id()), color_to_string(color),
                std::to_string(node.get_id()));
@@ -492,13 +496,13 @@ void node_positions_to_svg(const NodesPositions &positions, const Graph &graph,
   drawer.saveToFile(filename);
 }
 
-void node_positions_to_svg_any_degree(const NodesPositions &positions,
-                                      const Graph &graph,
-                                      const GraphAttributes &attributes,
-                                      const std::string &filename) {
-  int max_x = 0;
-  int max_y = 0;
-  for (auto &node : graph.get_nodes()) {
+void node_positions_to_svg_any_degree(const NodesPositions& positions,
+                                      const Graph& graph,
+                                      const GraphAttributes& attributes,
+                                      const std::string& filename) {
+  float max_x = 0;
+  float max_y = 0;
+  for (auto& node : graph.get_nodes()) {
     max_x = std::max(max_x, positions.get_position_x(node.get_id()));
     max_y = std::max(max_y, positions.get_position_y(node.get_id()));
   }
@@ -506,14 +510,14 @@ void node_positions_to_svg_any_degree(const NodesPositions &positions,
   ScaleLinear scale_x = ScaleLinear(0, max_x + 2, 0, 800);
   ScaleLinear scale_y = ScaleLinear(0, max_y + 2, 0, 600);
   std::unordered_map<int, Point2D> points;
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     double x = scale_x.map(positions.get_position_x(node.get_id()) + 1);
     double y = scale_y.map(positions.get_position_y(node.get_id()) + 1);
     points.emplace(node.get_id(), Point2D(x, y));
   }
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
-    for (auto &edge : node.get_edges()) {
+    for (auto& edge : node.get_edges()) {
       int j = edge.get_to().get_id();
       Line2D line(points.at(i), points.at(j));
       drawer.add(line);
@@ -528,9 +532,9 @@ void node_positions_to_svg_any_degree(const NodesPositions &positions,
   //         std::swap(i, j);
   //     // high degree nodes positions
   //     int x_i = positions.get_position_x(i), y_i =
-  //     positions.get_position_y(i); int x_j = positions.get_position_x(j),
-  //     y_j = positions.get_position_y(j); std::vector<std::tuple<int, int>>
-  //     list; try
+  //     positions.get_position_y(i); int x_j = positions.get_position_x(j), y_j
+  //     = positions.get_position_y(j); std::vector<std::tuple<int, int>> list;
+  //     try
   //     {
   //         list = chain_edges.at(make_chain_key(i, j));
   //     }
@@ -551,7 +555,7 @@ void node_positions_to_svg_any_degree(const NodesPositions &positions,
   //         p2(to_x, to_y); Line2D line(p1, p2); drawer.add(line, "blue");
   //     }
   // }
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     Color color = attributes.get_node_color(node.get_id());
     if (color == Color::RED) continue;
     drawer.add(points.at(node.get_id()), color_to_string(color),
@@ -560,16 +564,16 @@ void node_positions_to_svg_any_degree(const NodesPositions &positions,
   drawer.saveToFile(filename);
 }
 
-bool do_edges_cross(const NodesPositions &positions, int i, int j, int k,
+bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
                     int l) {
-  int i_pos_x = positions.get_position_x(i);
-  int i_pos_y = positions.get_position_y(i);
-  int j_pos_x = positions.get_position_x(j);
-  int j_pos_y = positions.get_position_y(j);
-  int k_pos_x = positions.get_position_x(k);
-  int k_pos_y = positions.get_position_y(k);
-  int l_pos_x = positions.get_position_x(l);
-  int l_pos_y = positions.get_position_y(l);
+  float i_pos_x = positions.get_position_x(i);
+  float i_pos_y = positions.get_position_y(i);
+  float j_pos_x = positions.get_position_x(j);
+  float j_pos_y = positions.get_position_y(j);
+  float k_pos_x = positions.get_position_x(k);
+  float k_pos_y = positions.get_position_y(k);
+  float l_pos_x = positions.get_position_x(l);
+  float l_pos_y = positions.get_position_y(l);
 
   bool is_i_j_horizontal = i_pos_y == j_pos_y;
   bool is_k_l_horizontal = k_pos_y == l_pos_y;
@@ -600,14 +604,14 @@ bool do_edges_cross(const NodesPositions &positions, int i, int j, int k,
 
 // removes useless corners from the graph and from the shape
 // (useless corners are red nodes with two horizontal or vertical edges)
-void refine_result(Graph &graph, GraphAttributes &attributes,
-                   NodesPositions &positions, Shape &shape) {
+void refine_result(Graph& graph, GraphAttributes& attributes,
+                   NodesPositions& positions, Shape& shape) {
   std::vector<int> nodes_to_remove;
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
     if (attributes.get_node_color(i) == Color::BLACK) continue;
-    std::vector<const GraphEdge *> edges;
-    for (auto &edge : node.get_edges()) edges.push_back(&edge);
+    std::vector<const GraphEdge*> edges;
+    for (auto& edge : node.get_edges()) edges.push_back(&edge);
     int j_1 = edges[0]->get_to().get_id();
     int j_2 = edges[1]->get_to().get_id();
     // if the added corner is flat, remove it
@@ -615,9 +619,9 @@ void refine_result(Graph &graph, GraphAttributes &attributes,
       nodes_to_remove.push_back(i);
   }
   for (int i : nodes_to_remove) {
-    const auto &node = graph.get_node_by_id(i);
-    std::vector<const GraphEdge *> edges;
-    for (auto &edge : node.get_edges()) edges.push_back(&edge);
+    const auto& node = graph.get_node_by_id(i);
+    std::vector<const GraphEdge*> edges;
+    for (auto& edge : node.get_edges()) edges.push_back(&edge);
     int j_1 = edges[0]->get_to().get_id();
     int j_2 = edges[1]->get_to().get_id();
     Direction direction = shape.get_direction(j_1, i);
@@ -633,27 +637,27 @@ void refine_result(Graph &graph, GraphAttributes &attributes,
   }
 }
 
-int get_x_coordinate(int node, const NodesPositions &positions) {
+float get_x_coordinate(int node, const NodesPositions& positions) {
   return positions.get_position_x(node);
 }
 
-int get_y_coordinate(int node, const NodesPositions &positions) {
+float get_y_coordinate(int node, const NodesPositions& positions) {
   return positions.get_position_y(node);
 }
 
 template <typename Func>
-bool are_classes_in_conflict(EquivalenceClasses &classes, int class_id_1,
-                             int class_id_2, const NodesPositions &positions,
+bool are_classes_in_conflict(EquivalenceClasses& classes, int class_id_1,
+                             int class_id_2, const NodesPositions& positions,
                              Func get_position) {
-  int min_1 = INT_MAX;
-  int max_1 = 0;
-  for (auto &node : classes.get_elems_of_class(class_id_1)) {
+  float min_1 = FLT_MAX;
+  float max_1 = 0;
+  for (auto& node : classes.get_elems_of_class(class_id_1)) {
     min_1 = std::min(min_1, get_position(node, positions));
     max_1 = std::max(max_1, get_position(node, positions));
   }
-  int min_2 = INT_MAX;
-  int max_2 = 0;
-  for (auto &node : classes.get_elems_of_class(class_id_2)) {
+  float min_2 = FLT_MAX;
+  float max_2 = 0;
+  for (auto& node : classes.get_elems_of_class(class_id_2)) {
     min_2 = std::min(min_2, get_position(node, positions));
     max_2 = std::max(max_2, get_position(node, positions));
   }
@@ -661,25 +665,25 @@ bool are_classes_in_conflict(EquivalenceClasses &classes, int class_id_1,
   return true;
 }
 
-bool are_classes_in_conflict_x(EquivalenceClasses &classes, int class_id_1,
+bool are_classes_in_conflict_x(EquivalenceClasses& classes, int class_id_1,
                                int class_id_2,
-                               const NodesPositions &positions) {
+                               const NodesPositions& positions) {
   return are_classes_in_conflict(classes, class_id_1, class_id_2, positions,
                                  get_x_coordinate);
 }
 
-bool are_classes_in_conflict_y(EquivalenceClasses &classes, int class_id_1,
+bool are_classes_in_conflict_y(EquivalenceClasses& classes, int class_id_1,
                                int class_id_2,
-                               const NodesPositions &positions) {
+                               const NodesPositions& positions) {
   return are_classes_in_conflict(classes, class_id_1, class_id_2, positions,
                                  get_y_coordinate);
 }
 
 bool can_move_left(int class_id,
-                   const std::unordered_map<int, std::unordered_set<int>>
-                       &coordinate_to_classes,
-                   int actual_coordinate, const NodesPositions &positions,
-                   EquivalenceClasses &classes_x) {
+                   const std::unordered_map<int, std::unordered_set<int>>&
+                       coordinate_to_classes,
+                   int actual_coordinate, const NodesPositions& positions,
+                   EquivalenceClasses& classes_x) {
   if (actual_coordinate == 0) return false;
   if (coordinate_to_classes.at(actual_coordinate - 1).empty()) return true;
   for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
@@ -690,10 +694,10 @@ bool can_move_left(int class_id,
 }
 
 bool can_move_down(int class_id,
-                   const std::unordered_map<int, std::unordered_set<int>>
-                       &coordinate_to_classes,
-                   int actual_coordinate, const NodesPositions &positions,
-                   EquivalenceClasses &classes_y) {
+                   const std::unordered_map<int, std::unordered_set<int>>&
+                       coordinate_to_classes,
+                   int actual_coordinate, const NodesPositions& positions,
+                   EquivalenceClasses& classes_y) {
   if (actual_coordinate == 0) return false;
   if (coordinate_to_classes.at(actual_coordinate - 1).empty()) return true;
   for (int other_class_id : coordinate_to_classes.at(actual_coordinate - 1))
@@ -703,15 +707,15 @@ bool can_move_down(int class_id,
   return true;
 }
 
-NodesPositions compact_area_x(const Graph &graph, const Shape &shape,
-                              const NodesPositions &old_positions) {
+NodesPositions compact_area_x(const Graph& graph, const Shape& shape,
+                              const NodesPositions& old_positions) {
   auto classes = build_equivalence_classes(shape, graph);
-  auto &classes_x = classes.first;
-  auto &classes_y = classes.second;
+  auto& classes_x = classes.first;
+  auto& classes_y = classes.second;
   std::unordered_map<int, std::unordered_set<int>> coordinate_to_classes;
   int max_coordinate = 0;
   std::unordered_set<int> visited_classes;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     int i = node.get_id();
     int class_id = classes_x.get_class_of_elem(i);
     if (visited_classes.contains(class_id)) continue;
@@ -731,23 +735,23 @@ NodesPositions compact_area_x(const Graph &graph, const Shape &shape,
     }
   }
   NodesPositions new_positions;
-  for (auto &[coordinate, classes] : coordinate_to_classes)
-    for (auto &class_id : classes)
-      for (auto &node_id : classes_x.get_elems_of_class(class_id))
+  for (auto& [coordinate, classes] : coordinate_to_classes)
+    for (auto& class_id : classes)
+      for (auto& node_id : classes_x.get_elems_of_class(class_id))
         new_positions.set_position(node_id, coordinate,
                                    old_positions.get_position_y(node_id));
   return std::move(new_positions);
 }
 
-NodesPositions compact_area_y(const Graph &graph, const Shape &shape,
-                              const NodesPositions &old_positions) {
+NodesPositions compact_area_y(const Graph& graph, const Shape& shape,
+                              const NodesPositions& old_positions) {
   auto classes = build_equivalence_classes(shape, graph);
-  auto &classes_x = std::get<0>(classes);
-  auto &classes_y = std::get<1>(classes);
+  auto& classes_x = std::get<0>(classes);
+  auto& classes_y = std::get<1>(classes);
   std::unordered_map<int, std::unordered_set<int>> coordinate_to_classes;
   int max_coordinate = 0;
   std::unordered_set<int> visited_classes;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     int i = node.get_id();
     int class_id = classes_y.get_class_of_elem(i);
     if (visited_classes.contains(class_id)) continue;
@@ -767,16 +771,16 @@ NodesPositions compact_area_y(const Graph &graph, const Shape &shape,
     }
   }
   NodesPositions new_positions;
-  for (auto &[coordinate, classes] : coordinate_to_classes)
-    for (auto &class_id : classes)
-      for (auto &node_id : classes_y.get_elems_of_class(class_id))
+  for (auto& [coordinate, classes] : coordinate_to_classes)
+    for (auto& class_id : classes)
+      for (auto& node_id : classes_y.get_elems_of_class(class_id))
         new_positions.set_position(
             node_id, old_positions.get_position_x(node_id), coordinate);
   return std::move(new_positions);
 }
 
-bool check_if_drawing_has_overlappings(const Graph &graph,
-                                       const NodesPositions &positions) {
+bool check_if_drawing_has_overlappings(const Graph& graph,
+                                       const NodesPositions& positions) {
   // node - node overlappings
   for (int id : graph.get_nodes_ids()) {
     for (int other_id : graph.get_nodes_ids()) {
@@ -790,16 +794,16 @@ bool check_if_drawing_has_overlappings(const Graph &graph,
   }
   // node - edge overlappings
   for (int id : graph.get_nodes_ids()) {
-    int i_x = positions.get_position_x(id);
-    int i_y = positions.get_position_y(id);
-    for (const auto &edge : graph.get_edges()) {
-      int j_1 = edge.get_from().get_id();
-      int j_2 = edge.get_to().get_id();
+    float i_x = positions.get_position_x(id);
+    float i_y = positions.get_position_y(id);
+    for (const auto& edge : graph.get_edges()) {
+      float j_1 = edge.get_from().get_id();
+      float j_2 = edge.get_to().get_id();
       if (j_1 == id || j_2 == id) continue;
-      int j_1_x = positions.get_position_x(j_1);
-      int j_1_y = positions.get_position_y(j_1);
-      int j_2_x = positions.get_position_x(j_2);
-      int j_2_y = positions.get_position_y(j_2);
+      float j_1_x = positions.get_position_x(j_1);
+      float j_1_y = positions.get_position_y(j_1);
+      float j_2_x = positions.get_position_x(j_2);
+      float j_2_y = positions.get_position_y(j_2);
       if (j_1_y == j_2_y) {  // horizontal edge
         if (i_y == j_1_y && i_x >= std::min(j_1_x, j_2_x) &&
             i_x <= std::max(j_1_x, j_2_x)) {
@@ -821,7 +825,7 @@ bool check_if_drawing_has_overlappings(const Graph &graph,
 }
 
 DrawingResult make_orthogonal_drawing_incremental(
-    const Graph &graph, std::vector<std::vector<int>> &cycles) {
+    const Graph& graph, std::vector<std::vector<int>>& cycles) {
   if (!is_graph_undirected(graph))
     throw std::runtime_error(
         "make_orthogonal_drawing_incremental: graph is not undirected");
@@ -831,22 +835,22 @@ DrawingResult make_orthogonal_drawing_incremental(
   auto augmented_graph = std::make_unique<Graph>();
   GraphAttributes attributes;
   attributes.add_attribute(Attribute::NODES_COLOR);
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     augmented_graph->add_node(node.get_id());
     attributes.set_node_color(node.get_id(), Color::BLACK);
   }
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (node.get_degree() > 4)
       throw std::runtime_error(
           "make_orthogonal_drawing_incremental: found node with degree > 4");
-    for (auto &edge : node.get_edges())
+    for (auto& edge : node.get_edges())
       augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
   }
   Shape shape = build_shape(*augmented_graph, attributes, cycles);
   BuildingResult result = build_nodes_positions(shape, *augmented_graph);
   int number_of_added_cycles = 0;
   while (result.type == BuildingResultType::CYCLES_TO_BE_ADDED) {
-    for (auto &cycle_to_add : result.cycles_to_be_added)
+    for (auto& cycle_to_add : result.cycles_to_be_added)
       cycles.push_back(cycle_to_add);
     number_of_added_cycles += result.cycles_to_be_added.size();
     shape = build_shape(*augmented_graph, attributes, cycles);
@@ -871,27 +875,27 @@ DrawingResult make_orthogonal_drawing_incremental(
           number_of_useless_bends};
 }
 
-DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph);
+DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph);
 
-DrawingResult make_orthogonal_drawing_low_degree(const Graph &graph) {
+DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph) {
   auto cycles = compute_cycle_basis(graph);
   return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
-DrawingResult make_orthogonal_drawing(const Graph &graph) {
-  for (const auto &node : graph.get_nodes())
+DrawingResult make_orthogonal_drawing(const Graph& graph) {
+  for (const auto& node : graph.get_nodes())
     if (node.get_degree() > 4) return make_orthogonal_drawing_any_degree(graph);
   return make_orthogonal_drawing_low_degree(graph);
 }
 
 std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet>
-compute_maximal_degree_4_subgraph(const Graph &graph) {
+compute_maximal_degree_4_subgraph(const Graph& graph) {
   auto subgraph = std::make_unique<Graph>();
   GraphEdgeHashSet removed_edges;
-  for (const auto &node : graph.get_nodes()) subgraph->add_node(node.get_id());
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) subgraph->add_node(node.get_id());
+  for (const auto& node : graph.get_nodes()) {
     int node_id = node.get_id();
-    for (auto &edge : node.get_edges()) {
+    for (auto& edge : node.get_edges()) {
       int neighbor_id = edge.get_to().get_id();
       if (subgraph->has_edge(node_id, neighbor_id)) continue;
       if (removed_edges.contains({node_id, neighbor_id})) continue;
@@ -907,61 +911,61 @@ compute_maximal_degree_4_subgraph(const Graph &graph) {
   return std::make_pair(std::move(subgraph), std::move(removed_edges));
 }
 
-DrawingResult merge_connected_components(std::vector<DrawingResult> &results);
+DrawingResult merge_connected_components(std::vector<DrawingResult>& results);
 
-void add_back_removed_edge(DrawingResult &result,
-                           const std::pair<int, int> &edge);
+void add_back_removed_edge(DrawingResult& result,
+                           const std::pair<int, int>& edge);
 
-void create_set_positions(std::set<int> &x_position_set,
-                          std::set<int> &y_position_set, Graph &graph,
-                          NodesPositions &positions);
+void create_set_positions(std::set<int>& x_position_set,
+                          std::set<int>& y_position_set, Graph& graph,
+                          NodesPositions& positions);
 
-void all_positive_positions(Graph &graph, NodesPositions &positions);
+void all_positive_positions(Graph& graph, NodesPositions& positions);
 
-DrawingResult make_orthogonal_drawing_any_degree(const Graph &graph) {
+DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
   auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
   auto components = compute_connected_components(*subgraph);
   std::vector<DrawingResult> results;
-  for (auto &component : components)
+  for (auto& component : components)
     results.push_back(
         std::move(make_orthogonal_drawing_low_degree(*component)));
   DrawingResult result = merge_connected_components(results);
-  for (auto &edge : removed_edges)
+  for (auto& edge : removed_edges)
     if (edge.first < edge.second) add_back_removed_edge(result, edge);
   return result;
 }
 
-DrawingResult merge_connected_components(std::vector<DrawingResult> &results) {
+DrawingResult merge_connected_components(std::vector<DrawingResult>& results) {
   if (results.size() != 1)
     throw std::runtime_error(
         "merge_connected_components: not really implemented");
   return std::move(results[0]);
 }
 
-void NodesPositions::x_right_shift(int x_pos) {
-  for (auto &entry : m_nodeid_to_position_map)
+void NodesPositions::x_right_shift(float x_pos) {
+  for (auto& entry : m_nodeid_to_position_map)
     if (entry.second.m_x >= x_pos) entry.second.m_x++;
 }
 
-void NodesPositions::x_left_shift(int x_pos) {
-  for (auto &entry : m_nodeid_to_position_map)
+void NodesPositions::x_left_shift(float x_pos) {
+  for (auto& entry : m_nodeid_to_position_map)
     if (entry.second.m_x <= x_pos) entry.second.m_x--;
 }
 
-void NodesPositions::y_up_shift(int y_pos) {
-  for (auto &entry : m_nodeid_to_position_map)
+void NodesPositions::y_up_shift(float y_pos) {
+  for (auto& entry : m_nodeid_to_position_map)
     if (entry.second.m_y >= y_pos) entry.second.m_y++;
 }
 
-void NodesPositions::y_down_shift(int y_pos) {
-  for (auto &entry : m_nodeid_to_position_map)
+void NodesPositions::y_down_shift(float y_pos) {
+  for (auto& entry : m_nodeid_to_position_map)
     if (entry.second.m_y <= y_pos) entry.second.m_y--;
 }
 
 void split_and_rewire(int i, int j, Direction direction_ia,
                       Direction direction_ab, bool x_true, bool y_true,
-                      bool aligned, Graph &graph, GraphAttributes &attributes,
-                      NodesPositions &positions) {
+                      bool aligned, Graph& graph, GraphAttributes& attributes,
+                      NodesPositions& positions) {
   auto n0 = graph.add_node().get_id();
   auto n1 = graph.add_node().get_id();
   auto n2 = graph.add_node().get_id();
@@ -1084,17 +1088,17 @@ void split_and_rewire(int i, int j, Direction direction_ia,
 
 // assume that coor_i < coor_j
 bool check_if_the_segment_is_free(int coor_i, int coor_j,
-                                  const std::set<int> &position_set) {
+                                  const std::set<int>& position_set) {
   for (int c = coor_i + 1; c < coor_j; c++)
     if (position_set.find(c) != position_set.end()) return false;
   return true;
 }
 
-void add_back_removed_edge(DrawingResult &result,
-                           const std::pair<int, int> &edge) {
-  auto &graph = *result.augmented_graph;
-  auto &attributes = result.attributes;
-  auto &positions = result.positions;
+void add_back_removed_edge(DrawingResult& result,
+                           const std::pair<int, int>& edge) {
+  auto& graph = *result.augmented_graph;
+  auto& attributes = result.attributes;
+  auto& positions = result.positions;
   int node_count = graph.size();
 
   std::set<int> x_position_set, y_position_set;
@@ -1163,10 +1167,10 @@ void add_back_removed_edge(DrawingResult &result,
   all_positive_positions(graph, positions);
 }
 
-void create_set_positions(std::set<int> &x_position_set,
-                          std::set<int> &y_position_set, Graph &graph,
-                          NodesPositions &positions) {
-  for (auto &node : graph.get_nodes()) {
+void create_set_positions(std::set<int>& x_position_set,
+                          std::set<int>& y_position_set, Graph& graph,
+                          NodesPositions& positions) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
     int x = positions.get_position_x(i);
     int y = positions.get_position_y(i);
@@ -1175,15 +1179,15 @@ void create_set_positions(std::set<int> &x_position_set,
   }
 }
 
-void all_positive_positions(Graph &graph, NodesPositions &positions) {
-  int min_x = INT_MAX;
-  int min_y = INT_MAX;
-  for (auto &node : graph.get_nodes()) {
+void all_positive_positions(Graph& graph, NodesPositions& positions) {
+  float min_x = FLT_MAX;
+  float min_y = FLT_MAX;
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
     min_x = std::min(min_x, positions.get_position_x(i));
     min_y = std::min(min_y, positions.get_position_y(i));
   }
-  for (auto &node : graph.get_nodes()) {
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
     positions.change_position(i, positions.get_position_x(i) - min_x,
                               positions.get_position_y(i) - min_y);
@@ -1191,11 +1195,11 @@ void all_positive_positions(Graph &graph, NodesPositions &positions) {
 }
 
 DrawingResult make_orthogonal_drawing_incremental_special(
-    const Graph &graph, std::vector<std::vector<int>> &cycles);
+    const Graph& graph, std::vector<std::vector<int>>& cycles);
 
-DrawingResult make_orthogonal_drawing_sperimental(const Graph &graph) {
+DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph) {
   bool has_low_degree = true;
-  for (const auto &node : graph.get_nodes())
+  for (const auto& node : graph.get_nodes())
     if (node.get_degree() > 4) {
       has_low_degree = false;
       break;
@@ -1206,11 +1210,11 @@ DrawingResult make_orthogonal_drawing_sperimental(const Graph &graph) {
   return make_orthogonal_drawing_incremental_special(graph, cycles);
 }
 
-BuildingResult build_nodes_positions_special(const Shape &shape,
-                                             const Graph &graph);
+BuildingResult build_nodes_positions_special(const Shape& shape,
+                                             const Graph& graph);
 
 DrawingResult make_orthogonal_drawing_incremental_special(
-    const Graph &graph, std::vector<std::vector<int>> &cycles) {
+    const Graph& graph, std::vector<std::vector<int>>& cycles) {
   if (!is_graph_undirected(graph))
     throw std::runtime_error(
         "make_orthogonal_drawing_incremental: graph is not undirected");
@@ -1220,18 +1224,18 @@ DrawingResult make_orthogonal_drawing_incremental_special(
   auto augmented_graph = std::make_unique<Graph>();
   GraphAttributes attributes;
   attributes.add_attribute(Attribute::NODES_COLOR);
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     augmented_graph->add_node(node.get_id());
     attributes.set_node_color(node.get_id(), Color::BLACK);
   }
-  for (const auto &node : graph.get_nodes())
-    for (auto &edge : node.get_edges())
+  for (const auto& node : graph.get_nodes())
+    for (auto& edge : node.get_edges())
       augmented_graph->add_edge(node.get_id(), edge.get_to().get_id());
   Shape shape = build_shape_special(*augmented_graph, attributes, cycles);
   BuildingResult result = build_nodes_positions(shape, *augmented_graph);
   int number_of_added_cycles = 0;
   while (result.type == BuildingResultType::CYCLES_TO_BE_ADDED) {
-    for (auto &cycle_to_add : result.cycles_to_be_added)
+    for (auto& cycle_to_add : result.cycles_to_be_added)
       cycles.push_back(cycle_to_add);
     number_of_added_cycles += result.cycles_to_be_added.size();
     shape = build_shape_special(*augmented_graph, attributes, cycles);

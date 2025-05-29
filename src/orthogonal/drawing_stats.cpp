@@ -6,45 +6,45 @@
 #include <unordered_set>
 #include <vector>
 
-int compute_total_edge_length(const DrawingResult &result) {
-  int total_edge_length = 0;
-  for (const auto &node : result.augmented_graph->get_nodes())
-    for (const auto &edge : node.get_edges()) {
+float compute_total_edge_length(const DrawingResult& result) {
+  float total_edge_length = 0;
+  for (const auto& node : result.augmented_graph->get_nodes())
+    for (const auto& edge : node.get_edges()) {
       int neighbor = edge.get_to().get_id();
-      int x1 = result.positions.get_position_x(node.get_id());
-      int y1 = result.positions.get_position_y(node.get_id());
-      int x2 = result.positions.get_position_x(neighbor);
-      int y2 = result.positions.get_position_y(neighbor);
+      float x1 = result.positions.get_position_x(node.get_id());
+      float y1 = result.positions.get_position_y(node.get_id());
+      float x2 = result.positions.get_position_x(neighbor);
+      float y2 = result.positions.get_position_y(neighbor);
       total_edge_length += std::abs(x1 - x2) + std::abs(y1 - y2);
     }
   return total_edge_length / 2;
 }
 
-int compute_max_edge_length(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &attributes = result.attributes;
-  const auto &positions = result.positions;
-  int max_edge_length = 0;
+float compute_max_edge_length(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& attributes = result.attributes;
+  const auto& positions = result.positions;
+  float max_edge_length = 0;
   std::unordered_set<int> visited;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (attributes.get_node_color(node.get_id()) != Color::BLACK) continue;
     std::function<void(int, int, int)> dfs = [&](int current_id, int black_id,
-                                                 int current_length) {
+                                                 float current_length) {
       visited.insert(current_id);
-      for (const auto &edge : graph.get_node_by_id(current_id).get_edges()) {
+      for (const auto& edge : graph.get_node_by_id(current_id).get_edges()) {
         int neighbor = edge.get_to().get_id();
         if (visited.contains(neighbor)) continue;
-        int x1 = positions.get_position_x(current_id);
-        int y1 = positions.get_position_y(current_id);
-        int x2 = positions.get_position_x(neighbor);
-        int y2 = positions.get_position_y(neighbor);
-        int length = std::abs(x1 - x2) + std::abs(y1 - y2);
+        float x1 = positions.get_position_x(current_id);
+        float y1 = positions.get_position_y(current_id);
+        float x2 = positions.get_position_x(neighbor);
+        float y2 = positions.get_position_y(neighbor);
+        float length = std::abs(x1 - x2) + std::abs(y1 - y2);
         Color neighbor_color = attributes.get_node_color(neighbor);
         if (neighbor_color == Color::RED)
           dfs(neighbor, black_id, current_length + length);
         else if (neighbor_color == Color::BLACK) {
           if (black_id < neighbor) {
-            int total_length = current_length + length;
+            float total_length = current_length + length;
             max_edge_length = std::max(max_edge_length, total_length);
           }
         }
@@ -56,32 +56,32 @@ int compute_max_edge_length(const DrawingResult &result) {
   return max_edge_length;
 }
 
-double compute_edge_length_std_dev(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &attributes = result.attributes;
-  const auto &positions = result.positions;
+double compute_edge_length_std_dev(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& attributes = result.attributes;
+  const auto& positions = result.positions;
   std::vector<int> edge_lengths;
-  int total_edge_length = 0;
+  float total_edge_length = 0;
   std::unordered_set<int> visited;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (attributes.get_node_color(node.get_id()) != Color::BLACK) continue;
-    std::function<void(int, int, int)> dfs = [&](int current_id, int black_id,
-                                                 int current_length) {
+    std::function<void(int, int, float)> dfs = [&](int current_id, int black_id,
+                                                   float current_length) {
       visited.insert(current_id);
-      for (const auto &edge : graph.get_node_by_id(current_id).get_edges()) {
+      for (const auto& edge : graph.get_node_by_id(current_id).get_edges()) {
         int neighbor = edge.get_to().get_id();
         if (visited.contains(neighbor)) continue;
-        int x1 = positions.get_position_x(current_id);
-        int y1 = positions.get_position_y(current_id);
-        int x2 = positions.get_position_x(neighbor);
-        int y2 = positions.get_position_y(neighbor);
-        int length = std::abs(x1 - x2) + std::abs(y1 - y2);
+        float x1 = positions.get_position_x(current_id);
+        float y1 = positions.get_position_y(current_id);
+        float x2 = positions.get_position_x(neighbor);
+        float y2 = positions.get_position_y(neighbor);
+        float length = std::abs(x1 - x2) + std::abs(y1 - y2);
         Color neighbor_color = attributes.get_node_color(neighbor);
         if (neighbor_color == Color::RED)
           dfs(neighbor, black_id, current_length + length);
         else if (neighbor_color == Color::BLACK) {
           if (black_id < neighbor) {
-            int total_length = current_length + length;
+            float total_length = current_length + length;
             total_edge_length += total_length;
             edge_lengths.push_back(total_length);
           }
@@ -94,25 +94,25 @@ double compute_edge_length_std_dev(const DrawingResult &result) {
   return compute_stddev(edge_lengths);
 }
 
-int compute_total_bends(const DrawingResult &result) {
+int compute_total_bends(const DrawingResult& result) {
   int total_bends = 0;
-  for (const auto &node : result.augmented_graph->get_nodes())
+  for (const auto& node : result.augmented_graph->get_nodes())
     if (result.attributes.get_node_color(node.get_id()) == Color::RED)
       total_bends++;
   return total_bends;
 }
 
-int compute_max_bends_per_edge(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &attributes = result.attributes;
+int compute_max_bends_per_edge(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& attributes = result.attributes;
   int max_reds = 0;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (attributes.get_node_color(node.get_id()) != Color::BLACK) continue;
     std::unordered_set<int> visited;
     std::function<void(int, int, int)> dfs = [&](int current, int black,
                                                  int red_count) {
       visited.insert(current);
-      for (const auto &edge : graph.get_node_by_id(current).get_edges()) {
+      for (const auto& edge : graph.get_node_by_id(current).get_edges()) {
         int neighbor = edge.get_to().get_id();
         if (visited.contains(neighbor)) continue;
         Color neighbor_color = attributes.get_node_color(neighbor);
@@ -128,17 +128,17 @@ int compute_max_bends_per_edge(const DrawingResult &result) {
   return max_reds;
 }
 
-double compute_bends_std_dev(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &attributes = result.attributes;
+double compute_bends_std_dev(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& attributes = result.attributes;
   std::vector<int> red_counts;
-  for (const auto &node : graph.get_nodes()) {
+  for (const auto& node : graph.get_nodes()) {
     if (attributes.get_node_color(node.get_id()) != Color::BLACK) continue;
     std::unordered_set<int> visited;
     std::function<void(int, int, int)> dfs = [&](int current, int black,
                                                  int red_count) {
       visited.insert(current);
-      for (const auto &edge : graph.get_node_by_id(current).get_edges()) {
+      for (const auto& edge : graph.get_node_by_id(current).get_edges()) {
         int neighbor = edge.get_to().get_id();
         if (visited.contains(neighbor)) continue;
         Color neighbor_color = attributes.get_node_color(neighbor);
@@ -154,14 +154,14 @@ double compute_bends_std_dev(const DrawingResult &result) {
   return compute_stddev(red_counts);
 }
 
-int compute_total_area(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &positions = result.positions;
-  int min_x = graph.size();
-  int min_y = graph.size();
-  int max_x = 0;
-  int max_y = 0;
-  for (auto &node : graph.get_nodes()) {
+float compute_total_area(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& positions = result.positions;
+  float min_x = graph.size();
+  float min_y = graph.size();
+  float max_x = 0;
+  float max_y = 0;
+  for (auto& node : graph.get_nodes()) {
     int i = node.get_id();
     min_x = std::min(min_x, positions.get_position_x(i));
     min_y = std::min(min_y, positions.get_position_y(i));
@@ -171,13 +171,13 @@ int compute_total_area(const DrawingResult &result) {
   return (max_x - min_x + 1) * (max_y - min_y + 1);
 }
 
-int compute_total_crossings(const DrawingResult &result) {
-  const auto &graph = *result.augmented_graph;
-  const auto &positions = result.positions;
+int compute_total_crossings(const DrawingResult& result) {
+  const auto& graph = *result.augmented_graph;
+  const auto& positions = result.positions;
   int total_crossings = 0;
-  for (auto &edge : graph.get_edges()) {
+  for (auto& edge : graph.get_edges()) {
     int edge_id = edge.get_id();
-    for (auto &other_edge : graph.get_edges()) {
+    for (auto& other_edge : graph.get_edges()) {
       int other_edge_id = other_edge.get_id();
       if (edge_id >= other_edge_id) continue;
       int i = edge.get_from().get_id();
@@ -191,7 +191,7 @@ int compute_total_crossings(const DrawingResult &result) {
   return total_crossings / 4;
 }
 
-OrthogonalStats compute_all_orthogonal_stats(const DrawingResult &result) {
+OrthogonalStats compute_all_orthogonal_stats(const DrawingResult& result) {
   return {
       compute_total_crossings(result),    compute_total_bends(result),
       compute_total_area(result),         compute_total_edge_length(result),
