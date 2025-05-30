@@ -716,49 +716,101 @@ std::tuple<float, float, float, float> shift_by_epsilon_factor(
     float x_j, float x_i, float y_j, float y_i, int z, float& from_y,
     float& to_y, float epsilon, int last_index, float& from_x, float& to_x) {
   // 1 quadrant
-  if ((x_j >= x_i && y_j >= y_i && z == 0) ||
-      (x_j <= x_i && y_j <= y_i && z == last_index)) {
-    std::cout << "1 quadrant" << std::endl;
+  if (x_j >= x_i && y_j >= y_i && z == 0) {
     if (from_x == to_x) {
+      from_y += epsilon;
       from_x += epsilon;
       to_x += epsilon;
     } else if (from_y == to_y) {
+      from_x += epsilon;
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+  // 3 quadrant
+  else if (x_j <= x_i && y_j <= y_i && z == last_index) {
+    if (from_x == to_x) {
+      to_y += epsilon;
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      to_x += epsilon;
       from_y += epsilon;
       to_y += epsilon;
     }
   }
   // 2 quadrant
-  else if ((x_j <= x_i && y_j >= y_i && z == 0) ||
-           (x_j >= x_i && y_j <= y_i && z == last_index)) {
-    std::cout << "2 quadrant" << std::endl;
+  else if (x_j <= x_i && y_j >= y_i && z == 0) {
     if (from_x == to_x) {
+      from_y += epsilon;
       from_x -= epsilon;
       to_x -= epsilon;
     } else if (from_y == to_y) {
+      from_x -= epsilon;
       from_y += epsilon;
       to_y += epsilon;
     }
   }
-  //   3 quadrant
-  else if ((x_j <= x_i && y_j <= y_i && z == 0) ||
-           (x_j >= x_i && y_j >= y_i && z == last_index)) {
-    std::cout << "3 quadrant" << std::endl;
+
+  // 4 quadrant
+  else if (x_j >= x_i && y_j <= y_i && z == last_index) {
     if (from_x == to_x) {
+      to_y += epsilon;
       from_x -= epsilon;
       to_x -= epsilon;
     } else if (from_y == to_y) {
+      to_x -= epsilon;
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+
+  //   3 quadrant
+  else if (x_j <= x_i && y_j <= y_i && z == 0) {
+    if (from_x == to_x) {
+      from_y -= epsilon;
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      from_x -= epsilon;
       from_y -= epsilon;
       to_y -= epsilon;
     }
   }
-  //    4 quadrant
-  else if ((x_j >= x_i && y_j <= y_i && z == 0) ||
-           (x_j <= x_i && y_j >= y_i && z == last_index)) {
-    std::cout << "4 quadrant" << std::endl;
+
+  // 1 quadrant
+  else if (x_j >= x_i && y_j >= y_i && z == last_index) {
     if (from_x == to_x) {
+      to_y -= epsilon;
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      to_x -= epsilon;
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+
+  //    4 quadrant
+  else if (x_j >= x_i && y_j <= y_i && z == 0) {
+    if (from_x == to_x) {
+      from_y -= epsilon;
       from_x += epsilon;
       to_x += epsilon;
     } else if (from_y == to_y) {
+      from_x += epsilon;
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+
+  else if (x_j <= x_i && y_j >= y_i && z == last_index) {
+    if (from_x == to_x) {
+      to_y -= epsilon;
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      to_x += epsilon;
       from_y -= epsilon;
       to_y -= epsilon;
     }
@@ -775,17 +827,12 @@ void shift_edges(GraphAttributes& attributes, int i, int j,
   float epsilon = 0.1;
   for (int z = 0; z < list.size(); z++) {
     if (z == 0 || z == list.size() - 1) {
-      std::cout << z << std::endl;
       int from = std::get<0>(list[z]);
       int to = std::get<1>(list[z]);
-      std::cout << from << " -> " << to << "\n";
       float from_x = positions.get_position_x(from),
             from_y = positions.get_position_y(from);
       float to_x = positions.get_position_x(to),
             to_y = positions.get_position_y(to);
-      std::cout << "from_x: " << from_x << " from_y: " << from_y << std::endl;
-      std::cout << "to_x: " << to_x << " to_y: " << to_y << std::endl;
-
       auto shifted_positions =
           shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y, epsilon,
                                   list.size() - 1, from_x, to_x);
@@ -793,10 +840,6 @@ void shift_edges(GraphAttributes& attributes, int i, int j,
       to_x = std::get<1>(shifted_positions);
       from_y = std::get<2>(shifted_positions);
       to_y = std::get<3>(shifted_positions);
-
-      std::cout << "from_x: " << from_x << " from_y: " << from_y << std::endl;
-      std::cout << "to_x: " << to_x << " to_y: " << to_y << std::endl;
-
       positions.change_position(from, from_x, from_y);
       positions.change_position(to, to_x, to_y);
     }
@@ -813,8 +856,6 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
   DrawingResult result = merge_connected_components(results);
   for (auto& edge : removed_edges) {
     if (edge.first > edge.second) continue;
-    std::cout << "Adding back removed edge: " << edge.first << "-"
-              << edge.second << std::endl;
     if (edge.first < edge.second) add_back_removed_edge(result, edge);
   }
 
