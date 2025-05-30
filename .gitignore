@@ -16,4 +16,5 @@ CMakeCache.txt
 cmake_install.cmake
 Makefile
 /build
+cnf_logs*
 libcore.a

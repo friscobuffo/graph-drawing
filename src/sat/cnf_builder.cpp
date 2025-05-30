@@ -1,7 +1,15 @@
 #include "sat/cnf_builder.hpp"
 
+#include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <mutex>
+
+#include "core/utils.hpp"
+
+const std::string project_path = std::filesystem::current_path().string() + "/";
+const std::string cnf_logs_file = get_unique_filename("cnf_logs", project_path);
+std::mutex cnf_logs_mutex;
 
 void CnfBuilder::add_clause(std::vector<int> clause) {
   for (int lit : clause) m_num_vars = std::max(m_num_vars, std::abs(lit));
@@ -38,4 +46,14 @@ void CnfBuilder::convert_to_cnf(const std::string& file_path) const {
     }
   }
   file.close();
+  std::lock_guard<std::mutex> lock(cnf_logs_mutex);
+  std::ofstream log_file(cnf_logs_file, std::ios_base::app);
+  if (log_file) {
+    log_file << "v " << get_number_of_variables();
+    log_file << " c " << get_number_of_clauses() << "\n";
+    log_file.close();
+  } else {
+    throw std::runtime_error("Error: Could not open log file for writing: " +
+                             cnf_logs_file);
+  }
 }

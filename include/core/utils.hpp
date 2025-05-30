@@ -34,6 +34,9 @@ enum class Color {
 
 const std::string color_to_string(const Color color);
 
+std::string get_unique_filename(const std::string& base_filename,
+                                const std::string& folder);
+
 std::string get_unique_filename(const std::string& base_filename);
 
 struct int_pair_hash {

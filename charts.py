@@ -7,6 +7,7 @@ import math
 from concurrent.futures import ProcessPoolExecutor
 import shutil
 from collections import Counter
+import seaborn as sns
 
 df = pd.read_csv('test_results___.csv')
 
@@ -21,13 +22,19 @@ df['nodes'] = df['graph_name'].apply(lambda x: parse_graph_name(x)[0])
 df['edges'] = df['graph_name'].apply(lambda x: parse_graph_name(x)[1])
 df['density'] = df['edges'] / df['nodes']
 df['shape_metrics_total_added_bends'] = df['shape_metrics_number_useless_bends'] + df['shape_metrics_bends']
-df['shape_metrics_ratio_useless_bends'] = df['shape_metrics_number_useless_bends'] / df['shape_metrics_total_added_bends']
-df['good_bends_ratio'] = df['shape_metrics_bends'] / (df['shape_metrics_bends'] + df['shape_metrics_number_useless_bends'])
+df['shape_metrics_sat_invocations'] = df['shape_metrics_number_added_cycles'] + df['shape_metrics_total_added_bends'] + 1
+# df['shape_metrics_ratio_useless_bends'] = df['shape_metrics_number_useless_bends'] / df['shape_metrics_total_added_bends']
+# df['good_bends_ratio'] = df['shape_metrics_bends'] / (df['shape_metrics_bends'] + df['shape_metrics_number_useless_bends'])
+
+if df.isnull().values.any():
+    nan_columns = df.columns[df.isnull().any()].tolist()
+    print(f"NaN values found in columns: {nan_columns}")
+    raise ValueError("DataFrame contains NaN values. Please clean the data before proceeding.")
 
 output_dir = 'plot_results'
 if os.path.exists(output_dir):
     import shutil
-    shutil.rmtree(output_dir)
+    shutil.rmtree(output_dir, ignore_errors=False)
 
 scatter_comparisons_dir = os.path.join(output_dir, 'scatter_comparisons')
 scatter_comparisons_less_1_5_dir = os.path.join(output_dir, 'scatter_comparisons_less_1_5')
@@ -36,6 +43,8 @@ scatter_comparisons_more_1_5_dir = os.path.join(output_dir, 'scatter_comparisons
 scatter_percentage_dir = os.path.join(output_dir, 'percentage_difference')
 
 histograms_dir = os.path.join(output_dir, 'histograms')
+
+cdf_dir = os.path.join(output_dir, 'cdf')
 
 shape_metrics_functions_dir = os.path.join(output_dir, 'shape_metrics_functions')
 
@@ -49,6 +58,7 @@ os.makedirs(scatter_comparisons_dir)
 os.makedirs(scatter_percentage_dir)
 os.makedirs(histograms_dir)
 os.makedirs(shape_metrics_functions_dir)
+os.makedirs(cdf_dir)
 
 def make_winner_comparison_scatter(df, metric_name, filename, output_dir):
     grouped = df.groupby(['nodes', 'density']).agg({
@@ -79,7 +89,6 @@ def make_winner_comparison_scatter(df, metric_name, filename, output_dir):
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"Difference scatter plot saved to {filepath}")
 
 def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, filename, output_dir, add_diagonal=True):
     plt.figure(figsize=(7, 6))
@@ -89,7 +98,7 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, filena
     y = df[y_row_name]
     
     # Create scatter plot
-    plt.scatter(x, y, edgecolor='k', s=15)
+    plt.scatter(x, y, edgecolor='k', s=15, color='royalblue', alpha=0.7)
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -99,11 +108,8 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, filena
         max_val = max(x.max(), y.max())
         plt.plot([min_val, max_val], [min_val, max_val], linestyle='--', color='gray', label='y = x')
     
-    # Calculate and plot best-fit line
-    mask = ~np.isnan(x) & ~np.isnan(y)  # Handle NaN values if any
-
     # Fit a 2nd-degree (quadratic) polynomial
-    coeffs = np.polyfit(x[mask], y[mask], deg=2)
+    coeffs = np.polyfit(x, y, deg=2)
     poly = np.poly1d(coeffs)
 
     # Generate smooth curve points
@@ -111,9 +117,9 @@ def make_scatter_comparison(df, x_row_name, y_row_name, x_label, y_label, filena
     y_fit = poly(x_fit)
 
     # R² computation (manually for nonlinear)
-    y_pred = poly(x[mask])
-    ss_res = np.sum((y[mask] - y_pred) ** 2)
-    ss_tot = np.sum((y[mask] - np.mean(y[mask])) ** 2)
+    y_pred = poly(x)
+    ss_res = np.sum((y - y_pred) ** 2)
+    ss_tot = np.sum((y - np.mean(y)) ** 2)
     r2 = 1 - (ss_res / ss_tot)
 
     # Plot
@@ -151,7 +157,7 @@ def make_scatter_comparison_special(df, x_row_name, y_row_name, x_label, y_label
     size = 50 * (1 + np.log10(counts))
 
     # Create scatter plot with sizes based on count
-    plt.scatter(x_unique, y_unique, edgecolor='k', s=size, alpha=0.7)
+    plt.scatter(x_unique, y_unique, edgecolor='k', s=size, alpha=0.7, color='royalblue')
     plt.xlabel(x_label)
     plt.ylabel(y_label)
     plt.grid(True, linestyle='--', alpha=0.7)
@@ -178,6 +184,13 @@ def make_scatter_comparison_special(df, x_row_name, y_row_name, x_label, y_label
     fit_label = f'Best fit: y = {coeffs[0]:.4f}x² + {coeffs[1]:.4f}x + {coeffs[2]:.4f}\n(R² = {r2:.2f})'
     plt.plot(x_fit, y_fit, 'r--', label=fit_label)
 
+    # Add legend for circle sizes
+    legend_counts = [1, 10, 100]
+    handles = []
+    for count in legend_counts:
+        size = 50 * (1 + np.log10(count))
+        handles.append(plt.scatter([], [], s=size, edgecolor='k', facecolor='royalblue', alpha=0.7, label=f'{count}'))
+    plt.legend(handles=handles, loc='upper right', frameon=True)
     plt.legend()
     plt.tight_layout()
     filepath = os.path.join(output_dir, filename)
@@ -190,8 +203,8 @@ def make_histogram_comparison(x_row_name, y_row_name, x_label, y_label, title, f
 
     # Get unique values and counts
     all_values = np.sort(pd.concat([
-        df[x_row_name].dropna(),
-        df[y_row_name].dropna()
+        df[x_row_name],
+        df[y_row_name]
     ]).unique())
 
     # Prepare counts for each value
@@ -222,8 +235,6 @@ def make_histogram_comparison(x_row_name, y_row_name, x_label, y_label, title, f
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
-
-    print(f"Histogram plot saved to {filepath}")
 
 def make_histogram_bucket(df, col_name, cutoff, bin_size, output_dir, x_label, y_label):
     column = df[col_name]
@@ -259,7 +270,26 @@ def make_histogram_bucket(df, col_name, cutoff, bin_size, output_dir, x_label, y
     filepath = os.path.join(output_dir, filename)
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
-    print(f"{col_name} bucket histogram plot saved to {filepath}")
+
+def make_cdf(column, output_path):
+    sns.ecdfplot(column)
+    plt.xlabel('Value')
+    plt.ylabel('CDF')
+    plt.grid(True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+def make_double_cdf(column1, column2, output_path, label1, label2):
+    sns.ecdfplot(column1, color='blue', label=label1)
+    sns.ecdfplot(column2, color='red', label=label2)
+    plt.xlabel('Value')
+    plt.ylabel('CDF')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
 
 def print_percentages_comparison(df, metric, x, y):
     ogdf_higher_count = (df[x] > df[y]).sum()
@@ -334,14 +364,18 @@ def generate_all_plots_parallel(df):
             executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_time', 'Density', 'Shape Metrics Time', 'shape_metrics_time_density.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_number_added_cycles', 'Nodes', 'Added Cycles', 'added_cycles_nodes.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_number_added_cycles', 'Density', 'Added Cycles', 'added_cycles_density.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_ratio_useless_bends', 'Nodes', 'Ratio Useless Bends', 'useless_bends_nodes.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_ratio_useless_bends', 'Density', 'Ratio Useless Bends', 'useless_bends_density.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_ratio_useless_bends', 'Nodes', 'Ratio Useless Bends', 'useless_bends_nodes.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_ratio_useless_bends', 'Density', 'Ratio Useless Bends', 'useless_bends_density.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_bends', 'Nodes', 'Bends', 'bends_nodes.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_bends', 'Density', 'Bends', 'bends_density.pdf', shape_metrics_functions_dir, False),
             executor.submit(make_histogram_comparison, 'ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge', 'Max Bends per Edge', 'Count', '', 'max_bends_hist.pdf', histograms_dir),
             executor.submit(make_histogram_bucket, df, 'shape_metrics_time', 0.925, 5, histograms_dir, 'Time (s)', 'Graphs'),
-            executor.submit(make_histogram_bucket, df, 'good_bends_ratio', 0.95, 0.05, histograms_dir, 'Good Bends Ratio', 'Graphs'),
+            # executor.submit(make_histogram_bucket, df, 'good_bends_ratio', 0.95, 0.05, histograms_dir, 'Good Bends Ratio', 'Graphs'),
             executor.submit(make_histogram_bucket, df, 'shape_metrics_number_added_cycles', 1.00, 10, histograms_dir, 'Added Cycles', 'Graphs'),
+            executor.submit(make_cdf, df['shape_metrics_time'], os.path.join(cdf_dir, 'shape_metrics_time_cdf.pdf')),
+            executor.submit(make_double_cdf, df['shape_metrics_total_added_bends'], df['shape_metrics_bends'], os.path.join(cdf_dir, 'shape_metrics_bends_cdf.pdf'), 'Fictitious Vertices', 'Bends'),
+            executor.submit(make_cdf, df['shape_metrics_number_added_cycles'], os.path.join(cdf_dir, 'shape_metrics_added_cycles_cdf.pdf')),
+            executor.submit(make_double_cdf, df['shape_metrics_sat_invocations'], df['shape_metrics_total_added_bends'], os.path.join(cdf_dir, 'shape_metrics_sat_invocations_cdf.pdf'), 'SAT Invocations', 'Total Added Bends'),
         ]
 
         for fut in futures:

@@ -14,14 +14,19 @@ const char TEMPORARY_FOLDER[] = "/dev/shm/";
 const char TEMPORARY_FOLDER[] = "/tmp/";
 #endif
 
-std::string get_unique_filename(const std::string& base_filename) {
+std::string get_unique_filename(const std::string& base_filename,
+                                const std::string& folder) {
   // Create a unique temporary file
-  std::string filename_template = TEMPORARY_FOLDER + base_filename + "_XXXXXX";
+  std::string filename_template = folder + base_filename + "_XXXXXX";
   int fd = mkstemp(filename_template.data());
   if (fd == -1)
     throw std::runtime_error("Failed to create unique temporary file");
   close(fd);  // Close the file descriptor
   return filename_template;
+}
+
+std::string get_unique_filename(const std::string& base_filename) {
+  return get_unique_filename(base_filename, TEMPORARY_FOLDER);
 }
 
 void save_string_to_file(const std::string& filename,
