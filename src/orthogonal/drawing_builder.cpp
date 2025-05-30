@@ -164,7 +164,8 @@ void NodesPositions::change_position(int node, float position_x,
   if (!has_position(node))
     throw std::runtime_error(
         "NodesPositions::change_position Node does not have a position");
-  m_nodeid_to_position_map.insert({node, NodePosition(position_x, position_y)});
+  m_nodeid_to_position_map.insert_or_assign(
+      node, NodePosition(position_x, position_y));
 }
 
 void NodesPositions::set_position(int node, float position_x,
@@ -319,149 +320,6 @@ BuildingResult build_nodes_positions(const Shape& shape, const Graph& graph) {
   return BuildingResult{std::move(positions), {}, BuildingResultType::OK};
 }
 
-int make_chain_key(int x, int y) { return (x << 16) ^ y; }
-
-void shift_by_epsilon_factor(int x_j, int x_i, int y_j, int y_i, int z,
-                             double& from_y, double& to_y, int epsilon,
-                             std::vector<std::tuple<int, int>>& list,
-                             double& from_x, double& to_x) {
-  // 1 quarter
-  if (x_j >= x_i && y_j >= y_i) {
-    // first horizontal edge
-    if (z == 0 && from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    }
-    // last horizontal edge
-    else if (z == list.size() - 1 && from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    }
-    // first vertical edge
-    else if (z == 0 && from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    }
-    // last vertical edge
-    else if (z == list.size() - 1 && from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    }
-    if (z > 0 && z < list.size() - 1) {
-      if (list.size() == 4) {
-        if (from_x == to_x) to_y -= epsilon;
-        if (from_y == to_y) from_x += epsilon;
-      } else if (list.size() == 3) {
-        if (from_x == to_x) {
-          from_y += epsilon;
-          to_y -= epsilon;
-        }
-        if (from_y == to_y) {
-          from_x += epsilon;
-          to_x -= epsilon;
-        }
-      }
-    }
-  }
-  // 2 quarter
-  if (x_j <= x_i && y_j >= y_i) {
-    if (z == 0 && from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    } else if (z == list.size() - 1 && from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    } else if (z == 0 && from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    } else if (z == list.size() - 1 && from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    }
-    if (z > 0 && z < list.size() - 1) {
-      if (list.size() == 4) {
-        if (from_x == to_x) from_y += epsilon;
-        if (from_y == to_y) to_x += epsilon;
-      } else if (list.size() == 3) {
-        if (from_x == to_x) {
-          from_y += epsilon;
-          to_y -= epsilon;
-        }
-        if (from_y == to_y) {
-          from_x -= epsilon;
-          to_x += epsilon;
-        }
-      }
-    }
-  }
-  // 3 quarter
-  if (x_j <= x_i && y_j <= y_i) {
-    if (z == 0 && from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    } else if (z == list.size() - 1 && from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    } else if (z == 0 && from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    } else if (z == list.size() - 1 && from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    }
-    if (z > 0 && z < list.size() - 1) {
-      if (list.size() == 4) {
-        if (from_x == to_x) to_y += epsilon;
-        if (from_y == to_y) from_x -= epsilon;
-      } else if (list.size() == 3) {
-        if (from_x == to_x) {
-          from_y -= epsilon;
-          to_y += epsilon;
-        }
-        if (from_y == to_y) {
-          from_x -= epsilon;
-          to_x += epsilon;
-        }
-      }
-    }
-  }
-  // 4 quarter
-  if (x_j >= x_i && y_j <= y_i) {
-    if (z == 0 && from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    } else if (z == list.size() - 1 && from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    } else if (z == 0 && from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    } else if (z == list.size() - 1 && from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    }
-    if (z > 0 && z < list.size() - 1) {
-      if (list.size() == 4) {
-        if (from_x == to_x) {
-          from_y -= epsilon;
-        }
-        if (from_y == to_y) {
-          to_x -= epsilon;
-        }
-      } else if (list.size() == 3) {
-        if (from_x == to_x) {
-          from_y -= epsilon;
-          to_y += epsilon;
-        }
-        if (from_y == to_y) {
-          from_x += epsilon;
-          to_x -= epsilon;
-        }
-      }
-    }
-  }
-}
-
 void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
                            const GraphAttributes& attributes,
                            const std::string& filename) {
@@ -490,74 +348,7 @@ void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
   }
   for (auto& node : graph.get_nodes()) {
     Color color = attributes.get_node_color(node.get_id());
-    drawer.add(points.at(node.get_id()), color_to_string(color),
-               std::to_string(node.get_id()));
-  }
-  drawer.saveToFile(filename);
-}
-
-void node_positions_to_svg_any_degree(const NodesPositions& positions,
-                                      const Graph& graph,
-                                      const GraphAttributes& attributes,
-                                      const std::string& filename) {
-  float max_x = 0;
-  float max_y = 0;
-  for (auto& node : graph.get_nodes()) {
-    max_x = std::max(max_x, positions.get_position_x(node.get_id()));
-    max_y = std::max(max_y, positions.get_position_y(node.get_id()));
-  }
-  SvgDrawer drawer{800, 600};
-  ScaleLinear scale_x = ScaleLinear(0, max_x + 2, 0, 800);
-  ScaleLinear scale_y = ScaleLinear(0, max_y + 2, 0, 600);
-  std::unordered_map<int, Point2D> points;
-  for (auto& node : graph.get_nodes()) {
-    double x = scale_x.map(positions.get_position_x(node.get_id()) + 1);
-    double y = scale_y.map(positions.get_position_y(node.get_id()) + 1);
-    points.emplace(node.get_id(), Point2D(x, y));
-  }
-  for (auto& node : graph.get_nodes()) {
-    int i = node.get_id();
-    for (auto& edge : node.get_edges()) {
-      int j = edge.get_to().get_id();
-      Line2D line(points.at(i), points.at(j));
-      drawer.add(line);
-    }
-  }
-  // int epsilon = 5;
-  // for (auto edge : removed_edges)
-  // {
-  //     int i = edge.first;
-  //     int j = edge.second;
-  //     if (i > j)
-  //         std::swap(i, j);
-  //     // high degree nodes positions
-  //     int x_i = positions.get_position_x(i), y_i =
-  //     positions.get_position_y(i); int x_j = positions.get_position_x(j), y_j
-  //     = positions.get_position_y(j); std::vector<std::tuple<int, int>> list;
-  //     try
-  //     {
-  //         list = chain_edges.at(make_chain_key(i, j));
-  //     }
-  //     catch (const std::out_of_range &e)
-  //     {
-  //         std::cerr << "🚨 Nino nino: " << i << "," << j << std::endl;
-  //         continue;
-  //     }
-  //     for (int z = 0; z < list.size(); z++)
-  //     {
-  //         int from = std::get<0>(list[z]);
-  //         int to = std::get<1>(list[z]);
-  //         // chain nodes coordinates
-  //         double from_x = points.at(from).x, from_y = points.at(from).y;
-  //         double to_x = points.at(to).x, to_y = points.at(to).y;
-  //         shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y,
-  //         epsilon, list, from_x, to_x); Point2D p1(from_x, from_y); Point2D
-  //         p2(to_x, to_y); Line2D line(p1, p2); drawer.add(line, "blue");
-  //     }
-  // }
-  for (auto& node : graph.get_nodes()) {
-    Color color = attributes.get_node_color(node.get_id());
-    if (color == Color::RED) continue;
+    if (color == Color::RED || color == Color::BLUE) continue;
     drawer.add(points.at(node.get_id()), color_to_string(color),
                std::to_string(node.get_id()));
   }
@@ -913,9 +704,6 @@ compute_maximal_degree_4_subgraph(const Graph& graph) {
 
 DrawingResult merge_connected_components(std::vector<DrawingResult>& results);
 
-void add_back_removed_edge(DrawingResult& result,
-                           const std::pair<int, int>& edge);
-
 void create_set_positions(std::set<int>& x_position_set,
                           std::set<int>& y_position_set, Graph& graph,
                           NodesPositions& positions);
@@ -930,8 +718,12 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
     results.push_back(
         std::move(make_orthogonal_drawing_low_degree(*component)));
   DrawingResult result = merge_connected_components(results);
-  for (auto& edge : removed_edges)
+  for (auto& edge : removed_edges) {
+    if (edge.first > edge.second) continue;
+    std::cout << "Adding back removed edge: " << edge.first << "-"
+              << edge.second << std::endl;
     if (edge.first < edge.second) add_back_removed_edge(result, edge);
+  }
   return result;
 }
 
@@ -962,10 +754,14 @@ void NodesPositions::y_down_shift(float y_pos) {
     if (entry.second.m_y <= y_pos) entry.second.m_y--;
 }
 
+int make_chain_key(int x, int y) { return (x << 16) ^ y; }
+
 void add_colored_node(Graph& graph, GraphAttributes& attributes, int& node_id,
                       Color color) {
   node_id = graph.add_node().get_id();
+  std::cout << "prima" << std::endl;
   attributes.set_node_color(node_id, color);
+  std::cout << "dopo" << std::endl;
 }
 
 void set_chain_and_edge(Graph& graph, GraphAttributes& attributes, int i, int j,
@@ -979,7 +775,6 @@ void split_and_rewire(int i, int j, Direction direction_ia,
                       bool aligned, Graph& graph, GraphAttributes& attributes,
                       NodesPositions& positions) {
   int n0 = -1, n1 = -1, n2 = -1, n3 = -1, n4 = -1;
-
   add_colored_node(graph, attributes, n0, Color::BLUE);
   add_colored_node(graph, attributes, n1, Color::RED);
   add_colored_node(graph, attributes, n2, Color::RED);
@@ -1001,7 +796,7 @@ void split_and_rewire(int i, int j, Direction direction_ia,
 
   float n1_x = i_x, n1_y = i_y;
   float n2_x = j_x, n2_y = j_y;
-  float n3_x = j_x, n3_y = j_y;  
+  float n3_x = j_x, n3_y = j_y;
 
   auto shift_x_left = [&](float x) { positions.x_left_shift(x); };
   auto shift_x_right = [&](float x) { positions.x_right_shift(x); };
@@ -1052,9 +847,6 @@ void split_and_rewire(int i, int j, Direction direction_ia,
           shift_x_right(j_x);
         break;
     }
-
-    j_x = positions.get_position_x(j);
-    j_y = positions.get_position_y(j);
   } else {
     switch (direction_ia) {
       case Direction::UP:
@@ -1066,12 +858,12 @@ void split_and_rewire(int i, int j, Direction direction_ia,
       default:
         break;
     }
-
-    i_x = positions.get_position_x(i);
-    i_y = positions.get_position_y(i);
-    j_x = positions.get_position_x(j);
-    j_y = positions.get_position_y(j);
   }
+
+  i_x = positions.get_position_x(i);
+  i_y = positions.get_position_y(i);
+  j_x = positions.get_position_x(j);
+  j_y = positions.get_position_y(j);
 
   positions.set_position(n0, i_x, i_y);
   positions.set_position(n1, n1_x, n1_y);
@@ -1100,6 +892,60 @@ bool check_if_the_segment_is_free(int coor_i, int coor_j,
   return true;
 }
 
+std::tuple<float, float, float, float> shift_by_epsilon_factor(
+    float x_j, float x_i, float y_j, float y_i, int z, float& from_y,
+    float& to_y, float epsilon, int last_index, float& from_x, float& to_x) {
+  // 1 quadrant
+  if ((x_j >= x_i && y_j >= y_i && z == 0) ||
+      (x_j <= x_i && y_j <= y_i && z == last_index)) {
+    std::cout << "1 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+  // 2 quadrant
+  else if ((x_j <= x_i && y_j >= y_i && z == 0) ||
+           (x_j >= x_i && y_j <= y_i && z == last_index)) {
+    std::cout << "2 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+  //   3 quadrant
+  else if ((x_j <= x_i && y_j <= y_i && z == 0) ||
+           (x_j >= x_i && y_j >= y_i && z == last_index)) {
+    std::cout << "3 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+  //    4 quadrant
+  else if ((x_j >= x_i && y_j <= y_i && z == 0) ||
+           (x_j <= x_i && y_j >= y_i && z == last_index)) {
+    std::cout << "4 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+  return std::make_tuple(from_x, to_x, from_y, to_y);
+}
+
 void add_back_removed_edge(DrawingResult& result,
                            const std::pair<int, int>& edge) {
   auto& graph = *result.augmented_graph;
@@ -1114,8 +960,8 @@ void add_back_removed_edge(DrawingResult& result,
   int j = edge.second;
   if (i > j) std::swap(i, j);
 
-  int x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
-  int x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
+  float x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
+  float x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
   if (x_i > x_j && y_i > y_j) {
     if (check_if_the_segment_is_free(x_j, x_i, x_position_set))
       split_and_rewire(i, j, Direction::LEFT, Direction::DOWN, true, false,
@@ -1170,7 +1016,38 @@ void add_back_removed_edge(DrawingResult& result,
     split_and_rewire(i, j, Direction::RIGHT, Direction::DOWN, false, false,
                      true, graph, attributes, positions);
 
+  x_i = positions.get_position_x(i), y_i = positions.get_position_y(i);
+  x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
+
   all_positive_positions(graph, positions);
+
+  std::vector<std::tuple<int, int>> list =
+      attributes.get_chain_edges(make_chain_key(i, j));
+
+  float epsilon = 0.05;
+  for (int z = 0; z < list.size(); z++) {
+    if (z == 0 || z == list.size() - 1) {
+      int from = std::get<0>(list[z]);
+      int to = std::get<1>(list[z]);
+      std::cout << from << " -> " << to << "\n";
+      float from_x = positions.get_position_x(from),
+            from_y = positions.get_position_y(from);
+      float to_x = positions.get_position_x(to),
+            to_y = positions.get_position_y(to);
+      auto shifted_positions =
+          shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y, epsilon,
+                                  list.size() - 1, from_x, to_x);
+      from_x = std::get<0>(shifted_positions);
+      to_x = std::get<1>(shifted_positions);
+      from_y = std::get<2>(shifted_positions);
+      to_y = std::get<3>(shifted_positions);
+      positions.change_position(from, from_x, from_y);
+      positions.change_position(to, to_x, to_y);
+    }
+  }
+
+  node_positions_to_svg(positions, graph, attributes,
+                        "output_shape_metrics.svg");
 }
 
 void create_set_positions(std::set<int>& x_position_set,

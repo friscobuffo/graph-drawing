@@ -59,11 +59,6 @@ void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
                            const GraphAttributes& attributes,
                            const std::string& filename);
 
-void node_positions_to_svg_any_degree(const NodesPositions& positions,
-                                      const Graph& graph,
-                                      const GraphAttributes& attributes,
-                                      const std::string& filename);
-
 struct DrawingResult {
   std::unique_ptr<Graph> augmented_graph;
   GraphAttributes attributes;
@@ -82,6 +77,9 @@ bool check_if_drawing_has_overlappings(const Graph& graph,
                                        const NodesPositions& positions);
 
 DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph);
+
+void add_back_removed_edge(DrawingResult& result,
+                           const std::pair<int, int>& edge);
 
 bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
                     int l);
