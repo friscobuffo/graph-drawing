@@ -710,6 +710,99 @@ void create_set_positions(std::set<int>& x_position_set,
 
 void all_positive_positions(Graph& graph, NodesPositions& positions);
 
+int make_chain_key(int x, int y) { return (x << 16) ^ y; }
+
+std::tuple<float, float, float, float> shift_by_epsilon_factor(
+    float x_j, float x_i, float y_j, float y_i, int z, float& from_y,
+    float& to_y, float epsilon, int last_index, float& from_x, float& to_x) {
+  // 1 quadrant
+  if ((x_j >= x_i && y_j >= y_i && z == 0) ||
+      (x_j <= x_i && y_j <= y_i && z == last_index)) {
+    std::cout << "1 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+  // 2 quadrant
+  else if ((x_j <= x_i && y_j >= y_i && z == 0) ||
+           (x_j >= x_i && y_j <= y_i && z == last_index)) {
+    std::cout << "2 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      from_y += epsilon;
+      to_y += epsilon;
+    }
+  }
+  //   3 quadrant
+  else if ((x_j <= x_i && y_j <= y_i && z == 0) ||
+           (x_j >= x_i && y_j >= y_i && z == last_index)) {
+    std::cout << "3 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x -= epsilon;
+      to_x -= epsilon;
+    } else if (from_y == to_y) {
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+  //    4 quadrant
+  else if ((x_j >= x_i && y_j <= y_i && z == 0) ||
+           (x_j <= x_i && y_j >= y_i && z == last_index)) {
+    std::cout << "4 quadrant" << std::endl;
+    if (from_x == to_x) {
+      from_x += epsilon;
+      to_x += epsilon;
+    } else if (from_y == to_y) {
+      from_y -= epsilon;
+      to_y -= epsilon;
+    }
+  }
+  return std::make_tuple(from_x, to_x, from_y, to_y);
+}
+
+void shift_edges(GraphAttributes& attributes, int i, int j,
+                 NodesPositions& positions, float x_j, float x_i, float y_j,
+                 float y_i) {
+  std::vector<std::tuple<int, int>> list =
+      attributes.get_chain_edges(make_chain_key(i, j));
+
+  float epsilon = 0.1;
+  for (int z = 0; z < list.size(); z++) {
+    if (z == 0 || z == list.size() - 1) {
+      std::cout << z << std::endl;
+      int from = std::get<0>(list[z]);
+      int to = std::get<1>(list[z]);
+      std::cout << from << " -> " << to << "\n";
+      float from_x = positions.get_position_x(from),
+            from_y = positions.get_position_y(from);
+      float to_x = positions.get_position_x(to),
+            to_y = positions.get_position_y(to);
+      std::cout << "from_x: " << from_x << " from_y: " << from_y << std::endl;
+      std::cout << "to_x: " << to_x << " to_y: " << to_y << std::endl;
+
+      auto shifted_positions =
+          shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y, epsilon,
+                                  list.size() - 1, from_x, to_x);
+      from_x = std::get<0>(shifted_positions);
+      to_x = std::get<1>(shifted_positions);
+      from_y = std::get<2>(shifted_positions);
+      to_y = std::get<3>(shifted_positions);
+
+      std::cout << "from_x: " << from_x << " from_y: " << from_y << std::endl;
+      std::cout << "to_x: " << to_x << " to_y: " << to_y << std::endl;
+
+      positions.change_position(from, from_x, from_y);
+      positions.change_position(to, to_x, to_y);
+    }
+  }
+}
+
 DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
   auto [subgraph, removed_edges] = compute_maximal_degree_4_subgraph(graph);
   auto components = compute_connected_components(*subgraph);
@@ -724,6 +817,17 @@ DrawingResult make_orthogonal_drawing_any_degree(const Graph& graph) {
               << edge.second << std::endl;
     if (edge.first < edge.second) add_back_removed_edge(result, edge);
   }
+
+  for (auto& edge : removed_edges) {
+    if (edge.first > edge.second) continue;
+    float x_i = result.positions.get_position_x(edge.first);
+    float y_i = result.positions.get_position_y(edge.first);
+    float x_j = result.positions.get_position_x(edge.second);
+    float y_j = result.positions.get_position_y(edge.second);
+    shift_edges(result.attributes, edge.first, edge.second, result.positions,
+                x_j, x_i, y_j, y_i);
+  }
+
   return result;
 }
 
@@ -754,14 +858,10 @@ void NodesPositions::y_down_shift(float y_pos) {
     if (entry.second.m_y <= y_pos) entry.second.m_y--;
 }
 
-int make_chain_key(int x, int y) { return (x << 16) ^ y; }
-
 void add_colored_node(Graph& graph, GraphAttributes& attributes, int& node_id,
                       Color color) {
   node_id = graph.add_node().get_id();
-  std::cout << "prima" << std::endl;
   attributes.set_node_color(node_id, color);
-  std::cout << "dopo" << std::endl;
 }
 
 void set_chain_and_edge(Graph& graph, GraphAttributes& attributes, int i, int j,
@@ -892,60 +992,6 @@ bool check_if_the_segment_is_free(int coor_i, int coor_j,
   return true;
 }
 
-std::tuple<float, float, float, float> shift_by_epsilon_factor(
-    float x_j, float x_i, float y_j, float y_i, int z, float& from_y,
-    float& to_y, float epsilon, int last_index, float& from_x, float& to_x) {
-  // 1 quadrant
-  if ((x_j >= x_i && y_j >= y_i && z == 0) ||
-      (x_j <= x_i && y_j <= y_i && z == last_index)) {
-    std::cout << "1 quadrant" << std::endl;
-    if (from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    } else if (from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    }
-  }
-  // 2 quadrant
-  else if ((x_j <= x_i && y_j >= y_i && z == 0) ||
-           (x_j >= x_i && y_j <= y_i && z == last_index)) {
-    std::cout << "2 quadrant" << std::endl;
-    if (from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    } else if (from_y == to_y) {
-      from_y += epsilon;
-      to_y += epsilon;
-    }
-  }
-  //   3 quadrant
-  else if ((x_j <= x_i && y_j <= y_i && z == 0) ||
-           (x_j >= x_i && y_j >= y_i && z == last_index)) {
-    std::cout << "3 quadrant" << std::endl;
-    if (from_x == to_x) {
-      from_x -= epsilon;
-      to_x -= epsilon;
-    } else if (from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    }
-  }
-  //    4 quadrant
-  else if ((x_j >= x_i && y_j <= y_i && z == 0) ||
-           (x_j <= x_i && y_j >= y_i && z == last_index)) {
-    std::cout << "4 quadrant" << std::endl;
-    if (from_x == to_x) {
-      from_x += epsilon;
-      to_x += epsilon;
-    } else if (from_y == to_y) {
-      from_y -= epsilon;
-      to_y -= epsilon;
-    }
-  }
-  return std::make_tuple(from_x, to_x, from_y, to_y);
-}
-
 void add_back_removed_edge(DrawingResult& result,
                            const std::pair<int, int>& edge) {
   auto& graph = *result.augmented_graph;
@@ -1020,34 +1066,6 @@ void add_back_removed_edge(DrawingResult& result,
   x_j = positions.get_position_x(j), y_j = positions.get_position_y(j);
 
   all_positive_positions(graph, positions);
-
-  std::vector<std::tuple<int, int>> list =
-      attributes.get_chain_edges(make_chain_key(i, j));
-
-  float epsilon = 0.05;
-  for (int z = 0; z < list.size(); z++) {
-    if (z == 0 || z == list.size() - 1) {
-      int from = std::get<0>(list[z]);
-      int to = std::get<1>(list[z]);
-      std::cout << from << " -> " << to << "\n";
-      float from_x = positions.get_position_x(from),
-            from_y = positions.get_position_y(from);
-      float to_x = positions.get_position_x(to),
-            to_y = positions.get_position_y(to);
-      auto shifted_positions =
-          shift_by_epsilon_factor(x_j, x_i, y_j, y_i, z, from_y, to_y, epsilon,
-                                  list.size() - 1, from_x, to_x);
-      from_x = std::get<0>(shifted_positions);
-      to_x = std::get<1>(shifted_positions);
-      from_y = std::get<2>(shifted_positions);
-      to_y = std::get<3>(shifted_positions);
-      positions.change_position(from, from_x, from_y);
-      positions.change_position(to, to_x, to_y);
-    }
-  }
-
-  node_positions_to_svg(positions, graph, attributes,
-                        "output_shape_metrics.svg");
 }
 
 void create_set_positions(std::set<int>& x_position_set,
