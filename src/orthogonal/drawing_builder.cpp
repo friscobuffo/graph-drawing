@@ -366,6 +366,17 @@ bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
   float l_pos_x = positions.get_position_x(l);
   float l_pos_y = positions.get_position_y(l);
 
+  auto same_position = [](float ax, float ay, float bx, float by) {
+    return ax == bx && ay == by;
+  };
+
+  if (same_position(i_pos_x, i_pos_y, k_pos_x, k_pos_y) ||
+      same_position(i_pos_x, i_pos_y, l_pos_x, l_pos_y) ||
+      same_position(j_pos_x, j_pos_y, k_pos_x, k_pos_y) ||
+      same_position(j_pos_x, j_pos_y, l_pos_x, l_pos_y)) {
+    return false;
+  }
+
   bool is_i_j_horizontal = i_pos_y == j_pos_y;
   bool is_k_l_horizontal = k_pos_y == l_pos_y;
 
