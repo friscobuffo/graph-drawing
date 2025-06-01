@@ -57,8 +57,9 @@ void prova1() {
   graph.add_undirected_edge(1, 5);
   graph.add_undirected_edge(4, 0);
   auto result = make_orthogonal_drawing_sperimental(graph);
-  node_positions_to_svg(result.positions, *result.augmented_graph,
-                        result.attributes, "daje.svg");
+  result.shape.print();
+  // node_positions_to_svg(result.positions, *result.augmented_graph,
+  // result.attributes, "daje.svg");
 }
 
 void cut_vertices_stats(std::string& folder_path) {
@@ -101,6 +102,7 @@ void cut_vertices_stats(std::string& folder_path) {
 
 int main() {
   prova1();
+  return 0;
   Config config("config.txt");
   const std::string& filename = config.get("output_svg_shape_metrics");
   auto graph = load_graph_from_txt_file(config.get("input_graph_file"));

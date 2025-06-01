@@ -44,8 +44,11 @@ class EquivalenceClasses {
   }
   std::string to_string() const {
     std::string result = "EquivalenceClasses:\n";
-    for (const auto& [elem, class_id] : m_elem_to_class)
-      result += std::to_string(elem) + " -> " + std::to_string(class_id) + "\n";
+    for (const auto& pair : m_class_to_elems) {
+      result += "Class " + std::to_string(pair.first) + ": ";
+      for (int elem : pair.second) result += std::to_string(elem) + " ";
+      result += "\n";
+    }
     return result;
   }
   void print() const { std::cout << to_string() << std::endl; }
@@ -1158,8 +1161,8 @@ DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph) {
       break;
     }
   if (has_low_degree) return make_orthogonal_drawing_low_degree(graph);
-  // auto cycles = compute_cycle_basis(graph);
-  auto cycles = compute_all_cycles_in_undirected_graph(graph);
+  auto cycles = compute_cycle_basis(graph);
+  // auto cycles = compute_all_cycles_in_undirected_graph(graph);
   return make_orthogonal_drawing_incremental_special(graph, cycles);
 }
 
@@ -1195,10 +1198,10 @@ DrawingResult make_orthogonal_drawing_incremental_special(
     result = build_nodes_positions(shape, *augmented_graph);
   }
   NodesPositions positions(std::move(result.positions.value()));
-  int old_size = augmented_graph->size();
+  // int old_size = augmented_graph->size();
   // refine_result(*augmented_graph, attributes, positions, shape);
-  int number_of_useless_bends = old_size - augmented_graph->size();
-  result = build_nodes_positions(shape, *augmented_graph);
+  // int number_of_useless_bends = old_size - augmented_graph->size();
+  // result = build_nodes_positions(shape, *augmented_graph);
   positions = std::move(result.positions.value());
   // auto new_positions = compact_area_x(*augmented_graph, shape, positions);
   // positions = std::move(new_positions);
@@ -1211,6 +1214,6 @@ DrawingResult make_orthogonal_drawing_incremental_special(
       std::move(positions),
       (int)cycles.size() - number_of_added_cycles,
       number_of_added_cycles,
-      number_of_useless_bends,
+      0,
   };
 }

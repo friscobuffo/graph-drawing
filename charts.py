@@ -37,27 +37,27 @@ if os.path.exists(output_dir):
     shutil.rmtree(output_dir, ignore_errors=False)
 
 scatter_comparisons_dir = os.path.join(output_dir, 'scatter_comparisons')
-scatter_comparisons_less_1_5_dir = os.path.join(output_dir, 'scatter_comparisons_less_1_5')
-scatter_comparisons_more_1_5_dir = os.path.join(output_dir, 'scatter_comparisons_more_1_5')
+# scatter_comparisons_less_1_5_dir = os.path.join(output_dir, 'scatter_comparisons_less_1_5')
+# scatter_comparisons_more_1_5_dir = os.path.join(output_dir, 'scatter_comparisons_more_1_5')
 
 scatter_percentage_dir = os.path.join(output_dir, 'percentage_difference')
 
-histograms_dir = os.path.join(output_dir, 'histograms')
+# histograms_dir = os.path.join(output_dir, 'histograms')
 
 cdf_dir = os.path.join(output_dir, 'cdf')
 
-shape_metrics_functions_dir = os.path.join(output_dir, 'shape_metrics_functions')
+# shape_metrics_functions_dir = os.path.join(output_dir, 'shape_metrics_functions')
 
 if os.path.exists(output_dir):
     shutil.rmtree(output_dir)
 
 os.makedirs(output_dir)
-os.makedirs(scatter_comparisons_less_1_5_dir)
-os.makedirs(scatter_comparisons_more_1_5_dir)
+# os.makedirs(scatter_comparisons_less_1_5_dir)
+# os.makedirs(scatter_comparisons_more_1_5_dir)
 os.makedirs(scatter_comparisons_dir)
 os.makedirs(scatter_percentage_dir)
-os.makedirs(histograms_dir)
-os.makedirs(shape_metrics_functions_dir)
+# os.makedirs(histograms_dir)
+# os.makedirs(shape_metrics_functions_dir)
 os.makedirs(cdf_dir)
 
 def make_winner_comparison_scatter(df, metric_name, filename, output_dir):
@@ -154,7 +154,10 @@ def make_scatter_comparison_special(df, x_row_name, y_row_name, x_label, y_label
     x_unique = unique_coords[:, 0]
     y_unique = unique_coords[:, 1]
 
-    size = 50 * (1 + np.log10(counts))
+    def get_circle_size(counts):
+        return 50 * np.sqrt(counts / 3.1415926535)
+    
+    size = get_circle_size(counts)
 
     # Create scatter plot with sizes based on count
     plt.scatter(x_unique, y_unique, edgecolor='k', s=size, alpha=0.7, color='royalblue')
@@ -188,7 +191,7 @@ def make_scatter_comparison_special(df, x_row_name, y_row_name, x_label, y_label
     legend_counts = [1, 10, 100]
     handles = []
     for count in legend_counts:
-        size = 50 * (1 + np.log10(count))
+        size = get_circle_size(count)
         handles.append(plt.scatter([], [], s=size, edgecolor='k', facecolor='royalblue', alpha=0.7, label=f'{count}'))
     plt.legend(handles=handles, loc='upper right', frameon=True)
     plt.legend()
@@ -271,19 +274,21 @@ def make_histogram_bucket(df, col_name, cutoff, bin_size, output_dir, x_label, y
     plt.savefig(filepath, dpi=300, bbox_inches='tight')
     plt.close()
 
-def make_cdf(column, output_path):
+def make_cdf(column, output_path, use_log_scale=False, xlabel='Value'):
     sns.ecdfplot(column)
-    plt.xlabel('Value')
+    if (use_log_scale):
+        plt.xscale('log')
+    plt.xlabel(xlabel)
     plt.ylabel('CDF')
     plt.grid(True)
     plt.tight_layout()
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
 
-def make_double_cdf(column1, column2, output_path, label1, label2):
+def make_double_cdf(column1, column2, output_path, label1, label2, xlabel='Value'):
     sns.ecdfplot(column1, color='blue', label=label1)
     sns.ecdfplot(column2, color='red', label=label2)
-    plt.xlabel('Value')
+    plt.xlabel(xlabel)
     plt.ylabel('CDF')
     plt.grid(True)
     plt.legend()
@@ -303,22 +308,22 @@ def print_percentages_comparison(df, metric, x, y):
     print()
 
 def generate_all_plots_parallel(df):
-    df_less = df[df['density'] < 1.5]
-    df_more = df[df['density'] >= 1.5]
+    # df_less = df[df['density'] < 1.5]
+    # df_more = df[df['density'] >= 1.5]
 
     metrics_scatter_comparison = [
-        ('crossings', 'Crossings'),
-        ('bends', 'Bends'),
-        ('area', 'Area'),
-        ('total_edge_length', 'Total Edge Length'),
-        ('time', 'Time (s)'),
-        ('max_edge_length', 'Max Edge Length'),
-        ('edge_length_stddev', 'Edge Length std dev'),
-        ('bends_stddev', 'Bends std dev')
+        'crossings',
+        'bends',
+        'area',
+        'total_edge_length',
+        'time',
+        'max_edge_length',
+        'edge_length_stddev',
+        'bends_stddev',
     ]
 
     metric_scatter_comparison_special = [
-        ('max_bends_per_edge', 'Max Bends per Edge')
+        'max_bends_per_edge',
     ]
 
     metrics_percentage_difference = [
@@ -335,47 +340,44 @@ def generate_all_plots_parallel(df):
     with ProcessPoolExecutor() as executor:
         futures = []
 
-        for metric, label in metrics_scatter_comparison:
+        for metric in metrics_scatter_comparison:
             x = f'ogdf_{metric}'
             y = f'shape_metrics_{metric}'
             f = f"{metric}_comparison.pdf"
             print_percentages_comparison(df, metric, x, y)
-            futures.append(executor.submit(make_scatter_comparison, df, x, y, f'OGDF {label}', f'Shape Metrics {label}', f, scatter_comparisons_dir))
+            futures.append(executor.submit(make_scatter_comparison, df, x, y, 'OGDF', 'DOMUS', f, scatter_comparisons_dir))
 
-            futures.append(executor.submit(make_scatter_comparison, df_less, x, y, f'OGDF {label}', f'Shape Metrics {label}', f"{metric}_less.pdf", scatter_comparisons_less_1_5_dir))
-            futures.append(executor.submit(make_scatter_comparison, df_more, x, y, f'OGDF {label}', f'Shape Metrics {label}', f"{metric}_more.pdf", scatter_comparisons_more_1_5_dir))
+            # futures.append(executor.submit(make_scatter_comparison, df_less, x, y, 'OGDF', 'DOMUS', f"{metric}_less.pdf", scatter_comparisons_less_1_5_dir))
+            # futures.append(executor.submit(make_scatter_comparison, df_more, x, y, 'OGDF', 'DOMUS', f"{metric}_more.pdf", scatter_comparisons_more_1_5_dir))
 
-        for metric, label in metric_scatter_comparison_special:
+        for metric in metric_scatter_comparison_special:
             x = f'ogdf_{metric}'
             y = f'shape_metrics_{metric}'
             f = f"{metric}_comparison_special.pdf"
             print_percentages_comparison(df, metric, x, y)
-            futures.append(executor.submit(make_scatter_comparison_special, df, x, y, f'OGDF {label}', f'Shape Metrics {label}', f, scatter_comparisons_dir))
+            futures.append(executor.submit(make_scatter_comparison_special, df, x, y, 'OGDF', 'DOMUS', f, scatter_comparisons_dir))
 
-            futures.append(executor.submit(make_scatter_comparison_special, df_less, x, y, f'OGDF {label}', f'Shape Metrics {label}', f"{metric}_less.pdf", scatter_comparisons_less_1_5_dir))
-            futures.append(executor.submit(make_scatter_comparison_special, df_more, x, y, f'OGDF {label}', f'Shape Metrics {label}', f"{metric}_more.pdf", scatter_comparisons_more_1_5_dir))
+            # futures.append(executor.submit(make_scatter_comparison_special, df_less, x, y, 'OGDF', 'DOMUS', f"{metric}_less.pdf", scatter_comparisons_less_1_5_dir))
+            # futures.append(executor.submit(make_scatter_comparison_special, df_more, x, y, 'OGDF', 'DOMUS', f"{metric}_more.pdf", scatter_comparisons_more_1_5_dir))
 
         
         for metric, filename in metrics_percentage_difference:
             futures.append(executor.submit(make_winner_comparison_scatter, df, metric, filename, scatter_percentage_dir))
 
         futures += [
-            executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_time', 'Number of Nodes', 'Shape Metrics Time', 'shape_metrics_time_nodes.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_time', 'Density', 'Shape Metrics Time', 'shape_metrics_time_density.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_number_added_cycles', 'Nodes', 'Added Cycles', 'added_cycles_nodes.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_number_added_cycles', 'Density', 'Added Cycles', 'added_cycles_density.pdf', shape_metrics_functions_dir, False),
-            # executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_ratio_useless_bends', 'Nodes', 'Ratio Useless Bends', 'useless_bends_nodes.pdf', shape_metrics_functions_dir, False),
-            # executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_ratio_useless_bends', 'Density', 'Ratio Useless Bends', 'useless_bends_density.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_bends', 'Nodes', 'Bends', 'bends_nodes.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_bends', 'Density', 'Bends', 'bends_density.pdf', shape_metrics_functions_dir, False),
-            executor.submit(make_histogram_comparison, 'ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge', 'Max Bends per Edge', 'Count', '', 'max_bends_hist.pdf', histograms_dir),
-            executor.submit(make_histogram_bucket, df, 'shape_metrics_time', 0.925, 5, histograms_dir, 'Time (s)', 'Graphs'),
-            # executor.submit(make_histogram_bucket, df, 'good_bends_ratio', 0.95, 0.05, histograms_dir, 'Good Bends Ratio', 'Graphs'),
-            executor.submit(make_histogram_bucket, df, 'shape_metrics_number_added_cycles', 1.00, 10, histograms_dir, 'Added Cycles', 'Graphs'),
-            executor.submit(make_cdf, df['shape_metrics_time'], os.path.join(cdf_dir, 'shape_metrics_time_cdf.pdf')),
+            # executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_time', 'Number of Nodes', 'Shape Metrics Time', 'shape_metrics_time_nodes.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_time', 'Density', 'Shape Metrics Time', 'shape_metrics_time_density.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_number_added_cycles', 'Nodes', 'Added Cycles', 'added_cycles_nodes.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_number_added_cycles', 'Density', 'Added Cycles', 'added_cycles_density.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'nodes', 'shape_metrics_bends', 'Nodes', 'Bends', 'bends_nodes.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_scatter_comparison, df, 'density', 'shape_metrics_bends', 'Density', 'Bends', 'bends_density.pdf', shape_metrics_functions_dir, False),
+            # executor.submit(make_histogram_comparison, 'ogdf_max_bends_per_edge', 'shape_metrics_max_bends_per_edge', 'Max Bends per Edge', 'Count', '', 'max_bends_hist.pdf', histograms_dir),
+            # executor.submit(make_histogram_bucket, df, 'shape_metrics_time', 0.925, 5, histograms_dir, 'Time (s)', 'Graphs'),
+            # executor.submit(make_histogram_bucket, df, 'shape_metrics_number_added_cycles', 1.00, 10, histograms_dir, 'Added Cycles', 'Graphs'),
+            executor.submit(make_cdf, df['shape_metrics_time'], os.path.join(cdf_dir, 'shape_metrics_time_cdf.pdf'), True, 'Time (s)'),
             executor.submit(make_double_cdf, df['shape_metrics_total_added_bends'], df['shape_metrics_bends'], os.path.join(cdf_dir, 'shape_metrics_bends_cdf.pdf'), 'Fictitious Vertices', 'Bends'),
             executor.submit(make_cdf, df['shape_metrics_number_added_cycles'], os.path.join(cdf_dir, 'shape_metrics_added_cycles_cdf.pdf')),
-            executor.submit(make_double_cdf, df['shape_metrics_sat_invocations'], df['shape_metrics_total_added_bends'], os.path.join(cdf_dir, 'shape_metrics_sat_invocations_cdf.pdf'), 'SAT Invocations', 'Total Added Bends'),
+            executor.submit(make_cdf, df['shape_metrics_sat_invocations'], os.path.join(cdf_dir, 'shape_metrics_sat_invocations_cdf.pdf')),
         ]
 
         for fut in futures:
