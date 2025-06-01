@@ -3,6 +3,7 @@
 
 #include <vector>
 
+#include "core/graph/attributes.hpp"
 #include "core/graph/graph.hpp"
 #include "orthogonal/shape/shape.hpp"
 

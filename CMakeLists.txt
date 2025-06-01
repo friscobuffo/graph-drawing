@@ -22,6 +22,7 @@ set(COMMON_SRCS
     src/drawing/polygon.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp
+    src/core/graph/attributes.cpp
     src/core/graph/file_loader.cpp
     src/core/tree/tree.cpp
     src/core/tree/tree_algorithms.cpp
