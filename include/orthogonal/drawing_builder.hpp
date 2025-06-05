@@ -30,9 +30,13 @@ class NodesPositions {
 
  public:
   void set_position(int node, float position_x, float position_y);
-  void change_position(int node, float position_x, float position_y);
+  void update_position(int node, float position_x, float position_y);
   float get_position_x(int node) const;
   float get_position_y(int node) const;
+  void x_right_shift_with_delta(float x_pos, float delta);
+  void x_left_shift_with_delta(float x_pos, float delta);
+  void y_up_shift_with_delta(float y_pos, float delta);
+  void y_down_shift_with_delta(float y_pos, float delta);
   void x_right_shift(float x_pos);
   void x_left_shift(float x_pos);
   void y_up_shift(float y_pos);
@@ -72,6 +76,17 @@ struct DrawingResult {
 DrawingResult make_orthogonal_drawing(const Graph& graph);
 
 DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph);
+
+std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet>
+compute_maximal_degree_4_subgraph(const Graph& graph);
+
+DrawingResult merge_connected_components(
+    std::vector<DrawingResult>& results, GraphEdgeHashSet& removed_edges);
+
+void NewFunction(DrawingResult& component,
+                 std::__1::unordered_map<int, int>& old_to_new_map,
+                 NodesPositions& merged_positions, float x_0, float y_0,
+                 int& retFlag);
 
 bool check_if_drawing_has_overlappings(const Graph& graph,
                                        const NodesPositions& positions);

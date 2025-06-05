@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 
 #include "baseline-ogdf/drawer.hpp"
@@ -7,6 +8,7 @@
 #include "core/graph/graph.hpp"
 #include "orthogonal/drawing_builder.hpp"
 #include "orthogonal/drawing_stats.hpp"
+#include "orthogonal/file_loader.hpp"
 
 void prova0() {
   Graph graph;
@@ -57,7 +59,7 @@ void prova1() {
   graph.add_undirected_edge(1, 5);
   graph.add_undirected_edge(4, 0);
   auto result = make_orthogonal_drawing_sperimental(graph);
-  result.shape.print();
+  //   result.shape.print();
   // node_positions_to_svg(result.positions, *result.augmented_graph,
   // result.attributes, "daje.svg");
 }
@@ -100,9 +102,67 @@ void cut_vertices_stats(std::string& folder_path) {
   std::cout << "pattern 3: " << pattern_3_times << "\n";
 }
 
+void load_rome_graphs() {
+  std::string ratioFilePath = "generated-graphs/edges_to_remove_ratio.txt";
+  std::ifstream ratioFile(ratioFilePath);
+  //   std::ofstream outFile("rome_metrics.txt");
+  if (!ratioFile.is_open()) {
+    std::cerr << "Failed to open file: " << ratioFilePath << std::endl;
+    return;
+  }
+  //   if (!outFile.is_open()) {
+  //     std::cerr << "Failed to open output file: rome_metrics.txt" <<
+  //     std::endl; return;
+  //   }
+  std::string line;
+  //   outFile << "OGDF, SHAPE METRICS:\n";
+  while (std::getline(ratioFile, line)) {
+    std::istringstream iss(line);
+    std::string filename;
+    double ratio;
+    if (!(iss >> filename >> ratio)) {
+      std::cerr << "Invalid line format: " << line << std::endl;
+      continue;
+    }
+    if (ratio <= 0.10) {
+      std::string dataFilePath = "generated-graphs/rome_2/" + filename;
+      try {
+        const std::string extension = ".txt";
+        Config config("config.txt");
+        std::cout << dataFilePath << std::endl;
+        auto graph = load_graph_from_txt_file(dataFilePath);
+        auto result_ogdf = create_drawing(
+            *graph, "ooutput/" +
+                        filename.erase(filename.size() - extension.size()) +
+                        config.get("output_svg_ogdf"));
+
+        srand(0);
+        auto result = make_orthogonal_drawing(*graph);
+        node_positions_to_svg(
+            result.positions, *result.augmented_graph, result.attributes,
+            "ooutput/" + filename.erase(filename.size() - extension.size()) +
+                config.get("output_svg_shape_metrics"));
+        // int total_area =
+        //     compute_total_area(result.positions, *result.augmented_graph);
+        // outFile << "Graph: " << filename << "\n";
+        // outFile << "Area: " << result_ogdf.area << ", "  << "\n";
+        // outFile << "Bends: " << result_ogdf.bends << ", " << "\n";
+        //         << "\n";
+      } catch (const std::exception& e) {
+        std::cerr << " 💭 Error processing file " << dataFilePath << ": "
+                  << e.what() << std::endl;
+        return;
+      }
+    }
+  }
+  ratioFile.close();
+  //   outFile.close();
+}
+
 int main() {
-  prova1();
-  return 0;
+  // load_rome_graphs();
+  //   prova1();
+  //   return 0;
   Config config("config.txt");
   const std::string& filename = config.get("output_svg_shape_metrics");
   auto graph = load_graph_from_txt_file(config.get("input_graph_file"));
@@ -115,7 +175,7 @@ int main() {
   std::cout << "Total edge length: " << result_ogdf.total_edge_length << "\n";
 
   srand(0);
-  auto result = make_orthogonal_drawing_low_degree(*graph);
+  auto result = make_orthogonal_drawing(*graph);
   node_positions_to_svg(result.positions, *result.augmented_graph,
                         result.attributes, filename);
   auto stats = compute_all_orthogonal_stats(result);
@@ -125,8 +185,8 @@ int main() {
   std::cout << "Bends: " << stats.bends << "\n";
   std::cout << "Total edge length: " << stats.total_edge_length << "\n";
 
-  std::string graphs_folder = "generated-graphs";
-  // cut_vertices_stats(graphs_folder);
+  // std::string graphs_folder = "generated-graphs";
+  //   cut_vertices_stats(graphs_folder);
 
   return 0;
 }

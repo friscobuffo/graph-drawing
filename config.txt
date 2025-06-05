@@ -1,7 +1,10 @@
 #################################
 # MAIN CONFIG
+# input_graph_file=generated-graphs/high_degree/prova/prova2.txt
+# input_graph_file=generated-graphs/rome_2/
+# input_graph_file=generated-graphs/rome_2/grafo3470.41.txt
 #################################
-input_graph_file=generated-graphs/20/graph_77_n20_m32.txt
+input_graph_file=generated-graphs/rome_2/grafo957.12.txt
 output_svg_shape_metrics=drawing_sm.svg
 output_svg_ogdf=drawing_ogdf.svg
 

@@ -216,8 +216,10 @@ std::vector<std::unique_ptr<Graph>> compute_connected_components(
     const Graph& graph) {
   if (!is_graph_undirected(graph))
     throw std::runtime_error("Graph is not undirected");
+
   std::unordered_set<int> visited;
   std::vector<std::unique_ptr<Graph>> components;
+
   std::function<void(const GraphNode&, Graph& component)> explore_component =
       [&](const GraphNode& node, Graph& component) {
         visited.insert(node.get_id());
@@ -232,14 +234,24 @@ std::vector<std::unique_ptr<Graph>> compute_connected_components(
           }
         }
       };
-  for (const auto& node : graph.get_nodes())
+
+  for (const auto& node : graph.get_nodes()) {
     if (!visited.contains(node.get_id())) {
       auto new_component = std::make_unique<Graph>();
       new_component->add_node(node.get_id());
       explore_component(node, *new_component);
       components.push_back(std::move(new_component));
     }
-  return std::move(components);
+  }
+
+  std::sort(
+      components.begin(), components.end(),
+      [](const std::unique_ptr<Graph>& a, const std::unique_ptr<Graph>& b) {
+        return a->get_nodes().size() >
+               b->get_nodes().size();  
+      });
+
+  return components;
 }
 
 void dfs_bic_com(const GraphNode& node,

@@ -168,6 +168,7 @@ float compute_total_area(const DrawingResult& result) {
     max_x = std::max(max_x, positions.get_position_x(i));
     max_y = std::max(max_y, positions.get_position_y(i));
   }
+
   return (max_x - min_x + 1) * (max_y - min_y + 1);
 }
 
