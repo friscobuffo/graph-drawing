@@ -31,16 +31,4 @@ void add_cycles_constraints(const Graph& graph, CnfBuilder& cnf_builder,
                             const std::vector<std::vector<int>>& cycles,
                             const VariablesHandler& handler);
 
-// constraints of nodes in degree > 4 graphs
-void add_nodes_constraints_special(const Graph& graph, CnfBuilder& cnf_builder,
-                                   const VariablesHandler& handler);
-
-void add_constraints_special_edges(const Graph& graph, CnfBuilder& cnf_builder,
-                                   VariablesHandler& handler);
-
-// constraints from cycles in degree >4 graphs
-void add_cycles_constraints_special(const Graph& graph, CnfBuilder& cnf_builder,
-                                    const std::vector<std::vector<int>>& cycles,
-                                    const VariablesHandler& handler);
-
 #endif

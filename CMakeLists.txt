@@ -19,6 +19,8 @@ set(COMMON_SRCS
     src/orthogonal/shape/shape_builder.cpp
     src/orthogonal/shape/variables_handler.cpp
     src/orthogonal/shape/clauses_functions.cpp
+    src/orthogonal/area_compacter.cpp
+    src/orthogonal/equivalence_classes.cpp
     src/drawing/polygon.cpp
     src/core/graph/graphs_algorithms.cpp
     src/core/graph/graph.cpp

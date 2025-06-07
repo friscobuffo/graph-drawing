@@ -25,8 +25,10 @@ void save_string_to_file(const std::string& filename,
 
 enum class Color {
   RED,
+  RED_SPECIAL,
   BLUE,
   BLACK,
+  GREEN,
   RED_AND_BLUE,
   NONE,
   ANY,

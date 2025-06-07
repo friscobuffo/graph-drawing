@@ -79,6 +79,8 @@ class Graph {
              return *pair.second;
            });
   }
+  int get_degree_of_node(int node_id) const;
+  int get_in_degree_of_node(int node_id) const;
   const GraphEdge& get_edge(int from_id, int to_id) const;
   const GraphEdge& get_edge_by_id(int edge_id) const;
   void remove_node(int id);
@@ -105,6 +107,9 @@ class GraphNode {
   std::string to_string() const;
   auto get_edges() const { return m_graph_owner.get_edges_of_node(m_id); };
   int get_degree() const { return get_edges().size(); }
+  int get_in_degree() const {
+    return m_graph_owner.get_in_degree_of_node(m_id);
+  }
   void print() const { std::cout << to_string() << std::endl; }
   const Graph& get_owner() const { return m_graph_owner; }
 };

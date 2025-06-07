@@ -64,40 +64,14 @@ void Shape::set_direction(const int i, const int j, const Direction direction) {
     throw std::invalid_argument(error);
   }
   m_shape[std::make_pair(i, j)] = direction;
-  if (m_node_neighbors_direction.contains(i)) {
-    switch (direction) {
-      case Direction::LEFT:
-        std::get<0>(m_node_neighbors_direction[i]) = j;
-        break;
-      case Direction::RIGHT:
-        std::get<1>(m_node_neighbors_direction[i]) = j;
-        break;
-      case Direction::DOWN:
-        std::get<2>(m_node_neighbors_direction[i]) = j;
-        break;
-      case Direction::UP:
-        std::get<3>(m_node_neighbors_direction[i]) = j;
-        break;
-    }
-  } else {
-    switch (direction) {
-      case Direction::LEFT:
-        m_node_neighbors_direction[i] = std::make_tuple(j, -1, -1, -1);
-        break;
-      case Direction::RIGHT:
-        m_node_neighbors_direction[i] = std::make_tuple(-1, j, -1, -1);
-        break;
-      case Direction::DOWN:
-        m_node_neighbors_direction[i] = std::make_tuple(-1, -1, j, -1);
-        break;
-      case Direction::UP:
-        m_node_neighbors_direction[i] = std::make_tuple(-1, -1, -1, j);
-        break;
-    }
-  }
 }
 
 Direction Shape::get_direction(const int i, const int j) const {
+  if (!m_shape.contains({i, j})) {
+    std::string error = "Direction not set for this pair: (" +
+                        std::to_string(i) + ", " + std::to_string(j) + ")";
+    throw std::invalid_argument(error);
+  }
   return m_shape.at(std::make_pair(i, j));
 }
 
@@ -129,67 +103,11 @@ bool Shape::is_vertical(const int i, const int j) const {
   return is_up(i, j) || is_down(i, j);
 }
 
-bool Shape::has_node_a_left_neighbor(const int node) const {
-  return std::get<0>(m_node_neighbors_direction.at(node)) != -1;
-}
-
-bool Shape::has_node_a_right_neighbor(const int node) const {
-  return std::get<1>(m_node_neighbors_direction.at(node)) != -1;
-}
-
-bool Shape::has_node_a_up_neighbor(const int node) const {
-  return std::get<3>(m_node_neighbors_direction.at(node)) != -1;
-}
-
-bool Shape::has_node_a_down_neighbor(const int node) const {
-  return std::get<2>(m_node_neighbors_direction.at(node)) != -1;
-}
-
-int Shape::get_right_neighbor(const int node) const {
-  if (!has_node_a_right_neighbor(node))
-    throw std::invalid_argument("Node does not have a right neighbor");
-  return std::get<1>(m_node_neighbors_direction.at(node));
-}
-
-int Shape::get_left_neighbor(const int node) const {
-  if (!has_node_a_left_neighbor(node))
-    throw std::invalid_argument("Node does not have a left neighbor");
-  return std::get<0>(m_node_neighbors_direction.at(node));
-}
-
-int Shape::get_up_neighbor(const int node) const {
-  if (!has_node_a_up_neighbor(node))
-    throw std::invalid_argument("Node does not have an up neighbor");
-  return std::get<3>(m_node_neighbors_direction.at(node));
-}
-
-int Shape::get_down_neighbor(const int node) const {
-  if (!has_node_a_down_neighbor(node))
-    throw std::invalid_argument("Node does not have a down neighbor");
-  return std::get<2>(m_node_neighbors_direction.at(node));
-}
-
 void Shape::remove_direction(const int i, const int j) {
   if (!contains(i, j))
     throw std::invalid_argument("Direction does not exist for this pair");
   Direction direction = get_direction(i, j);
   m_shape.erase(std::make_pair(i, j));
-  if (m_node_neighbors_direction.contains(i)) {
-    switch (direction) {
-      case Direction::LEFT:
-        std::get<0>(m_node_neighbors_direction[i]) = -1;
-        break;
-      case Direction::RIGHT:
-        std::get<1>(m_node_neighbors_direction[i]) = -1;
-        break;
-      case Direction::DOWN:
-        std::get<2>(m_node_neighbors_direction[i]) = -1;
-        break;
-      case Direction::UP:
-        std::get<3>(m_node_neighbors_direction[i]) = -1;
-        break;
-    }
-  }
 }
 
 std::string Shape::to_string() const {

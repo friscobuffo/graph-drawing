@@ -2,6 +2,8 @@
 #define MY_POLYGON_H
 
 #include <iostream>
+#include <optional>
+#include <string>
 #include <vector>
 
 class Point2D {
@@ -68,6 +70,56 @@ class Polygon2D {
   bool isInside(Point2D& p);
   bool isInside(Line2D& l);
   std::vector<Point2D> computeConvexHull();
+};
+
+class Circle2D {
+ private:
+  Point2D center;
+  double radius;
+  std::optional<std::string> label;
+  std::optional<std::string> color;
+
+ public:
+  Circle2D(Point2D& center, double radius) : center(center), radius(radius) {}
+  Point2D getCenter() const { return center; }
+  double getRadius() const { return radius; }
+  void setLabel(const std::string& label) { this->label = label; }
+  bool hasLabel() const { return label.has_value(); }
+  std::string getLabel() const {
+    if (!label.has_value()) throw std::runtime_error("Circle has no label");
+    return *label;
+  }
+  void setColor(const std::string& color) { this->color = color; }
+  bool hasColor() const { return color.has_value(); }
+  std::string getColor() const {
+    if (!color.has_value()) throw std::runtime_error("Circle has no color");
+    return *color;
+  }
+};
+
+class Square2D {
+ private:
+  Point2D center;
+  double side;
+  std::optional<std::string> label;
+  std::optional<std::string> color;
+
+ public:
+  Square2D(Point2D& center, double side) : center(center), side(side) {}
+  Point2D getCenter() const { return center; }
+  double getSide() const { return side; }
+  void setLabel(const std::string& label) { this->label = label; }
+  bool hasLabel() const { return label.has_value(); }
+  std::string getLabel() const {
+    if (!label.has_value()) throw std::runtime_error("Square has no label");
+    return *label;
+  }
+  void setColor(const std::string& color) { this->color = color; }
+  bool hasColor() const { return color.has_value(); }
+  std::string getColor() const {
+    if (!color.has_value()) throw std::runtime_error("Square has no color");
+    return *color;
+  }
 };
 
 #endif

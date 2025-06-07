@@ -11,6 +11,12 @@ void GraphAttributes::add_attribute(Attribute attribute) {
   mattribute_to_node[attribute] = {};
 }
 
+void GraphAttributes::remove_nodes_attribute(int node_id) {
+  for (auto [attribute, nodes_attributes] : mattribute_to_node) {
+    nodes_attributes.erase(node_id);
+  }
+}
+
 bool GraphAttributes::has_attribute_by_id(Attribute attribute, int id) const {
   if (!has_attribute(attribute))
     throw std::runtime_error(
@@ -61,6 +67,13 @@ Color GraphAttributes::get_node_color(int node_id) const {
         "GraphAttributes::get_node_color: the node does not have a color");
   return std::any_cast<Color>(
       mattribute_to_node.at(Attribute::NODES_COLOR).at(node_id));
+}
+
+void GraphAttributes::change_node_color(int node_id, Color color) {
+  if (!has_attribute_by_id(Attribute::NODES_COLOR, node_id))
+    throw std::runtime_error(
+        "GraphAttributes::change_node_color: the node does not have a color");
+  mattribute_to_node.at(Attribute::NODES_COLOR)[node_id] = color;
 }
 
 void GraphAttributes::set_edge_any_label(int edge_id, const std::any& label) {

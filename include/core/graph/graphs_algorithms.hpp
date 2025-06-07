@@ -35,8 +35,13 @@ std::vector<std::unique_ptr<Graph>> compute_connected_components(
 struct BiconnectedComponents {
   std::unordered_set<int> cutvertices;
   std::vector<std::unique_ptr<Graph>> components;
+  std::string to_string() const;
+  void print() const;
 };
 
 BiconnectedComponents compute_biconnected_components(const Graph& graph);
+
+std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet>
+compute_maximal_degree_4_subgraph(const Graph& graph);
 
 #endif

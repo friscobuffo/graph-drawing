@@ -1,6 +1,7 @@
 #ifndef MY_SHAPE_HPP
 #define MY_SHAPE_HPP
 
+#include <array>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -18,11 +19,13 @@ Direction opposite_direction(const Direction direction);
 
 Direction rotate_90_degrees(const Direction direction);
 
+constexpr std::array<Direction, 4> get_all_directions() {
+  return {Direction::LEFT, Direction::RIGHT, Direction::UP, Direction::DOWN};
+}
+
 class Shape {
  private:
   std::unordered_map<std::pair<int, int>, Direction, int_pair_hash> m_shape;
-  std::unordered_map<int, std::tuple<int, int, int, int>>
-      m_node_neighbors_direction;
 
  public:
   void set_direction(const int i, const int j, const Direction direction);
@@ -34,14 +37,6 @@ class Shape {
   bool is_left(const int i, const int j) const;
   bool is_horizontal(const int i, const int j) const;
   bool is_vertical(const int i, const int j) const;
-  bool has_node_a_right_neighbor(const int node) const;
-  bool has_node_a_left_neighbor(const int node) const;
-  bool has_node_a_up_neighbor(const int node) const;
-  bool has_node_a_down_neighbor(const int node) const;
-  int get_right_neighbor(const int node) const;
-  int get_left_neighbor(const int node) const;
-  int get_up_neighbor(const int node) const;
-  int get_down_neighbor(const int node) const;
   void remove_direction(const int i, const int j);
   std::string to_string() const;
   void print() const;

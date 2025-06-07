@@ -349,3 +349,41 @@ void build_component(Graph& component, std::list<int>& nodes,
   for (const auto& edge : edges)
     component.add_undirected_edge(edge.first, edge.second);
 }
+
+std::string BiconnectedComponents::to_string() const {
+  std::string result = "Biconnected Components:\n";
+  result += "Cut vertices: ";
+  for (const auto& cv : cutvertices) result += std::to_string(cv) + " ";
+  result += "\nComponents:\n";
+  for (const auto& component : components) {
+    result += component->to_string() + "\n";
+  }
+  return result;
+}
+
+void BiconnectedComponents::print() const {
+  std::cout << to_string() << std::endl;
+}
+
+std::pair<std::unique_ptr<Graph>, GraphEdgeHashSet>
+compute_maximal_degree_4_subgraph(const Graph& graph) {
+  auto subgraph = std::make_unique<Graph>();
+  GraphEdgeHashSet removed_edges;
+  for (const auto& node : graph.get_nodes()) subgraph->add_node(node.get_id());
+  for (const auto& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    for (auto& edge : node.get_edges()) {
+      int neighbor_id = edge.get_to().get_id();
+      if (subgraph->has_edge(node_id, neighbor_id)) continue;
+      if (removed_edges.contains({node_id, neighbor_id})) continue;
+      if (subgraph->get_node_by_id(node_id).get_degree() < 4 &&
+          subgraph->get_node_by_id(neighbor_id).get_degree() < 4) {
+        subgraph->add_undirected_edge(node_id, neighbor_id);
+      } else {
+        removed_edges.insert({node_id, neighbor_id});
+        removed_edges.insert({neighbor_id, node_id});
+      }
+    }
+  }
+  return std::make_pair(std::move(subgraph), std::move(removed_edges));
+}

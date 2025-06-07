@@ -32,10 +32,12 @@ class GraphAttributes {
   const std::any& get_attribute_by_id(Attribute attribute, int id) const;
   void set_node_color(int node_id, Color color);
   Color get_node_color(int node_id) const;
+  void change_node_color(int node_id, Color color);
   void set_edge_any_label(int edge_id, const std::any& label);
   void set_chain_edges(int key, const std::tuple<int, int>& edge);
   std::vector<std::tuple<int, int>> get_chain_edges(int key);
   const std::any& get_edge_any_label(int edge_id) const;
+  void remove_nodes_attribute(int node_id);
 };
 
 #endif

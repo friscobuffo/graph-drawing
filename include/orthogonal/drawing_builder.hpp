@@ -31,6 +31,8 @@ class NodesPositions {
  public:
   void set_position(int node, float position_x, float position_y);
   void change_position(int node, float position_x, float position_y);
+  void change_position_x(int node, float position_x);
+  void change_position_y(int node, float position_y);
   float get_position_x(int node) const;
   float get_position_y(int node) const;
   void x_right_shift(float x_pos);
@@ -41,19 +43,6 @@ class NodesPositions {
   void remove_position(int node);
   const NodePosition& get_position(int node) const;
 };
-
-enum class BuildingResultType {
-  OK,
-  CYCLES_TO_BE_ADDED,
-};
-
-struct BuildingResult {
-  std::optional<NodesPositions> positions;
-  std::vector<std::vector<int>> cycles_to_be_added;
-  BuildingResultType type;
-};
-
-BuildingResult build_nodes_positions(const Shape& shape, const Graph& graph);
 
 void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
                            const GraphAttributes& attributes,
@@ -71,8 +60,6 @@ struct DrawingResult {
 
 DrawingResult make_orthogonal_drawing(const Graph& graph);
 
-DrawingResult make_orthogonal_drawing_low_degree(const Graph& graph);
-
 bool check_if_drawing_has_overlappings(const Graph& graph,
                                        const NodesPositions& positions);
 
@@ -83,5 +70,7 @@ void add_back_removed_edge(DrawingResult& result,
 
 bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
                     int l);
+
+void prova_special();
 
 #endif

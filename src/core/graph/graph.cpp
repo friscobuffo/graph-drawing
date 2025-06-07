@@ -65,8 +65,8 @@ const GraphEdge& Graph::add_edge(int from_id, int to_id) {
     throw std::runtime_error("Graph::add_edge: node not found");
   if (has_edge(from_id, to_id))
     throw std::runtime_error("Graph::add_edge: edge already exists");
-  if (from_id == to_id)
-    throw std::runtime_error("Graph::add_edge: cannot add self-loop");
+  // if (from_id == to_id)
+  //   throw std::runtime_error("Graph::add_edge: cannot add self-loop");
   auto& from_node = m_nodeid_to_node_map.at(from_id);
   auto& to_node = m_nodeid_to_node_map.at(to_id);
   GraphEdge* edge =
@@ -142,4 +142,16 @@ void Graph::remove_node(int id) {
   m_nodeid_to_edgesid.erase(id);
   m_nodeid_to_neighborsid_to_edgesid.erase(id);
   m_nodeid_to_incoming_edgesid_map.erase(id);
+}
+
+int Graph::get_degree_of_node(int node_id) const {
+  if (!has_node(node_id))
+    throw std::runtime_error("Graph::get_degree_of_node: node not found");
+  return m_nodeid_to_edgesid.at(node_id).size();
+}
+
+int Graph::get_in_degree_of_node(int node_id) const {
+  if (!has_node(node_id))
+    throw std::runtime_error("Graph::get_in_degree_of_node: node not found");
+  return m_nodeid_to_incoming_edgesid_map.at(node_id).size();
 }

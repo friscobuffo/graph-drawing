@@ -11,24 +11,42 @@ std::unique_ptr<Graph> generate_connected_random_graph_degree_max_4(
     int number_of_nodes, int number_of_edges) {
   if (number_of_edges > 2 * number_of_nodes)
     throw std::runtime_error("Number of edges is too large");
+  if (number_of_edges < number_of_nodes - 1)
+    throw std::runtime_error("Number of edges is too small");
   auto graph = std::make_unique<Graph>();
   for (int i = 0; i < number_of_nodes; ++i) graph->add_node(i);
-  GraphEdgeHashSet added_edge;
   int added_edges = 0;
   while (added_edges < number_of_edges) {
     int i = rand() % number_of_nodes;
     int j = rand() % number_of_nodes;
-    if (i == j || added_edge.contains({i, j})) continue;
+    if (i == j || graph->has_edge(i, j)) continue;
     if (graph->get_node_by_id(i).get_degree() >= 4) continue;
     if (graph->get_node_by_id(j).get_degree() >= 4) continue;
     graph->add_undirected_edge(i, j);
-    added_edge.insert({i, j});
-    added_edge.insert({j, i});
     ++added_edges;
   }
   if (!is_graph_connected(*graph))
     return generate_connected_random_graph_degree_max_4(number_of_nodes,
                                                         number_of_edges);
+  return graph;
+}
+
+std::unique_ptr<Graph> generate_connected_random_graph(int number_of_nodes,
+                                                       int number_of_edges) {
+  if (number_of_edges < number_of_nodes - 1)
+    throw std::runtime_error("Number of edges is too small");
+  auto graph = std::make_unique<Graph>();
+  for (int i = 0; i < number_of_nodes; ++i) graph->add_node(i);
+  int added_edges = 0;
+  while (added_edges < number_of_edges) {
+    int i = rand() % number_of_nodes;
+    int j = rand() % number_of_nodes;
+    if (i == j || graph->has_edge(i, j)) continue;
+    graph->add_undirected_edge(i, j);
+    ++added_edges;
+  }
+  if (!is_graph_connected(*graph))
+    return generate_connected_random_graph(number_of_nodes, number_of_edges);
   return graph;
 }
 
