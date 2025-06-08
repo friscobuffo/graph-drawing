@@ -173,12 +173,10 @@ void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
     if (color == Color::GREEN) continue;
     if (color == Color::BLUE) continue;
     if (color == Color::RED_SPECIAL) continue;
-    int side;
-    if (node.get_degree() <= 4)
-      side = 25;
-    else
-      side = ceil(25 * sqrt((node.get_degree() - 3)));
-    Square2D square{points.at(node.get_id()), side};
+    int side = (node.get_degree() <= 4)
+                   ? 25
+                   : ceil(25 * sqrt((node.get_degree() - 3)));
+    Square2D square{points.at(node.get_id()), static_cast<double>(side)};
     square.setColor(color_to_string(color));
     square.setLabel(std::to_string(node.get_id()));
     drawer.add(square);
@@ -1013,54 +1011,15 @@ int get_other_neighbor_id(const Graph& graph, int node_id, int neighbor_id) {
                            std::to_string(node_id));
 }
 
-std::unordered_map<int, Direction> compute_shifting_direction(
-    const Graph& graph, const GraphAttributes& attributes, const Shape& shape,
-    std::vector<int>& nodes_at_direction, Direction increasing_direction,
-    int& index_of_fixed_node) {
-  bool has_black_node = false;
-  int black_node_index = -1;
-  std::unordered_map<int, Direction> node_to_direction;
+int find_fixed_index_node(const GraphAttributes& attributes,
+                          std::vector<int>& nodes_at_direction) {
   for (int i = 0; i < nodes_at_direction.size(); ++i) {
     int node_id = nodes_at_direction[i];
     if (attributes.get_node_color(node_id) == Color::BLACK) {
-      has_black_node = true;
-      black_node_index = i;
-      break;
+      return i;
     }
   }
-  if (has_black_node) {
-    Direction direction = opposite_direction(increasing_direction);
-    for (int i = 0; i < nodes_at_direction.size(); ++i) {
-      if (i == black_node_index) {
-        direction = increasing_direction;
-        continue;
-      }
-      node_to_direction[nodes_at_direction[i]] = direction;
-    }
-    index_of_fixed_node = black_node_index;
-    return node_to_direction;
-  }
-  int red_node_index = -1;
-  for (int i = 0; i < nodes_at_direction.size(); ++i) {
-    int node_id = nodes_at_direction[i];
-    if (attributes.get_node_color(node_id) == Color::RED) {
-      red_node_index = i;
-      break;
-    }
-  }
-  if (red_node_index == -1) {
-    return {};
-  }
-  Direction direction = opposite_direction(increasing_direction);
-  for (int i = 0; i < nodes_at_direction.size(); ++i) {
-    if (i == red_node_index) {
-      direction = increasing_direction;
-      continue;
-    }
-    node_to_direction[nodes_at_direction[i]] = direction;
-  }
-  index_of_fixed_node = red_node_index;
-  return node_to_direction;
+  return nodes_at_direction.size() / 2;
 }
 
 template <typename Func>
@@ -1101,90 +1060,123 @@ void shifting_order(int node_id, Graph& graph, Shape& shape,
       });
 }
 
-void make_shifts(int node_id, Graph& graph, Shape& shape,
-                 GraphAttributes& attributes, NodesPositions& positions,
-                 std::vector<int>& right_nodes, Direction nodes_direction,
-                 Color new_color, Direction increasing_direction) {
+void make_shifts_right(int node_id, Graph& graph, Shape& shape,
+                       GraphAttributes& attributes, NodesPositions& positions,
+                       std::vector<int>& right_nodes) {
+  auto position_function = [](const NodesPositions& positions, int id) {
+    return positions.get_position_x(id);
+  };
   shifting_order(node_id, graph, shape, right_nodes, positions, attributes,
-                 increasing_direction,
-                 [](const NodesPositions& positions, int id) {
-                   return positions.get_position_x(id);
-                 });
-  int index_of_fixed_node = -1;
-  std::unordered_map<int, Direction> node_to_direction =
-      compute_shifting_direction(graph, attributes, shape, right_nodes,
-                                 increasing_direction, index_of_fixed_node);
-  float up_initial_position = positions.get_position_y(node_id);
+                 Direction::UP, position_function);
+  auto other_position_function = [](const NodesPositions& positions, int id) {
+    return positions.get_position_y(id);
+  };
+  auto other_position_change_function = [](NodesPositions& positions, int id,
+                                           float new_position) {
+    positions.change_position_y(id, new_position);
+  };
+  int index_of_fixed_node = find_fixed_index_node(attributes, right_nodes);
+  float initial_position = positions.get_position_y(node_id);
+  // for (const GraphNode& node : graph.get_nodes()) {
+  //   int node_id = node.get_id();
+  //   if (other_position_function(positions, node_id) >
+  //       initial_position + shift) {
+  //     other_position_change_function(
+  //         positions, node_id,
+  //         other_position_function(positions, node_id) + 0.05f);
+  //   }
+  // }
   for (int i = 0; i < right_nodes.size(); ++i) {
+    if (i == index_of_fixed_node) continue;
     int node_to_shift_id = right_nodes[i];
-    if (!node_to_direction.contains(node_to_shift_id)) continue;
     float shift = (i - index_of_fixed_node) * 0.05f;
-    if (node_to_direction[node_to_shift_id] == increasing_direction)
-      for (const GraphNode& node : graph.get_nodes()) {
-        int node_id = node.get_id();
-        if (positions.get_position_y(node_id) > up_initial_position + shift) {
-          positions.change_position_y(
-              node_id, positions.get_position_y(node_id) + 0.05f);
-        }
-      }
-    else if (node_to_direction[node_to_shift_id] ==
-             opposite_direction(increasing_direction)) {
-      for (const GraphNode& node : graph.get_nodes()) {
-        int node_id = node.get_id();
-        if (positions.get_position_y(node_id) < up_initial_position + shift) {
-          positions.change_position_y(
-              node_id, positions.get_position_y(node_id) - 0.05f);
-        }
-      }
-    } else
-      throw std::runtime_error("wtf");
+    int node_to_shift_neighbor_id =
+        get_other_neighbor_id(graph, node_to_shift_id, node_id);
+    Direction direction =
+        shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
     int added_node_id = graph.add_node().get_id();
-    attributes.set_node_color(added_node_id, new_color);
-    shape.set_direction(node_id, added_node_id,
-                        node_to_direction[node_to_shift_id]);
-    shape.set_direction(
-        added_node_id, node_id,
-        opposite_direction(node_to_direction[node_to_shift_id]));
-    shape.set_direction(added_node_id, node_to_shift_id, nodes_direction);
-    shape.set_direction(node_to_shift_id, added_node_id,
-                        opposite_direction(nodes_direction));
+    attributes.set_node_color(added_node_id, Color::GREEN);
+    shape.set_direction(node_id, added_node_id, direction);
+    shape.set_direction(added_node_id, node_id, opposite_direction(direction));
+    shape.set_direction(added_node_id, node_to_shift_id, Direction::RIGHT);
+    shape.set_direction(node_to_shift_id, added_node_id, Direction::LEFT);
     shape.remove_direction(node_id, node_to_shift_id);
     shape.remove_direction(node_to_shift_id, node_id);
     graph.remove_undirected_edge(node_id, node_to_shift_id);
     graph.add_undirected_edge(node_id, added_node_id);
     graph.add_undirected_edge(added_node_id, node_to_shift_id);
-    if (increasing_direction == Direction::UP) {
-      positions.set_position(added_node_id, positions.get_position_x(node_id),
-                             up_initial_position + shift);
-      positions.change_position_y(node_to_shift_id,
-                                  positions.get_position_y(added_node_id));
-    } else if (increasing_direction == Direction::RIGHT) {
-      positions.set_position(added_node_id,
-                             positions.get_position_x(node_id) + shift,
-                             positions.get_position_y(node_id));
-      positions.change_position_x(node_to_shift_id,
-                                  positions.get_position_x(added_node_id));
-    } else
-      throw std::runtime_error("make_shifts: wtf");
+    positions.set_position(added_node_id, positions.get_position_x(node_id),
+                           initial_position + shift);
+    positions.change_position_y(node_to_shift_id,
+                                positions.get_position_y(added_node_id));
+  }
+}
+
+void make_shifts_up(int node_id, Graph& graph, Shape& shape,
+                    GraphAttributes& attributes, NodesPositions& positions,
+                    std::vector<int>& up_nodes) {
+  auto position_function = [](const NodesPositions& positions, int id) {
+    return positions.get_position_y(id);
+  };
+  shifting_order(node_id, graph, shape, up_nodes, positions, attributes,
+                 Direction::RIGHT, position_function);
+  auto other_position_function = [](const NodesPositions& positions, int id) {
+    return positions.get_position_x(id);
+  };
+  auto other_position_change_function = [](NodesPositions& positions, int id,
+                                           float new_position) {
+    positions.change_position_x(id, new_position);
+  };
+  int index_of_fixed_node = find_fixed_index_node(attributes, up_nodes);
+  float initial_position = positions.get_position_x(node_id);
+  // for (const GraphNode& node : graph.get_nodes()) {
+  //   int node_id = node.get_id();
+  //   if (other_position_function(positions, node_id) >
+  //       initial_position + shift) {
+  //     other_position_change_function(
+  //         positions, node_id,
+  //         other_position_function(positions, node_id) + 0.05f);
+  //   }
+  // }
+  for (int i = 0; i < up_nodes.size(); ++i) {
+    if (i == index_of_fixed_node) continue;
+    int node_to_shift_id = up_nodes[i];
+    float shift = (i - index_of_fixed_node) * 0.05f;
+    int node_to_shift_neighbor_id =
+        get_other_neighbor_id(graph, node_to_shift_id, node_id);
+    Direction direction =
+        shape.get_direction(node_to_shift_id, node_to_shift_neighbor_id);
+    int added_node_id = graph.add_node().get_id();
+    attributes.set_node_color(added_node_id, Color::BLUE);
+    shape.set_direction(node_id, added_node_id, direction);
+    shape.set_direction(added_node_id, node_id, opposite_direction(direction));
+    shape.set_direction(added_node_id, node_to_shift_id, Direction::UP);
+    shape.set_direction(node_to_shift_id, added_node_id, Direction::DOWN);
+    shape.remove_direction(node_id, node_to_shift_id);
+    shape.remove_direction(node_to_shift_id, node_id);
+    graph.remove_undirected_edge(node_id, node_to_shift_id);
+    graph.add_undirected_edge(node_id, added_node_id);
+    graph.add_undirected_edge(added_node_id, node_to_shift_id);
+    positions.set_position(added_node_id, initial_position + shift,
+                           positions.get_position_y(node_id));
+    positions.change_position_x(node_to_shift_id,
+                                positions.get_position_x(added_node_id));
   }
 }
 
 void make_shifts(Graph& graph, GraphAttributes& attributes, Shape& shape,
                  NodesPositions& positions) {
   std::vector<const GraphNode*> nodes;
-  for (const GraphNode& node : graph.get_nodes()) {
+  for (const GraphNode& node : graph.get_nodes())
     if (node.get_degree() > 4) nodes.push_back(&node);
-  }
   for (const GraphNode* node : nodes) {
     int node_id = node->get_id();
     std::unordered_map<Direction, std::vector<int>> nodes_to_sort =
         neighbors_at_each_direction(*node, shape, attributes);
-    make_shifts(node_id, graph, shape, attributes, positions,
-                nodes_to_sort[Direction::RIGHT], Direction::RIGHT, Color::GREEN,
-                Direction::UP);
-    make_shifts(node_id, graph, shape, attributes, positions,
-                nodes_to_sort[Direction::UP], Direction::UP, Color::BLUE,
-                Direction::RIGHT);
+    make_shifts_right(node_id, graph, shape, attributes, positions,
+                      nodes_to_sort[Direction::RIGHT]);
+    make_shifts_up(node_id, graph, shape, attributes, positions,
+                   nodes_to_sort[Direction::UP]);
   }
 }
 
@@ -1440,7 +1432,7 @@ NodesPositions build_nodes_positions(Graph& graph, GraphAttributes& attributes,
                                      Shape& shape) {
   find_inconsistencies(graph, shape, attributes);
   auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
-  auto [ordering_x, ordering_y, _, _] =
+  auto [ordering_x, ordering_y, ignored_1, ignored_2] =
       equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
   add_special_edges_in_orderings(graph, *ordering_x, *ordering_y, attributes,
                                  shape, classes_x, classes_y);

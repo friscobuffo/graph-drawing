@@ -102,26 +102,32 @@ int main() {
   // auto graph = generate_connected_random_graph(20, 35);
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo113.28.txt");
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo115.30.txt");
-  auto graph_rg = load_graph_from_txt_file("rome_2/grafo3470.41.txt");
-  auto result_ogdf = create_drawing(*graph_rg, "rome_ogdf.svg");
-  graph_rg->print();
+  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo3470.41.txt");
+  // auto result_ogdf = create_drawing(*graph_rg, "rome_ogdf.svg");
+  // graph_rg->print();
+  // auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
+  // node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
+  //                       result_rg.attributes, "rome.svg");
+  // auto graph = generate_connected_random_graph(15, 23);
+  // auto result = make_orthogonal_drawing_sperimental(*graph);
+  // node_positions_to_svg(result.positions, *result.augmented_graph,
+  //                       result.attributes, "daje.svg");
+
+  // std::unique_ptr<Graph> graph0 = prova0();
+  // result = make_orthogonal_drawing_sperimental(*graph0);
+  // node_positions_to_svg(result.positions, *result.augmented_graph,
+  //                       result.attributes, "daje0.svg");
+  // std::unique_ptr<Graph> graph1 = prova1();
+  // result = make_orthogonal_drawing_sperimental(*graph1);
+  // node_positions_to_svg(result.positions, *result.augmented_graph,
+  //                       result.attributes, "daje1.svg");
+  auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
+  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
   auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
   node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
-                        result_rg.attributes, "rome.svg");
-  auto graph = generate_connected_random_graph(15, 23);
-  auto result = make_orthogonal_drawing_sperimental(*graph);
-  node_positions_to_svg(result.positions, *result.augmented_graph,
-                        result.attributes, "daje.svg");
+                        result_rg.attributes, "rome2_.svg");
 
-  std::unique_ptr<Graph> graph0 = prova0();
-  result = make_orthogonal_drawing_sperimental(*graph0);
-  node_positions_to_svg(result.positions, *result.augmented_graph,
-                        result.attributes, "daje0.svg");
-  std::unique_ptr<Graph> graph1 = prova1();
-  result = make_orthogonal_drawing_sperimental(*graph1);
-  node_positions_to_svg(result.positions, *result.augmented_graph,
-                        result.attributes, "daje1.svg");
-  prova_special();
+  // prova_special();
   return 0;
   // Config config("config.txt");
   // const std::string& filename = config.get("output_svg_shape_metrics");

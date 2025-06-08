@@ -49,6 +49,8 @@ const std::string color_to_string(const Color color) {
       return "black";
     case Color::GREEN:
       return "green";
+    case Color::RED_SPECIAL:
+      return "darkred";
     default:
       throw std::invalid_argument("Invalid color");
   }
