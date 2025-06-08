@@ -1068,24 +1068,21 @@ void make_shifts_right(int node_id, Graph& graph, Shape& shape,
   };
   shifting_order(node_id, graph, shape, right_nodes, positions, attributes,
                  Direction::UP, position_function);
-  auto other_position_function = [](const NodesPositions& positions, int id) {
-    return positions.get_position_y(id);
-  };
-  auto other_position_change_function = [](NodesPositions& positions, int id,
-                                           float new_position) {
-    positions.change_position_y(id, new_position);
-  };
   int index_of_fixed_node = find_fixed_index_node(attributes, right_nodes);
   float initial_position = positions.get_position_y(node_id);
-  // for (const GraphNode& node : graph.get_nodes()) {
-  //   int node_id = node.get_id();
-  //   if (other_position_function(positions, node_id) >
-  //       initial_position + shift) {
-  //     other_position_change_function(
-  //         positions, node_id,
-  //         other_position_function(positions, node_id) + 0.05f);
-  //   }
-  // }
+  for (const GraphNode& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    double old_position_y = positions.get_position_y(node_id);
+    if (old_position_y > initial_position) {
+      double new_position_y =
+          old_position_y + 0.05f * (right_nodes.size() - index_of_fixed_node);
+      positions.change_position_y(node_id, new_position_y);
+    }
+    if (old_position_y < initial_position) {
+      double new_position_y = old_position_y - 0.05f * index_of_fixed_node;
+      positions.change_position_y(node_id, new_position_y);
+    }
+  }
   for (int i = 0; i < right_nodes.size(); ++i) {
     if (i == index_of_fixed_node) continue;
     int node_to_shift_id = right_nodes[i];
@@ -1120,24 +1117,21 @@ void make_shifts_up(int node_id, Graph& graph, Shape& shape,
   };
   shifting_order(node_id, graph, shape, up_nodes, positions, attributes,
                  Direction::RIGHT, position_function);
-  auto other_position_function = [](const NodesPositions& positions, int id) {
-    return positions.get_position_x(id);
-  };
-  auto other_position_change_function = [](NodesPositions& positions, int id,
-                                           float new_position) {
-    positions.change_position_x(id, new_position);
-  };
   int index_of_fixed_node = find_fixed_index_node(attributes, up_nodes);
   float initial_position = positions.get_position_x(node_id);
-  // for (const GraphNode& node : graph.get_nodes()) {
-  //   int node_id = node.get_id();
-  //   if (other_position_function(positions, node_id) >
-  //       initial_position + shift) {
-  //     other_position_change_function(
-  //         positions, node_id,
-  //         other_position_function(positions, node_id) + 0.05f);
-  //   }
-  // }
+  for (const GraphNode& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    double old_position_x = positions.get_position_x(node_id);
+    if (old_position_x > initial_position) {
+      double new_position_x =
+          old_position_x + 0.05f * (up_nodes.size() - index_of_fixed_node);
+      positions.change_position_x(node_id, new_position_x);
+    }
+    if (old_position_x < initial_position) {
+      double new_position_x = old_position_x - 0.05f * index_of_fixed_node;
+      positions.change_position_x(node_id, new_position_x);
+    }
+  }
   for (int i = 0; i < up_nodes.size(); ++i) {
     if (i == index_of_fixed_node) continue;
     int node_to_shift_id = up_nodes[i];
