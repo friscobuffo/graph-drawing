@@ -190,24 +190,61 @@ int compute_total_area(const DrawingResult& result) {
   return (max_x - min_x + 1) * (max_y - min_y + 1);
 }
 
+bool do_edges_cross(int i, int j, int k, int l,
+                    std::unordered_map<int, int>& node_to_coordinate_x,
+                    std::unordered_map<int, int>& node_to_coordinate_y) {
+  int i_pos_x = node_to_coordinate_x[i];
+  int i_pos_y = node_to_coordinate_y[i];
+  int j_pos_x = node_to_coordinate_x[j];
+  int j_pos_y = node_to_coordinate_y[j];
+  int k_pos_x = node_to_coordinate_x[k];
+  int k_pos_y = node_to_coordinate_y[k];
+  int l_pos_x = node_to_coordinate_x[l];
+  int l_pos_y = node_to_coordinate_y[l];
+
+  bool is_i_j_horizontal = i_pos_y == j_pos_y;
+  bool is_k_l_horizontal = k_pos_y == l_pos_y;
+
+  if (is_i_j_horizontal && is_k_l_horizontal) return false;
+  if (!is_i_j_horizontal && !is_k_l_horizontal) return false;
+  if (!is_i_j_horizontal)
+    return do_edges_cross(k, l, i, j, node_to_coordinate_x,
+                          node_to_coordinate_x);
+  if (i_pos_x == k_pos_x || i_pos_x == l_pos_x || j_pos_x == k_pos_x ||
+      j_pos_x == l_pos_x || i_pos_y == k_pos_y || i_pos_y == l_pos_y ||
+      j_pos_y == k_pos_y || j_pos_y == l_pos_y)
+    return false;
+  if (k_pos_x < std::min(i_pos_x, j_pos_x) ||
+      k_pos_x > std::max(i_pos_x, j_pos_x))
+    return false;
+  if (i_pos_y < std::min(k_pos_y, l_pos_y) ||
+      i_pos_y > std::max(k_pos_y, l_pos_y))
+    return false;
+  return true;
+}
+
 int compute_total_crossings(const DrawingResult& result) {
   const auto& graph = *result.augmented_graph;
   const auto& positions = result.positions;
+  const GraphAttributes& attributes = result.attributes;
+  auto [node_to_coordinate_x, node_to_coordinate_y] =
+      compute_node_to_coordinates_integer(graph, positions);
   int total_crossings = 0;
   for (auto& edge : graph.get_edges()) {
     int edge_id = edge.get_id();
     int i = edge.get_from().get_id();
     int j = edge.get_to().get_id();
+    if (i > j) continue;
     for (auto& other_edge : graph.get_edges()) {
       int other_edge_id = other_edge.get_id();
       if (edge_id >= other_edge_id) continue;
       int k = other_edge.get_from().get_id();
       int l = other_edge.get_to().get_id();
+      if (k > l) continue;
       if (i == k || i == l || j == k || j == l) continue;
       if (do_edges_cross(positions, i, j, k, l)) ++total_crossings;
     }
   }
-  total_crossings /= 4;
   return total_crossings;
 }
 

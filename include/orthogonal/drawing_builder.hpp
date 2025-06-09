@@ -68,9 +68,6 @@ DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph);
 void add_back_removed_edge(DrawingResult& result,
                            const std::pair<int, int>& edge);
 
-bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
-                    int l);
-
 void prova_special();
 
 #endif
