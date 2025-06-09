@@ -21,6 +21,7 @@
 #include "orthogonal/file_loader.hpp"
 
 std::unordered_set<std::string> graphs_already_in_csv;
+int total_fails = 0;
 
 auto test_shape_metrics_approach(const Graph& graph,
                                  const std::string& svg_output_filename) {
@@ -97,6 +98,12 @@ void compare_approaches_in_folder(std::string& folder_path,
             number_of_comparisons_done.fetch_add(1, std::memory_order_relaxed);
         if (graphs_already_in_csv.contains(graph_filename)) continue;
         std::unique_ptr<Graph> graph = load_graph_from_txt_file(entry_path);
+        if (!is_graph_connected(*graph)) {
+          std::lock_guard<std::mutex> lock(input_output_lock);
+          std::cerr << "Graph " << graph_filename
+                    << " is not connected, skipping." << std::endl;
+          continue;
+        }
         {
           std::lock_guard<std::mutex> lock(input_output_lock);
           std::cout << "Processing comparison #" << current_number << " - "
@@ -125,6 +132,7 @@ void compare_approaches_in_folder(std::string& folder_path,
             throw;
           } else {
             std::cout << "Graph contains cycle, skipping." << std::endl;
+            total_fails++;
           }
         }
       }
@@ -134,6 +142,8 @@ void compare_approaches_in_folder(std::string& folder_path,
     if (t.joinable()) t.join();
   std::cout << "All comparisons done." << std::endl;
   std::cout << "Threads used: " << num_threads << std::endl;
+  std::cout << "Total fails: " << total_fails << std::endl;
+  std::cout << "Total comparisons: " << number_of_comparisons_done.load() << std::endl;
 }
 
 void initialize_csv_file(std::ofstream& result_file) {
