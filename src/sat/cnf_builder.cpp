@@ -8,7 +8,7 @@
 #include "core/utils.hpp"
 
 const std::string project_path = std::filesystem::current_path().string() + "/";
-const std::string cnf_logs_file = get_unique_filename("cnf_logs", project_path);
+const std::string cnf_logs_file = "cnf_logs.txt";
 std::mutex cnf_logs_mutex;
 
 void CnfBuilder::add_clause(std::vector<int> clause) {

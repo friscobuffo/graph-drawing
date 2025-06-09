@@ -193,8 +193,6 @@ int compute_total_area(const DrawingResult& result) {
     min_x = std::min(min_x, x);
     min_y = std::min(min_y, y);
   }
-  std::cout << "min_x: " << min_x << ", max_x: " << max_x
-            << ", min_y: " << min_y << ", max_y: " << max_y << "\n";
   return (max_x - min_x + 1) * (max_y - min_y + 1);
 }
 
