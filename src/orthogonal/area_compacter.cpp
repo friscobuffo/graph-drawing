@@ -1,169 +1,176 @@
 #include "orthogonal/area_compacter.hpp"
 
-#include <cfloat>
+#include <cmath>
 
 #include "orthogonal/equivalence_classes.hpp"
 
-float get_x_coordinate(const NodesPositions& positions, int node_id) {
-  return positions.get_position_x(node_id);
+auto build_coordinate_x_to_nodes(const Graph& graph,
+                                 const NodesPositions& positions) {
+  std::unordered_map<int, std::unordered_set<int>> coordinate_x_to_nodes;
+  for (const auto& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    int x = std::round(100.0 * positions.get_position_x(node_id));
+    coordinate_x_to_nodes[x].insert(node_id);
+  }
+  return coordinate_x_to_nodes;
 }
 
-float get_y_coordinate(const NodesPositions& positions, int node_id) {
-  return positions.get_position_y(node_id);
+auto build_coordinate_y_to_nodes(const Graph& graph,
+                                 const NodesPositions& positions) {
+  std::unordered_map<int, std::unordered_set<int>> coordinate_y_to_nodes;
+  for (const auto& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    int y = std::round(100.0 * positions.get_position_y(node_id));
+    coordinate_y_to_nodes[y].insert(node_id);
+  }
+  return coordinate_y_to_nodes;
 }
 
-bool can_move_to_previous_coordinate(
-    const std::unordered_set<int>& classes_at_coordinate,
-    const std::unordered_set<int>& classes_at_previous_coordinate,
-    const std::unordered_map<int, std::pair<float, float>>&
-        class_to_min_max_coord) {
-  if (classes_at_previous_coordinate.empty()) return true;
-  for (int class_id_1 : classes_at_coordinate) {
-    float min_1 = class_to_min_max_coord.at(class_id_1).first;
-    float max_1 = class_to_min_max_coord.at(class_id_1).second;
-    for (int class_id_2 : classes_at_previous_coordinate) {
-      float min_2 = class_to_min_max_coord.at(class_id_2).first;
-      float max_2 = class_to_min_max_coord.at(class_id_2).second;
-      if (!(min_1 > max_2 || min_2 > max_1)) return false;
+auto build_index_to_nodes_map_x(const Graph& graph,
+                                const NodesPositions& positions) {
+  auto coordinate_x_to_nodes = build_coordinate_x_to_nodes(graph, positions);
+  int actual_x = 0;
+  int x_index = 0;
+  std::unordered_map<int, std::unordered_set<int>> index_to_nodes;
+  std::unordered_map<int, int> nodes_to_index;
+  while (coordinate_x_to_nodes.contains(actual_x)) {
+    for (int node_id : coordinate_x_to_nodes[actual_x]) {
+      index_to_nodes[x_index].insert(node_id);
+      nodes_to_index[node_id] = x_index;
+    }
+    if (coordinate_x_to_nodes.contains(actual_x + 5)) {
+      actual_x += 5;
+    } else {
+      actual_x += 100;
+      ++x_index;
     }
   }
+  return std::make_pair(index_to_nodes, nodes_to_index);
+}
+
+auto build_index_to_nodes_map_y(const Graph& graph,
+                                const NodesPositions& positions) {
+  auto coordinate_y_to_nodes = build_coordinate_y_to_nodes(graph, positions);
+  int actual_y = 0;
+  int y_index = 0;
+  std::unordered_map<int, std::unordered_set<int>> index_to_nodes;
+  std::unordered_map<int, int> nodes_to_index;
+  while (coordinate_y_to_nodes.contains(actual_y)) {
+    for (int node_id : coordinate_y_to_nodes[actual_y]) {
+      index_to_nodes[y_index].insert(node_id);
+      nodes_to_index[node_id] = y_index;
+    }
+    if (coordinate_y_to_nodes.contains(actual_y + 5)) {
+      actual_y += 5;
+    } else {
+      actual_y += 100;
+      ++y_index;
+    }
+  }
+  return std::make_pair(index_to_nodes, nodes_to_index);
+}
+
+bool can_move_to_prev_index(IntPairHashSet& prev, IntPairHashSet& to_shift) {
+  if (to_shift.size() != 1) throw std::runtime_error("can_move_left: wtf");
+  auto [to_shift_min, to_shift_max] = *to_shift.begin();
+  for (auto [prev_min, prev_max] : prev)
+    if (!(prev_min > to_shift_max || to_shift_min > prev_max)) return false;
   return true;
 }
 
-bool does_class_contain_colored_node(const EquivalenceClasses& classes,
-                                     int class_id, Color color,
-                                     const GraphAttributes& attributes) {
-  for (int node_id : classes.get_elems_of_class(class_id))
-    if (attributes.get_node_color(node_id) == color) return true;
-  return false;
+int compute_shift_amount(
+    int index,
+    std::unordered_map<int, IntPairHashSet>& index_to_min_max_coordinate) {
+  int shift = 0;
+  IntPairHashSet& to_shift = index_to_min_max_coordinate[index];
+  while (true) {
+    if (index - shift == 0) return shift;
+    IntPairHashSet& prev = index_to_min_max_coordinate[index - shift - 1];
+    if (can_move_to_prev_index(prev, to_shift))
+      shift++;
+    else
+      break;
+  }
+  return shift;
 }
 
-template <typename Func>
-auto build_coordinate_to_classes(const Graph& graph,
-                                 const NodesPositions& old_positions,
-                                 const EquivalenceClasses& classes,
-                                 Func get_position, Color color,
-                                 const GraphAttributes& attributes) {
-  std::unordered_map<float, std::unordered_set<int>> coordinate_to_classes;
-  for (int class_id : classes.get_all_classes()) {
-    int node_id = *classes.get_elems_of_class(class_id).begin();
-    float coordinate = get_position(old_positions, node_id);
-    if (coordinate_to_classes.contains(coordinate))
-      throw std::runtime_error("build_coordinate_to_classes: wtf");
-    coordinate_to_classes[coordinate] = {class_id};
-  }
-  std::vector<float> sorted_coordinates;
-  for (const auto& [coordinate, _] : coordinate_to_classes)
-    sorted_coordinates.push_back(coordinate);
-  std::sort(sorted_coordinates.begin(), sorted_coordinates.end());
-  float previous_coordinate = sorted_coordinates[0];
-  std::vector<float> true_sorted_coordinates;
-  true_sorted_coordinates.push_back(previous_coordinate);
-  for (int i = 1; i < sorted_coordinates.size(); ++i) {
-    float coordinate = sorted_coordinates[i];
-    int class_id = *coordinate_to_classes[coordinate].begin();
-    if (does_class_contain_colored_node(classes, class_id, color, attributes)) {
-      coordinate_to_classes[coordinate].clear();
-      coordinate_to_classes[previous_coordinate].insert(class_id);
-      continue;
+auto build_index_x_to_min_max_index_y(
+    std::unordered_map<int, std::unordered_set<int>>& index_x_to_nodes,
+    const NodesPositions& positions,
+    std::unordered_map<int, int>& node_to_index_y) {
+  std::unordered_map<int, IntPairHashSet> index_to_min_max_y;
+  for (const auto& [index, nodes] : index_x_to_nodes) {
+    int min_y = INT_MAX;
+    int max_y = 0;
+    for (int node_id : nodes) {
+      int y = node_to_index_y[node_id];
+      min_y = std::min(min_y, y);
+      max_y = std::max(max_y, y);
     }
-    previous_coordinate = coordinate;
-    true_sorted_coordinates.push_back(coordinate);
+    index_to_min_max_y[index] = {{min_y, max_y}};
   }
-  return std::make_pair(std::move(coordinate_to_classes),
-                        std::move(true_sorted_coordinates));
+  return index_to_min_max_y;
 }
 
-void shift_x_position(NodesPositions& positions, float shift_value,
-                      int node_id) {
-  float old_x = positions.get_position_x(node_id);
-  positions.change_position(node_id, old_x - shift_value,
-                            positions.get_position_y(node_id));
-}
-
-void shift_y_position(NodesPositions& positions, float shift_value,
-                      int node_id) {
-  float old_y = positions.get_position_y(node_id);
-  positions.change_position(node_id, positions.get_position_x(node_id),
-                            old_y - shift_value);
-}
-
-template <typename Func>
-void compact_area(
-    const Graph& graph, const Shape& shape, NodesPositions& old_positions,
-    const GraphAttributes& attributes, const EquivalenceClasses& classes,
-    std::unordered_map<float, std::unordered_set<int>>& coordinate_to_classes,
-    std::vector<float>& sorted_coordinates,
-    std::unordered_map<int, std::pair<float, float>>&
-        class_to_min_max_other_coord,
-    Func shifting_function) {
-  for (int i = 1; i < sorted_coordinates.size(); ++i) {
-    const float coordinate = sorted_coordinates[i];
-    int previous_index = i - 1;
-    float previous_coordinate = sorted_coordinates[previous_index];
-    float new_coordinate = coordinate;
-    const std::unordered_set<int>& classes_at_coordinate =
-        coordinate_to_classes[coordinate];
-    do {
-      std::unordered_set<int>& classes_at_previous_coordinate =
-          coordinate_to_classes[previous_coordinate];
-      bool move = can_move_to_previous_coordinate(
-          classes_at_coordinate, classes_at_previous_coordinate,
-          class_to_min_max_other_coord);
-      if (!move) break;
-      new_coordinate = previous_coordinate;
-      previous_index--;
-      if (previous_index < 0) break;
-      previous_coordinate = sorted_coordinates[previous_index];
-    } while (true);
-    if (new_coordinate != coordinate) {
-      float shift = coordinate - new_coordinate;
-      for (int class_id : classes_at_coordinate) {
-        for (int node_id : classes.get_elems_of_class(class_id))
-          shifting_function(old_positions, shift, node_id);
-        coordinate_to_classes[new_coordinate].insert(class_id);
-      }
-      coordinate_to_classes.erase(coordinate);
+auto build_index_y_to_min_max_index_x(
+    std::unordered_map<int, std::unordered_set<int>>& index_to_nodes,
+    const NodesPositions& positions,
+    std::unordered_map<int, int>& node_to_index_x) {
+  std::unordered_map<int, IntPairHashSet> index_to_min_max_x;
+  for (const auto& [index, nodes] : index_to_nodes) {
+    int min_x = INT_MAX;
+    int max_x = 0;
+    for (int node_id : nodes) {
+      int x = node_to_index_x[node_id];
+      min_x = std::min(min_x, x);
+      max_x = std::max(max_x, x);
     }
+    index_to_min_max_x[index] = {{min_x, max_x}};
   }
+  return index_to_min_max_x;
 }
 
 void compact_area(const Graph& graph, const Shape& shape,
-                  NodesPositions& old_positions,
+                  NodesPositions& positions,
                   const GraphAttributes& attributes) {
-  auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
-  auto [coordinate_to_classes_x, sorted_coordinates_x] =
-      build_coordinate_to_classes(graph, old_positions, classes_x,
-                                  get_x_coordinate, Color::BLUE, attributes);
-  std::unordered_map<int, std::pair<float, float>> class_to_min_max_y;
-  for (int class_id : classes_x.get_all_classes()) {
-    float min = FLT_MAX;
-    float max = 0;
-    for (auto& node : classes_x.get_elems_of_class(class_id)) {
-      min = std::min(min, get_y_coordinate(old_positions, node));
-      max = std::max(max, get_y_coordinate(old_positions, node));
+  auto [index_x_to_nodes, nodes_to_index_x] =
+      build_index_to_nodes_map_x(graph, positions);
+  auto [index_y_to_nodes, nodes_to_index_y] =
+      build_index_to_nodes_map_y(graph, positions);
+  // compacting x
+  auto index_to_min_max_y = build_index_x_to_min_max_index_y(
+      index_x_to_nodes, positions, nodes_to_index_y);
+  int index = 0;
+  while (index_to_min_max_y.contains(index + 1)) {
+    ++index;
+    int shift_amount = compute_shift_amount(index, index_to_min_max_y);
+    if (shift_amount == 0) {
+      continue;
     }
-    class_to_min_max_y[class_id] = {min, max};
-  }
-  compact_area(graph, shape, old_positions, attributes, classes_x,
-               coordinate_to_classes_x, sorted_coordinates_x,
-               class_to_min_max_y, shift_x_position);
-
-  auto [coordinate_to_classes_y, sorted_coordinates_y] =
-      build_coordinate_to_classes(graph, old_positions, classes_y,
-                                  get_y_coordinate, Color::GREEN, attributes);
-
-  std::unordered_map<int, std::pair<float, float>> class_to_min_max_x;
-  for (int class_id : classes_y.get_all_classes()) {
-    float min = FLT_MAX;
-    float max = 0;
-    for (auto& node : classes_y.get_elems_of_class(class_id)) {
-      min = std::min(min, get_x_coordinate(old_positions, node));
-      max = std::max(max, get_x_coordinate(old_positions, node));
+    std::unordered_set<int>& nodes_to_shift = index_x_to_nodes[index];
+    for (int node_id : nodes_to_shift) {
+      float old_x = positions.get_position_x(node_id);
+      positions.change_position_x(node_id, old_x - shift_amount);
     }
-    class_to_min_max_x[class_id] = {min, max};
+    index_to_min_max_y[index - shift_amount].insert(
+        *index_to_min_max_y[index].begin());
+    index_to_min_max_y[index].clear();
   }
-  compact_area(graph, shape, old_positions, attributes, classes_y,
-               coordinate_to_classes_y, sorted_coordinates_y,
-               class_to_min_max_x, shift_y_position);
+  // compacting y
+  auto index_to_min_max_x = build_index_y_to_min_max_index_x(
+      index_y_to_nodes, positions, nodes_to_index_x);
+  index = 0;
+  while (index_to_min_max_x.contains(index + 1)) {
+    ++index;
+    int shift_amount = compute_shift_amount(index, index_to_min_max_x);
+    if (shift_amount == 0) continue;
+    std::unordered_set<int>& nodes_to_shift = index_y_to_nodes[index];
+    for (int node_id : nodes_to_shift) {
+      float old_y = positions.get_position_y(node_id);
+      positions.change_position_y(node_id, old_y - shift_amount);
+    }
+    index_to_min_max_x[index - shift_amount].insert(
+        *index_to_min_max_x[index].begin());
+    index_to_min_max_x[index].clear();
+  }
 }

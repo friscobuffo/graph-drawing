@@ -121,11 +121,13 @@ int main() {
   // result = make_orthogonal_drawing_sperimental(*graph1);
   // node_positions_to_svg(result.positions, *result.augmented_graph,
   //                       result.attributes, "daje1.svg");
-  auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
+  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
+  auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
   auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
   node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
-                        result_rg.attributes, "rome2_.svg");
+                        result_rg.attributes, "rome2.svg");
+  std::cout << "crossings: " << compute_total_crossings(result_rg) << "\n";
+  std::cout << "area: " << compute_total_area(result_rg) << "\n";
 
   // prova_special();
   return 0;

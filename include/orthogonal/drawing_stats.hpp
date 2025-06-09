@@ -16,7 +16,7 @@ int compute_max_bends_per_edge(const DrawingResult& result);
 
 double compute_bends_std_dev(const DrawingResult& result);
 
-float compute_total_area(const DrawingResult& result);
+int compute_total_area(const DrawingResult& result);
 
 int compute_total_crossings(const DrawingResult& result);
 

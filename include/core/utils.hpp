@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 template <typename Iterable>
@@ -52,5 +53,7 @@ struct int_pair_hash {
 std::vector<std::string> collect_txt_files(const std::string& folder_path);
 
 double compute_stddev(const std::vector<int>& values);
+
+using IntPairHashSet = std::unordered_set<std::pair<int, int>, int_pair_hash>;
 
 #endif

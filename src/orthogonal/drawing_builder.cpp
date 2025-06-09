@@ -784,8 +784,30 @@ void add_green_blue_nodes(Graph& graph, GraphAttributes& attributes,
 NodesPositions build_nodes_positions(Graph& graph, GraphAttributes& attributes,
                                      Shape& shape);
 
-void make_shifts(Graph& graph, GraphAttributes& attributes, Shape& shape,
-                 NodesPositions& positions);
+void make_shifts_negative_positions(const Graph& graph,
+                                    NodesPositions& positions) {
+  float min_x = FLT_MAX;
+  float min_y = FLT_MAX;
+  for (const auto& node : graph.get_nodes()) {
+    min_x = std::min(min_x, positions.get_position_x(node.get_id()));
+    min_y = std::min(min_y, positions.get_position_y(node.get_id()));
+  }
+  if (min_x < 0) {
+    for (auto& node : graph.get_nodes()) {
+      int i = node.get_id();
+      positions.change_position_x(i, positions.get_position_x(i) - min_x);
+    }
+  }
+  if (min_y < 0) {
+    for (auto& node : graph.get_nodes()) {
+      int i = node.get_id();
+      positions.change_position_y(i, positions.get_position_y(i) - min_y);
+    }
+  }
+}
+
+void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes,
+                                  Shape& shape, NodesPositions& positions);
 
 DrawingResult make_orthogonal_drawing_incremental(
     const Graph& graph, std::vector<std::vector<int>>& cycles) {
@@ -821,8 +843,9 @@ DrawingResult make_orthogonal_drawing_incremental(
   add_green_blue_nodes(*augmented_graph, attributes, shape);
   NodesPositions positions =
       build_nodes_positions(*augmented_graph, attributes, shape);
-  // compact_area(*augmented_graph, shape, positions, attributes);
-  make_shifts(*augmented_graph, attributes, shape, positions);
+  make_shifts_overlapped_edges(*augmented_graph, attributes, shape, positions);
+  make_shifts_negative_positions(*augmented_graph, positions);
+  compact_area(*augmented_graph, shape, positions, attributes);
   return {std::move(augmented_graph),
           std::move(attributes),
           std::move(shape),
@@ -1075,7 +1098,8 @@ void make_shifts_right(int node_id, Graph& graph, Shape& shape,
     double old_position_y = positions.get_position_y(node_id);
     if (old_position_y > initial_position) {
       double new_position_y =
-          old_position_y + 0.05f * (right_nodes.size() - index_of_fixed_node);
+          old_position_y +
+          0.05f * (right_nodes.size() - index_of_fixed_node - 1);
       positions.change_position_y(node_id, new_position_y);
     }
     if (old_position_y < initial_position) {
@@ -1124,7 +1148,7 @@ void make_shifts_up(int node_id, Graph& graph, Shape& shape,
     double old_position_x = positions.get_position_x(node_id);
     if (old_position_x > initial_position) {
       double new_position_x =
-          old_position_x + 0.05f * (up_nodes.size() - index_of_fixed_node);
+          old_position_x + 0.05f * (up_nodes.size() - index_of_fixed_node - 1);
       positions.change_position_x(node_id, new_position_x);
     }
     if (old_position_x < initial_position) {
@@ -1158,8 +1182,8 @@ void make_shifts_up(int node_id, Graph& graph, Shape& shape,
   }
 }
 
-void make_shifts(Graph& graph, GraphAttributes& attributes, Shape& shape,
-                 NodesPositions& positions) {
+void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes,
+                                  Shape& shape, NodesPositions& positions) {
   std::vector<const GraphNode*> nodes;
   for (const GraphNode& node : graph.get_nodes())
     if (node.get_degree() > 4) nodes.push_back(&node);
@@ -1572,6 +1596,6 @@ void prova_special() {
   add_green_blue_nodes(graph, attributes, shape);
   NodesPositions positions = build_nodes_positions(graph, attributes, shape);
   // compact_area(graph, shape, positions, attributes);
-  make_shifts(graph, attributes, shape, positions);
+  make_shifts_overlapped_edges(graph, attributes, shape, positions);
   node_positions_to_svg(positions, graph, attributes, "dajetutta.svg");
 }

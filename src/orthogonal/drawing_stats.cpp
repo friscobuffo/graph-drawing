@@ -154,21 +154,62 @@ double compute_bends_std_dev(const DrawingResult& result) {
   return compute_stddev(red_counts);
 }
 
-float compute_total_area(const DrawingResult& result) {
+// to remove here
+auto build_coordinate_x_to_nodes_(const Graph& graph,
+                                  const NodesPositions& positions) {
+  std::unordered_map<int, std::unordered_set<int>> coordinate_x_to_nodes;
+  for (const auto& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    int x = std::round(100.0 * positions.get_position_x(node_id));
+    coordinate_x_to_nodes[x].insert(node_id);
+  }
+  return coordinate_x_to_nodes;
+}
+
+// to remove here
+auto build_coordinate_y_to_nodes_(const Graph& graph,
+                                  const NodesPositions& positions) {
+  std::unordered_map<int, std::unordered_set<int>> coordinate_y_to_nodes;
+  for (const auto& node : graph.get_nodes()) {
+    int node_id = node.get_id();
+    int y = std::round(100.0 * positions.get_position_y(node_id));
+    coordinate_y_to_nodes[y].insert(node_id);
+  }
+  return coordinate_y_to_nodes;
+}
+
+std::pair<int, int> compute_max_coordinates_integer(
+    const Graph& graph, const NodesPositions& positions) {
+  auto coordinate_y_to_nodes = build_coordinate_y_to_nodes_(graph, positions);
+  auto coordinate_x_to_nodes = build_coordinate_x_to_nodes_(graph, positions);
+  int actual_y = 0;
+  int y_index = 0;
+  while (coordinate_y_to_nodes.contains(actual_y)) {
+    if (coordinate_y_to_nodes.contains(actual_y + 5)) {
+      actual_y += 5;
+    } else {
+      actual_y += 100;
+      ++y_index;
+    }
+  }
+  int actual_x = 0;
+  int x_index = 0;
+  while (coordinate_x_to_nodes.contains(actual_x)) {
+    if (coordinate_x_to_nodes.contains(actual_x + 5)) {
+      actual_x += 5;
+    } else {
+      actual_x += 100;
+      ++x_index;
+    }
+  }
+  return std::make_pair(x_index - 1, y_index - 1);
+}
+
+int compute_total_area(const DrawingResult& result) {
   const auto& graph = *result.augmented_graph;
   const auto& positions = result.positions;
-  float min_x = graph.size();
-  float min_y = graph.size();
-  float max_x = 0;
-  float max_y = 0;
-  for (auto& node : graph.get_nodes()) {
-    int i = node.get_id();
-    min_x = std::min(min_x, positions.get_position_x(i));
-    min_y = std::min(min_y, positions.get_position_y(i));
-    max_x = std::max(max_x, positions.get_position_x(i));
-    max_y = std::max(max_y, positions.get_position_y(i));
-  }
-  return (max_x - min_x + 1) * (max_y - min_y + 1);
+  auto [max_x, max_y] = compute_max_coordinates_integer(graph, positions);
+  return (max_x + 1) * (max_y + 1);
 }
 
 int compute_total_crossings(const DrawingResult& result) {
@@ -188,7 +229,12 @@ int compute_total_crossings(const DrawingResult& result) {
       if (do_edges_cross(positions, i, j, k, l)) ++total_crossings;
     }
   }
-  return total_crossings / 4;
+  total_crossings /= 4;
+  for (const GraphNode& node : graph.get_nodes()) {
+    int degree = node.get_degree();
+    if (degree > 4) total_crossings -= (degree - 4);
+  }
+  return total_crossings;
 }
 
 OrthogonalStats compute_all_orthogonal_stats(const DrawingResult& result) {
