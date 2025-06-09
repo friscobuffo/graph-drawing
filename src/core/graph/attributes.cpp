@@ -89,3 +89,16 @@ const std::any& GraphAttributes::get_edge_any_label(int edge_id) const {
         "GraphAttributes::get_edge_any_label: the edge does not have a label");
   return mattribute_to_node.at(Attribute::EDGES_ANY_LABEL).at(edge_id);
 }
+
+bool GraphAttributes::are_nodes_identified(int node_id_1, int node_id_2) const {
+  return m_identified_nodes.contains({node_id_1, node_id_2}) ||
+         m_identified_nodes.contains({node_id_2, node_id_1});
+}
+
+void GraphAttributes::identify_nodes(int node_id_1, int node_id_2) {
+  if (are_nodes_identified(node_id_1, node_id_2))
+    throw std::runtime_error(
+        "GraphAttributes::identify_nodes: nodes are already identified");
+  m_identified_nodes.insert({node_id_1, node_id_2});
+  m_identified_nodes.insert({node_id_2, node_id_1});
+}

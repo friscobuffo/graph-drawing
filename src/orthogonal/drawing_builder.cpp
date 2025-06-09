@@ -169,10 +169,10 @@ void node_positions_to_svg(const NodesPositions& positions, const Graph& graph,
   }
   for (auto& node : graph.get_nodes()) {
     Color color = attributes.get_node_color(node.get_id());
-    if (color == Color::RED) continue;
-    if (color == Color::GREEN) continue;
-    if (color == Color::BLUE) continue;
-    if (color == Color::RED_SPECIAL) continue;
+    // if (color == Color::RED) continue;
+    // if (color == Color::GREEN) continue;
+    // if (color == Color::BLUE) continue;
+    // if (color == Color::RED_SPECIAL) continue;
     int side = (node.get_degree() <= 4)
                    ? 25
                    : ceil(25 * sqrt((node.get_degree() - 3)));
@@ -195,16 +195,11 @@ bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
   float l_pos_x = positions.get_position_x(l);
   float l_pos_y = positions.get_position_y(l);
 
-  auto same_position = [](float ax, float ay, float bx, float by) {
-    return ax == bx && ay == by;
-  };
-
-  if (same_position(i_pos_x, i_pos_y, k_pos_x, k_pos_y) ||
-      same_position(i_pos_x, i_pos_y, l_pos_x, l_pos_y) ||
-      same_position(j_pos_x, j_pos_y, k_pos_x, k_pos_y) ||
-      same_position(j_pos_x, j_pos_y, l_pos_x, l_pos_y)) {
+  if (std::abs(i_pos_x - k_pos_x) < 0.2 || std::abs(i_pos_x - l_pos_x) < 0.2 ||
+      std::abs(i_pos_y - k_pos_y) < 0.2 || std::abs(i_pos_y - l_pos_y) < 0.2 ||
+      std::abs(j_pos_x - k_pos_x) < 0.2 || std::abs(j_pos_x - l_pos_x) < 0.2 ||
+      std::abs(j_pos_y - k_pos_y) < 0.2 || std::abs(j_pos_y - l_pos_y) < 0.2)
     return false;
-  }
 
   bool is_i_j_horizontal = i_pos_y == j_pos_y;
   bool is_k_l_horizontal = k_pos_y == l_pos_y;
@@ -1128,6 +1123,7 @@ void make_shifts_right(int node_id, Graph& graph, Shape& shape,
     graph.add_undirected_edge(added_node_id, node_to_shift_id);
     positions.set_position(added_node_id, positions.get_position_x(node_id),
                            initial_position + shift);
+    attributes.identify_nodes(added_node_id, node_id);
     positions.change_position_y(node_to_shift_id,
                                 positions.get_position_y(added_node_id));
   }
@@ -1177,6 +1173,7 @@ void make_shifts_up(int node_id, Graph& graph, Shape& shape,
     graph.add_undirected_edge(added_node_id, node_to_shift_id);
     positions.set_position(added_node_id, initial_position + shift,
                            positions.get_position_y(node_id));
+    attributes.identify_nodes(added_node_id, node_id);
     positions.change_position_x(node_to_shift_id,
                                 positions.get_position_x(added_node_id));
   }
