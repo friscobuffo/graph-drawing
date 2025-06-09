@@ -119,9 +119,13 @@ void compare_approaches_in_folder(std::string& folder_path,
           }
         } catch (const std::exception& e) {
           std::lock_guard<std::mutex> lock(input_output_lock);
-          std::cout << "Error processing graph " << graph_filename << std::endl;
-          std::cout << "Exception: " << e.what() << std::endl;
-          // throw;
+          std::cerr << "Error processing graph " << graph_filename << std::endl;
+          if (std::string(e.what()) != "Graph contains cycle") {
+            std::cerr << "Error: " << e.what() << std::endl;
+            throw;
+          } else {
+            std::cout << "Graph contains cycle, skipping." << std::endl;
+          }
         }
       }
     });
