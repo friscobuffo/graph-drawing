@@ -6,6 +6,14 @@
 #include <unordered_set>
 #include <vector>
 
+float min_coordinate(
+    std::unordered_map<int, std::unordered_set<int>> coordinate_to_nodes) {
+  float min_c = MAXFLOAT;
+  for (auto& [coord, nodes] : coordinate_to_nodes)
+    if (coord < min_c) min_c = coord;
+  return min_c;
+}
+
 auto compute_node_to_coordinates_integer(const Graph& graph,
                                          const NodesPositions& positions) {
   std::unordered_map<int, std::unordered_set<int>> coordinate_y_to_nodes;
@@ -20,31 +28,29 @@ auto compute_node_to_coordinates_integer(const Graph& graph,
     int x = std::round(100.0 * positions.get_position_x(node_id));
     coordinate_x_to_nodes[x].insert(node_id);
   }
-  int actual_y = 0;
   int y_index = 0;
   std::unordered_map<int, int> node_to_coordinate_y;
-  while (coordinate_y_to_nodes.contains(actual_y)) {
-    for (const auto& node_id : coordinate_y_to_nodes[actual_y])
+  float min_y = min_coordinate(coordinate_y_to_nodes);
+  while (true) {
+    for (const auto& node_id : coordinate_y_to_nodes[min_y])
       node_to_coordinate_y[node_id] = y_index;
-    if (coordinate_y_to_nodes.contains(actual_y + 5)) {
-      actual_y += 5;
-    } else {
-      actual_y += 100;
-      ++y_index;
-    }
+    coordinate_y_to_nodes.erase(min_y);
+    if (coordinate_y_to_nodes.empty()) break;
+    float next_min_y = min_coordinate(coordinate_y_to_nodes);
+    if (next_min_y - min_y > 80) ++y_index;
+    min_y = next_min_y;
   }
-  int actual_x = 0;
   int x_index = 0;
   std::unordered_map<int, int> node_to_coordinate_x;
-  while (coordinate_x_to_nodes.contains(actual_x)) {
-    for (const auto& node_id : coordinate_x_to_nodes[actual_x])
+  float min_x = min_coordinate(coordinate_x_to_nodes);
+  while (true) {
+    for (const auto& node_id : coordinate_x_to_nodes[min_x])
       node_to_coordinate_x[node_id] = x_index;
-    if (coordinate_x_to_nodes.contains(actual_x + 5)) {
-      actual_x += 5;
-    } else {
-      actual_x += 100;
-      ++x_index;
-    }
+    coordinate_x_to_nodes.erase(min_x);
+    if (coordinate_x_to_nodes.empty()) break;
+    float next_min_x = min_coordinate(coordinate_x_to_nodes);
+    if (next_min_x - min_x > 80) ++x_index;
+    min_x = next_min_x;
   }
   return std::make_pair(node_to_coordinate_x, node_to_coordinate_y);
 }
@@ -187,6 +193,8 @@ int compute_total_area(const DrawingResult& result) {
     min_x = std::min(min_x, x);
     min_y = std::min(min_y, y);
   }
+  std::cout << "min_x: " << min_x << ", max_x: " << max_x
+            << ", min_y: " << min_y << ", max_y: " << max_y << "\n";
   return (max_x - min_x + 1) * (max_y - min_y + 1);
 }
 

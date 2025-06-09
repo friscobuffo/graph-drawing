@@ -122,11 +122,11 @@ int main() {
   // node_positions_to_svg(result.positions, *result.augmented_graph,
   //                       result.attributes, "daje1.svg");
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
-  auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
+  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
+  auto graph_rg = load_graph_from_txt_file("rome_2/grafo4123.77.txt");
   std::cout << "Graph loaded: " << graph_rg->size() << " nodes\n";
   std::cout << "Graph loaded: " << graph_rg->get_number_of_edges()
             << " edges\n";
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo3610.57.txt");
   auto result_ogdf = create_drawing(*graph_rg, "rome_ogdf.svg");
   auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
   node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
