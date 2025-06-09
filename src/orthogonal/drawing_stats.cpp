@@ -223,6 +223,50 @@ bool do_edges_cross(int i, int j, int k, int l,
   return true;
 }
 
+bool do_edges_cross(const NodesPositions& positions, int i, int j, int k,
+                    int l) {
+  float i_pos_x = positions.get_position_x(i);
+  float i_pos_y = positions.get_position_y(i);
+  float j_pos_x = positions.get_position_x(j);
+  float j_pos_y = positions.get_position_y(j);
+  float k_pos_x = positions.get_position_x(k);
+  float k_pos_y = positions.get_position_y(k);
+  float l_pos_x = positions.get_position_x(l);
+  float l_pos_y = positions.get_position_y(l);
+
+  if (std::abs(i_pos_x - k_pos_x) < 0.2 || std::abs(i_pos_x - l_pos_x) < 0.2 ||
+      std::abs(i_pos_y - k_pos_y) < 0.2 || std::abs(i_pos_y - l_pos_y) < 0.2 ||
+      std::abs(j_pos_x - k_pos_x) < 0.2 || std::abs(j_pos_x - l_pos_x) < 0.2 ||
+      std::abs(j_pos_y - k_pos_y) < 0.2 || std::abs(j_pos_y - l_pos_y) < 0.2)
+    return false;
+
+  bool is_i_j_horizontal = i_pos_y == j_pos_y;
+  bool is_k_l_horizontal = k_pos_y == l_pos_y;
+
+  if (is_i_j_horizontal && is_k_l_horizontal) {
+    return (i_pos_y == k_pos_y) &&
+           ((i_pos_x <= k_pos_x && j_pos_x >= k_pos_x) ||
+            (i_pos_x <= l_pos_x && j_pos_x >= l_pos_x) ||
+            (j_pos_x <= k_pos_x && i_pos_x >= k_pos_x) ||
+            (j_pos_x <= l_pos_x && i_pos_x >= l_pos_x));
+  }
+  if (!is_i_j_horizontal && !is_k_l_horizontal) {
+    return (i_pos_x == k_pos_x) &&
+           ((i_pos_y <= k_pos_y && j_pos_y >= k_pos_y) ||
+            (i_pos_y <= l_pos_y && j_pos_y >= l_pos_y) ||
+            (j_pos_y <= k_pos_y && i_pos_y >= k_pos_y) ||
+            (j_pos_y <= l_pos_y && i_pos_y >= l_pos_y));
+  }
+  if (!is_i_j_horizontal) return do_edges_cross(positions, k, l, i, j);
+  if (k_pos_x < std::min(i_pos_x, j_pos_x) ||
+      k_pos_x > std::max(i_pos_x, j_pos_x))
+    return false;
+  if (i_pos_y < std::min(k_pos_y, l_pos_y) ||
+      i_pos_y > std::max(k_pos_y, l_pos_y))
+    return false;
+  return true;
+}
+
 int compute_total_crossings(const DrawingResult& result) {
   const auto& graph = *result.augmented_graph;
   const auto& positions = result.positions;

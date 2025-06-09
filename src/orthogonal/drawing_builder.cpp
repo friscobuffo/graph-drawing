@@ -1354,7 +1354,6 @@ void add_edge_for_internal_loops(
   if (!added_to_original_edge.contains({class_from_id, class_to_id}))
     throw std::runtime_error("Edge not found in added edges");
   auto [from_id, to_id] = added_to_original_edge[{class_from_id, class_to_id}];
-  std::cout << "adding mini corner " << from_id << " " << to_id << "\n";
   Direction direction = shape.get_direction(from_id, to_id);
   Direction direction_to_add;
   if (direction == Direction::RIGHT)
