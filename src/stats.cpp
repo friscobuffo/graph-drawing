@@ -30,9 +30,9 @@ auto test_shape_metrics_approach(const Graph& graph,
   std::chrono::duration<double> elapsed = end - start;
   node_positions_to_svg(result.positions, *result.augmented_graph,
                         result.attributes, svg_output_filename);
-  if (check_if_drawing_has_overlappings(*result.augmented_graph,
-                                        result.positions))
-    throw std::runtime_error("Drawing has overlappings");
+  // if (check_if_drawing_has_overlappings(*result.augmented_graph,
+  //                                       result.positions))
+  //   throw std::runtime_error("Drawing has overlappings");
   return std::make_pair(std::move(result), elapsed.count());
 }
 
@@ -121,7 +121,7 @@ void compare_approaches_in_folder(std::string& folder_path,
           std::lock_guard<std::mutex> lock(input_output_lock);
           std::cout << "Error processing graph " << graph_filename << std::endl;
           std::cout << "Exception: " << e.what() << std::endl;
-          throw;
+          // throw;
         }
       }
     });

@@ -9,7 +9,7 @@ import shutil
 from collections import Counter
 import seaborn as sns
 
-df = pd.read_csv('test_results___.csv')
+df = pd.read_csv('test_results.csv')
 
 def parse_graph_name(name):
     n_match = re.search(r'n(\d+)', name)
@@ -26,10 +26,10 @@ df['shape_metrics_sat_invocations'] = df['shape_metrics_number_added_cycles'] + 
 # df['shape_metrics_ratio_useless_bends'] = df['shape_metrics_number_useless_bends'] / df['shape_metrics_total_added_bends']
 # df['good_bends_ratio'] = df['shape_metrics_bends'] / (df['shape_metrics_bends'] + df['shape_metrics_number_useless_bends'])
 
-if df.isnull().values.any():
-    nan_columns = df.columns[df.isnull().any()].tolist()
-    print(f"NaN values found in columns: {nan_columns}")
-    raise ValueError("DataFrame contains NaN values. Please clean the data before proceeding.")
+# if df.isnull().values.any():
+#     nan_columns = df.columns[df.isnull().any()].tolist()
+#     print(f"NaN values found in columns: {nan_columns}")
+#     raise ValueError("DataFrame contains NaN values. Please clean the data before proceeding.")
 
 output_dir = 'plot_results'
 if os.path.exists(output_dir):

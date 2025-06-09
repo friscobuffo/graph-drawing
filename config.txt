@@ -20,6 +20,6 @@ graphs_generated_per_same_nodes_number=100
 #################################
 # COMPARISON TEST CONFIG
 #################################
-test_graphs_folder=generated-graphs/
+test_graphs_folder=rome_2/
 output_result_filename=test_results.csv
 output_svgs_folder=output-svgs/
