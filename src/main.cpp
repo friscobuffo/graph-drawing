@@ -1,3 +1,5 @@
+#include <chrono>
+#include <filesystem>
 #include <iostream>
 
 #include "baseline-ogdf/drawer.hpp"
@@ -7,6 +9,30 @@
 #include "core/graph/graph.hpp"
 #include "orthogonal/drawing_builder.hpp"
 #include "orthogonal/drawing_stats.hpp"
+
+void launch_subset_stress_test() {
+  auto txt_files = collect_txt_files("rome_2_subset_300");
+  int index = 0;
+  while (index < txt_files.size()) {
+    const auto& entry_path = txt_files[index];
+    index++;
+    const std::string graph_filename =
+        std::filesystem::path(entry_path).stem().string();
+    std::unique_ptr<Graph> graph = load_graph_from_txt_file(entry_path);
+    if (!is_graph_connected(*graph)) {
+      std::cerr << "Graph " << graph_filename << " is not connected, skipping."
+                << std::endl;
+      continue;
+    }
+    try {
+      auto result_shape_metrics = make_orthogonal_drawing_sperimental(*graph);
+    } catch (const std::exception& e) {
+      std::cout << "Error processing graph " << graph_filename << std::endl;
+      std::cout << "Error: " << e.what() << std::endl;
+      throw;
+    }
+  }
+}
 
 std::unique_ptr<Graph> prova0() {
   std::unique_ptr<Graph> graph = std::make_unique<Graph>();
@@ -99,6 +125,12 @@ void cut_vertices_stats(std::string& folder_path) {
 }
 
 int main() {
+  auto start = std::chrono::high_resolution_clock::now();
+  launch_subset_stress_test();
+  auto end = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> elapsed = end - start;
+  std::cout << "Elapsed time: " << elapsed.count() << " seconds\n";
+  return 0;
   // auto graph = generate_connected_random_graph(20, 35);
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo113.28.txt");
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo115.30.txt");
@@ -123,7 +155,7 @@ int main() {
   //                       result.attributes, "daje1.svg");
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
   // auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
-  auto graph_rg = load_graph_from_txt_file("rome_2/grafo4123.77.txt");
+  auto graph_rg = load_graph_from_txt_file("rome_2/grafo1848.18.txt");
   std::cout << "Graph loaded: " << graph_rg->size() << " nodes\n";
   std::cout << "Graph loaded: " << graph_rg->get_number_of_edges()
             << " edges\n";

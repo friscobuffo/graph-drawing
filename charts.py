@@ -26,22 +26,10 @@ df['shape_metrics_sat_invocations'] = df['shape_metrics_number_added_cycles'] + 
 # df['shape_metrics_ratio_useless_bends'] = df['shape_metrics_number_useless_bends'] / df['shape_metrics_total_added_bends']
 # df['good_bends_ratio'] = df['shape_metrics_bends'] / (df['shape_metrics_bends'] + df['shape_metrics_number_useless_bends'])
 
-# if df.isnull().values.any():
-#     nan_columns = df.columns[df.isnull().any()].tolist()
-#     print(f"NaN values found in columns: {nan_columns}")
-#     raise ValueError("DataFrame contains NaN values. Please clean the data before proceeding.")
-
-def prova():
-    #check if the area of shape_metrics is less than ogdf
-    area_ratio = df['ogdf_area'] / df['shape_metrics_area']
-    area_way_less_than_ogdf = area_ratio > 1.5
-    # print the names of the graphs where the area of shape_metrics is way less than ogdf
-    print("Graphs where shape_metrics area is way less than ogdf area:")
-    for index, row in df[area_way_less_than_ogdf].iterrows():
-        print(f"Graph: {row['graph_name']}, OGDF Area: {row['ogdf_area']}, Shape Metrics Area: {row['shape_metrics_area']}")
-    quit()
-
-prova()
+if df.isnull().values.any():
+    nan_columns = df.columns[df.isnull().any()].tolist()
+    print(f"NaN values found in columns: {nan_columns}")
+    raise ValueError("DataFrame contains NaN values. Please clean the data before proceeding.")
 
 output_dir = 'plot_results'
 if os.path.exists(output_dir):

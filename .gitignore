@@ -18,4 +18,4 @@ Makefile
 /build
 cnf_logs*
 libcore.a
-/rome_2
+/rome_2*

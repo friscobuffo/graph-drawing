@@ -790,6 +790,7 @@ DrawingResult make_orthogonal_drawing_incremental(
   }
   int old_size = augmented_graph->size();
   refine_result(*augmented_graph, attributes, shape);
+  // shape.print();
   int number_of_useless_bends = old_size - augmented_graph->size();
   add_green_blue_nodes(*augmented_graph, attributes, shape);
   NodesPositions positions =
@@ -1349,6 +1350,7 @@ void add_edge_for_internal_loops(
     std::vector<int>& cycle,
     GraphEdgeHashMap<std::pair<int, int>>& added_to_original_edge, Graph& graph,
     Shape& shape, GraphAttributes& attributes, EquivalenceClasses& classes) {
+  std::cout << "Adding edge for internal loops\n";
   int class_from_id = cycle[0];
   int class_to_id = cycle[1];
   if (!added_to_original_edge.contains({class_from_id, class_to_id}))
@@ -1404,6 +1406,8 @@ NodesPositions build_nodes_positions(Graph& graph, GraphAttributes& attributes,
   auto [classes_x, classes_y] = build_equivalence_classes(shape, graph);
   auto [ordering_x, ordering_y, ignored_1, ignored_2] =
       equivalence_classes_to_ordering(classes_x, classes_y, graph, shape);
+  // std::cout << "NEW SHAPE\n";
+  // shape.print();
   add_special_edges_in_orderings(graph, *ordering_x, *ordering_y, attributes,
                                  shape, classes_x, classes_y);
   auto new_classes_x_ordering = make_topological_ordering(*ordering_x);
