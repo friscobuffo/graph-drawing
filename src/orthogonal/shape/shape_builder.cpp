@@ -1,12 +1,12 @@
 #include "orthogonal/shape/shape_builder.hpp"
 
 #include <algorithm>
-#include <optional>
-#include <random>
+#include <filesystem>
 #include <fstream>
 #include <mutex>
+#include <optional>
+#include <random>
 #include <stdexcept>
-#include <filesystem>
 #include <string>
 #include <unordered_map>
 
@@ -131,7 +131,7 @@ std::optional<Shape> build_shape_or_add_corner(
   const std::string cnf = get_unique_filename("cnf");
   cnf_builder.convert_to_cnf(cnf);
   auto results = launch_glucose(cnf, false);
-  // remove(cnf.c_str());
+  remove(cnf.c_str());
   if (results.result == GlucoseResultType::UNSAT) {
     auto edge =
         find_edges_to_split(results.proof_lines, random_engine, handler, graph);

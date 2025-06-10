@@ -49,7 +49,7 @@ GlucoseResult launch_glucose(const std::string& conjunctive_normal_form_file,
   command += " > /dev/null 2>&1";
   std::system(command.c_str());
   GlucoseResult result = get_results(output_file, proof_file);
-  // delete_glucose_temp_files(output_file, proof_file);
+  delete_glucose_temp_files(output_file, proof_file);
   return std::move(result);
 }
 

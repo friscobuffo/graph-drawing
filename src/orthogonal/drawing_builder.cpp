@@ -700,7 +700,6 @@ DrawingResult make_orthogonal_drawing_incremental(
 
 DrawingResult make_orthogonal_drawing_sperimental(const Graph& graph) {
   auto cycles = compute_cycle_basis(graph);
-  // auto cycles = compute_all_cycles_in_undirected_graph(graph);
   return make_orthogonal_drawing_incremental(graph, cycles);
 }
 
@@ -760,6 +759,12 @@ void make_shifts_negative_positions(const Graph& graph,
 void make_shifts_overlapped_edges(Graph& graph, GraphAttributes& attributes,
                                   Shape& shape, NodesPositions& positions);
 
+bool has_graph_degree_more_than_4(const Graph& graph) {
+  for (const auto& node : graph.get_nodes())
+    if (node.get_degree() > 4) return true;
+  return false;
+}
+
 DrawingResult make_orthogonal_drawing_incremental(
     const Graph& graph, std::vector<std::vector<int>>& cycles) {
   if (!is_graph_undirected(graph))
@@ -783,20 +788,24 @@ DrawingResult make_orthogonal_drawing_incremental(
       check_if_metrics_exist(shape, *augmented_graph, attributes);
   int number_of_added_cycles = 0;
   while (cycle_to_add.has_value()) {
-    cycles.push_back(cycle_to_add.value());
+    cycles.push_back(*cycle_to_add);
     number_of_added_cycles++;
     shape = build_shape(*augmented_graph, attributes, cycles);
     cycle_to_add = check_if_metrics_exist(shape, *augmented_graph, attributes);
   }
   int old_size = augmented_graph->size();
   refine_result(*augmented_graph, attributes, shape);
-  // shape.print();
   int number_of_useless_bends = old_size - augmented_graph->size();
-  add_green_blue_nodes(*augmented_graph, attributes, shape);
-  NodesPositions positions =
-      build_nodes_positions(*augmented_graph, attributes, shape);
-  make_shifts_overlapped_edges(*augmented_graph, attributes, shape, positions);
-  make_shifts_negative_positions(*augmented_graph, positions);
+  NodesPositions positions;
+  if (has_graph_degree_more_than_4(*augmented_graph)) {
+    add_green_blue_nodes(*augmented_graph, attributes, shape);
+    positions = build_nodes_positions(*augmented_graph, attributes, shape);
+    make_shifts_overlapped_edges(*augmented_graph, attributes, shape,
+                                 positions);
+    make_shifts_negative_positions(*augmented_graph, positions);
+  } else {
+    positions = build_nodes_positions(*augmented_graph, attributes, shape);
+  }
   compact_area(*augmented_graph, shape, positions, attributes);
   return {std::move(augmented_graph),
           std::move(attributes),

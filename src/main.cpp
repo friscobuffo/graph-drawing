@@ -10,30 +10,6 @@
 #include "orthogonal/drawing_builder.hpp"
 #include "orthogonal/drawing_stats.hpp"
 
-void launch_subset_stress_test() {
-  auto txt_files = collect_txt_files("rome_2_subset_300");
-  int index = 0;
-  while (index < txt_files.size()) {
-    const auto& entry_path = txt_files[index];
-    index++;
-    const std::string graph_filename =
-        std::filesystem::path(entry_path).stem().string();
-    std::unique_ptr<Graph> graph = load_graph_from_txt_file(entry_path);
-    if (!is_graph_connected(*graph)) {
-      std::cerr << "Graph " << graph_filename << " is not connected, skipping."
-                << std::endl;
-      continue;
-    }
-    try {
-      auto result_shape_metrics = make_orthogonal_drawing_sperimental(*graph);
-    } catch (const std::exception& e) {
-      std::cout << "Error processing graph " << graph_filename << std::endl;
-      std::cout << "Error: " << e.what() << std::endl;
-      throw;
-    }
-  }
-}
-
 std::unique_ptr<Graph> prova0() {
   std::unique_ptr<Graph> graph = std::make_unique<Graph>();
   for (int i = 0; i < 12; ++i) graph->add_node(i);
@@ -125,44 +101,26 @@ void cut_vertices_stats(std::string& folder_path) {
 }
 
 int main() {
+  // auto graph = generate_connected_random_graph(20, 35);
+  // auto graph = load_graph_from_txt_file("rome_2/grafo113.28.txt");
+  // auto graph = load_graph_from_txt_file("rome_2/grafo115.30.txt");
+  // auto graph = load_graph_from_txt_file("rome_2/grafo3470.41.txt");
+  auto graph = generate_connected_random_graph(15, 23);
+
+  // auto graph = prova0();
+  // auto graph = prova1();
+
+  // auto graph = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
+  // auto graph = load_graph_from_txt_file("rome_2/grafo149.41.txt");
+  // auto graph = load_graph_from_txt_file("rome_2/grafo8961.75.txt");
+
   auto start = std::chrono::high_resolution_clock::now();
-  launch_subset_stress_test();
+  auto result_rg = make_orthogonal_drawing_sperimental(*graph);
   auto end = std::chrono::high_resolution_clock::now();
   std::chrono::duration<double> elapsed = end - start;
   std::cout << "Elapsed time: " << elapsed.count() << " seconds\n";
-  return 0;
-  // auto graph = generate_connected_random_graph(20, 35);
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo113.28.txt");
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo115.30.txt");
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo3470.41.txt");
-  // auto result_ogdf = create_drawing(*graph_rg, "rome_ogdf.svg");
-  // graph_rg->print();
-  // auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
-  // node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
-  //                       result_rg.attributes, "rome.svg");
-  // auto graph = generate_connected_random_graph(15, 23);
-  // auto result = make_orthogonal_drawing_sperimental(*graph);
-  // node_positions_to_svg(result.positions, *result.augmented_graph,
-  //                       result.attributes, "daje.svg");
-
-  // std::unique_ptr<Graph> graph0 = prova0();
-  // result = make_orthogonal_drawing_sperimental(*graph0);
-  // node_positions_to_svg(result.positions, *result.augmented_graph,
-  //                       result.attributes, "daje0.svg");
-  // std::unique_ptr<Graph> graph1 = prova1();
-  // result = make_orthogonal_drawing_sperimental(*graph1);
-  // node_positions_to_svg(result.positions, *result.augmented_graph,
-  //                       result.attributes, "daje1.svg");
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo11549.35.txt");
-  // auto graph_rg = load_graph_from_txt_file("rome_2/grafo149.41.txt");
-  auto graph_rg = load_graph_from_txt_file("rome_2/grafo1848.18.txt");
-  std::cout << "Graph loaded: " << graph_rg->size() << " nodes\n";
-  std::cout << "Graph loaded: " << graph_rg->get_number_of_edges()
-            << " edges\n";
-  auto result_ogdf = create_drawing(*graph_rg, "rome_ogdf.svg");
-  auto result_rg = make_orthogonal_drawing_sperimental(*graph_rg);
   node_positions_to_svg(result_rg.positions, *result_rg.augmented_graph,
-                        result_rg.attributes, "rome2.svg");
+                        result_rg.attributes, "rome.svg");
   std::cout << "crossings: " << compute_total_crossings(result_rg) << "\n";
   std::cout << "area: " << compute_total_area(result_rg) << "\n";
   std::cout << "bends: " << compute_total_bends(result_rg) << "\n";
@@ -175,7 +133,6 @@ int main() {
   std::cout << "max bends per edge: " << compute_max_bends_per_edge(result_rg)
             << "\n";
   std::cout << "bends stddev: " << compute_bends_std_dev(result_rg) << "\n";
-  prova_special();
   return 0;
   // Config config("config.txt");
   // const std::string& filename = config.get("output_svg_shape_metrics");
